@@ -1,0 +1,11 @@
+[package]
+name = "edgy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ahash = { version = "0.8.11", default-features = false }
+embedded-graphics = "0.8.1"
+
+[dev-dependencies]
+embedded-graphics-simulator = "0.7.0"
