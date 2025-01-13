@@ -26,25 +26,15 @@ fn main() -> Result<(), core::convert::Infallible> {
 
         let rect = Rectangle::new(Point::new(0, 20), display.size());
         let ui_context_render = std::time::Instant::now();
-        let mut ui = UiContext::new(&mut display, rect);
-        StackLayout::new(&mut ui, StackLayoutDirection::Vertical, |add_widget| {
-            let mut label1 = Label::new::<SimulatorDisplay<Rgb888>>(
-                MonoTextStyle::new(&FONT_4X6, Rgb888::RED),
-                "Hello World",
-            );
-
-            let mut label2 = Label::new::<SimulatorDisplay<Rgb888>>(
-                MonoTextStyle::new(&FONT_4X6, Rgb888::GREEN),
-                "Goodbye World",
-            );
-
-            add_widget(&mut label1);
-            add_widget(&mut label2);
-
-            StackLayout::new(&mut ui, StackLayoutDirection::Horizontal, |add_widget| {
-            });
+        let mut ui_ctx = UiContext::new(&mut display, rect);
+        let mut stack = StackLayout::new(&mut ui_ctx, StackLayoutDirection::Vertical, |ui| {
+            ui(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(text_style, "Hello world")));
+            ui(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(text_style, "pizda")));
+            ui(Box::new(StackLayout::new(&mut ui, StackLayoutDirection::Horizontal, |ui| {
+                Box::new(Label::new::<SimulatorDisplay<Rgb888>>(text_style, "govno"));
+            })));
         });
-
+        stack.draw(&mut ui_ctx);
 
         let seconds_ui = ui_context_render.elapsed().as_millis();
         Text::new(
