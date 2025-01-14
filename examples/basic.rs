@@ -27,13 +27,30 @@ fn main() -> Result<(), core::convert::Infallible> {
         let rect = Rectangle::new(Point::new(0, 20), display.size());
         let ui_context_render = std::time::Instant::now();
         let mut ui_ctx = UiContext::new(&mut display, rect);
-        let mut stack = StackLayout::new(&mut ui_ctx, StackLayoutDirection::Vertical, |ui| {
-            ui(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(text_style, "Hello world")));
-            ui(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(text_style, "pizda")));
-            ui(Box::new(StackLayout::new(&mut ui, StackLayoutDirection::Horizontal, |ui| {
-                Box::new(Label::new::<SimulatorDisplay<Rgb888>>(text_style, "govno"));
-            })));
+
+        let mut stack = StackLayout::new(StackLayoutDirection::Vertical, |add| {
+            add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
+                text_style,
+                "Hello world",
+            )));
+            add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
+                text_style,
+                "Nested layout!",
+            )));
+
+            add(Box::new(StackLayout::new(
+                StackLayoutDirection::Horizontal,
+                |add| {
+                    add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
+                        text_style, "Widget 1",
+                    )));
+                    add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
+                        text_style, "Widget 2",
+                    )));
+                },
+            )));
         });
+
         stack.draw(&mut ui_ctx);
 
         let seconds_ui = ui_context_render.elapsed().as_millis();
@@ -51,7 +68,6 @@ fn main() -> Result<(), core::convert::Infallible> {
             text_style,
         )
         .draw(&mut display)?;
-
 
         for event in window.events() {
             match event {

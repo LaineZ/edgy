@@ -1,33 +1,36 @@
-use embedded_graphics::{mono_font::MonoTextStyle, prelude::*, primitives::Rectangle, text::Text};
+use embedded_graphics::{mono_font::MonoTextStyle, prelude::*, text::Text};
+
+use crate::UiContext;
+
+use super::Widget;
 
 pub struct Label<'a, C: PixelColor> {
-    text: &'a str,
-    size: Rectangle,
-    style: MonoTextStyle<'a, C>,
+    text_object: Text<'a, MonoTextStyle<'a, C>>,
 }
 
 impl<'a, C: PixelColor> Label<'a, C> {
-    pub fn new(text: &'a str, style: MonoTextStyle<'a, C>) -> Self {
-        Self {
-            text,
-            style,
-            size: Rectangle::zero(),
-        }
+    pub fn new<D>(text_style: MonoTextStyle<'a, C>, text: &'a str) -> Self
+    where
+        D: DrawTarget<Color = C>,
+        C: PixelColor,
+    {
+        let text_object = Text::new(text, Point::zero(), text_style);
+        Self { text_object }
     }
 }
 
-impl<C> Drawable for Label<'_, C>
+impl<'a, D, C> Widget<D, C> for Label<'a, C>
 where
+    D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    type Color = C;
-    type Output = ();
+    fn draw(&mut self, ui: &mut UiContext<D, C>) {
+        self.text_object.translate_mut(ui.bounds.top_left);
+        let _ = self.text_object.draw(ui.draw_target);
+    }
 
-    fn draw<D>(&self, target: &mut D) -> Result<Self::Output, D::Error>
-    where
-        D: DrawTarget<Color = Self::Color>,
-    {
-        Text::new(self.text, self.size.top_left, self.style).draw(target)?;
-        Ok(())
+    fn size(&self) -> Size {
+        dbg!(self.text_object.bounding_box());
+        self.text_object.bounding_box().size
     }
 }
