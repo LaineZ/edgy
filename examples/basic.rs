@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use edgy::{Label, LinearLayoutBuilder, UiBuilder, UiContext, WidgetObj};
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -10,23 +8,19 @@ use embedded_graphics::{
 };
 use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, Window};
 
-pub fn demo_ui<'a, D, C>(
-    counter: &'a mut i32,
-    counter2: &'a RefCell<&'a mut i32>,
-) -> WidgetObj<'a, D, C>
+pub fn demo_ui<'a, D>() -> WidgetObj<'a, D, Rgb888>
 where
-    D: DrawTarget<Color = C> + 'a,
-    C: PixelColor + 'a,
+    D: DrawTarget<Color = Rgb888> + 'a,
 {
     let mut ui = LinearLayoutBuilder {
+        direction: edgy::LayoutDirection::Horizontal,
         children: Vec::new(),
     };
-    ui.label("привет");
-    ui.label("пока");
-
-    ui.linear_layout(|ui| {
-        ui.label("прощай");
-        ui.label("навсегда");
+    ui.label("hello", Rgb888::RED);
+    ui.label("world", Rgb888::RED);
+    ui.linear_layout(edgy::LayoutDirection::Vertical, |ui| {
+        ui.label("good", Rgb888::WHITE);
+        ui.label("friend", Rgb888::BLUE);
     });
 
     ui.finish()
@@ -50,6 +44,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         let rect = Rectangle::new(Point::new(0, 20), display.size());
         let ui_context_render = std::time::Instant::now();
         let mut ui_ctx = UiContext::new(&mut display, rect);
+        demo_ui().draw(&mut ui_ctx, rect);
 
         let seconds_ui = ui_context_render.elapsed().as_millis();
         Text::new(
