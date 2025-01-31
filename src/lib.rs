@@ -1,3 +1,7 @@
+#![no_std]
+
+use alloc::{boxed::Box, vec::Vec};
+use core::marker::PhantomData;
 use embedded_graphics::{
     mono_font::MonoTextStyle,
     prelude::*,
@@ -5,9 +9,19 @@ use embedded_graphics::{
     text::Text,
     Drawable,
 };
-use widgets::Widget;
-pub mod widgets;
-use core::marker::PhantomData;
+
+extern crate alloc;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EventResult {
+    /// эвент обработан
+    Stop,
+    /// эвент не обработан, пробуем следующий виджет
+    Pass,
+}
+
+/// затычка
+pub struct Event;
 
 pub struct UiContext<'a, D, C>
 where
@@ -29,158 +43,161 @@ where
             bounds,
         }
     }
+}
 
-    pub fn root<F>(ui: &mut UiContext<D, C>, mut f: F)
-    where
-        D: DrawTarget<Color = C>,
-        C: PixelColor,
-        F: FnMut(&mut dyn FnMut(&mut dyn Widget<D, C>)),
-    {
-        let current_position = ui.bounds.top_left;
+/// трейт для любых виджетов, в том числе контейнеров
+/// можно использовать в виде объекта
+pub trait Widget<'a, D, C>: 'a
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor,
+{
+    fn layout(&mut self, hint: Size) -> Size;
 
-        f(&mut |widget: &mut dyn Widget<D, C>| {
-            let widget_size = widget.size();
+    fn handle_event(&mut self, event: &Event) -> EventResult {
+        let _ = event;
+        EventResult::Pass
+    }
 
-            let mut child_ui = UiContext {
-                draw_target: ui.draw_target,
-                bounds: Rectangle::new(current_position, widget_size),
-            };
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle);
+}
 
-            widget.draw(&mut child_ui);
+pub trait UiBuilder<'a, D, C>
+where
+    D: DrawTarget<Color = C> + 'a,
+    C: PixelColor + 'a,
+{
+    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>);
+
+    fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W) {
+        self.add_widget_obj(WidgetObj {
+            widget: Box::new(widget),
         });
     }
-}
 
-pub struct Label<'a, C: PixelColor> {
-    text_object: Text<'a, MonoTextStyle<'a, C>>,
-}
-
-impl<'a, C: PixelColor> Label<'a, C> {
-    pub fn new<D>(text_style: MonoTextStyle<'a, C>, text: &'a str) -> Self
-    where
-        D: DrawTarget<Color = C>,
-        C: PixelColor,
-    {
-        let text_object = Text::new(text, Point::zero(), text_style);
-        Self { text_object }
-    }
-}
-
-impl<'a, D, C> Widget<D, C> for Label<'a, C>
-where
-    D: DrawTarget<Color = C>,
-    C: PixelColor,
-{
-    fn draw(&mut self, ui: &mut UiContext<D, C>) {
-        self.text_object.translate_mut(ui.bounds.top_left);
-        let _ = self.text_object.draw(ui.draw_target);
+    fn label(&mut self, text: &'a str) {
+        self.add_widget(Label { text })
     }
 
-    fn size(&self) -> Size {
-        dbg!(self.text_object.bounding_box());
-        self.text_object.bounding_box().size
-    }
-}
-
-pub struct StackLayout<'a, D, C>
-where
-    D: DrawTarget<Color = C>,
-    C: PixelColor,
-{
-    direction: StackLayoutDirection,
-    widgets: Vec<Box<dyn Widget<D, C> + 'a>>,
-}
-
-impl<'a, D, C> StackLayout<'a, D, C>
-where
-    D: DrawTarget<Color = C>,
-    C: PixelColor,
-{
-    pub fn new<F>(direction: StackLayoutDirection, mut f: F) -> Self
-    where
-        F: FnMut(&mut dyn FnMut(Box<dyn Widget<D, C> + 'a>)),
-    {
-        let mut widgets = Vec::new();
-
-        let mut add_widget = |widget: Box<dyn Widget<D, C> + 'a>| {
-            widgets.push(widget);
+    fn linear_layout(&mut self, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
+        let mut builder = LinearLayoutBuilder {
+            children: Vec::new(),
         };
-
-        f(&mut add_widget);
-
-        Self { direction, widgets }
+        fill(&mut builder);
+        builder.finish();
     }
 
-    pub fn draw(&mut self, ui: &mut UiContext<D, C>) {
-        let mut current_position = ui.bounds.top_left;
-        let mut remaining_size = ui.bounds.size;
+    // сюда добавлять функции для стройки виджетов, типа button
 
-        for widget in &mut self.widgets {
-            let widget_size = widget.size();
-
-            if (self.direction == StackLayoutDirection::Vertical
-                && widget_size.height > remaining_size.height)
-                || (self.direction == StackLayoutDirection::Horizontal
-                    && widget_size.width > remaining_size.width)
-            {
-                continue;
-            }
-
-            let mut child_ui = UiContext {
-                draw_target: ui.draw_target,
-                bounds: Rectangle::new(current_position, widget_size),
-            };
-
-            widget.draw(&mut child_ui);
-
-            match self.direction {
-                StackLayoutDirection::Vertical => {
-                    current_position.y += widget_size.height as i32;
-                    remaining_size.height -= widget_size.height;
-                }
-                StackLayoutDirection::Horizontal => {
-                    current_position.x += widget_size.width as i32;
-                    remaining_size.width -= widget_size.width;
-                }
-            }
-        }
-    }
+    fn finish(self) -> WidgetObj<'a, D, C>;
 }
 
-impl<'a, D, C> Widget<D, C> for StackLayout<'a, D, C>
+pub struct Label<'a> {
+    text: &'a str,
+}
+
+impl<'a, D, C> Widget<'a, D, C> for Label<'a>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    fn draw(&mut self, ui: &mut UiContext<D, C>) {
-        self.draw(ui)
+    fn layout(&mut self, hint: Size) -> Size {
+        todo!()
     }
 
-    fn size(&self) -> Size {
-        let mut total_width = 0;
-        let mut total_height = 0;
-
-        for widget in &self.widgets {
-            let size = widget.size();
-
-            match self.direction {
-                StackLayoutDirection::Vertical => {
-                    total_width = total_width.max(size.width);
-                    total_height += size.height;
-                }
-                StackLayoutDirection::Horizontal => {
-                    total_width += size.width;
-                    total_height = total_height.max(size.height);
-                }
-            }
-        }
-
-        Size::new(total_width, total_height)
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        todo!()
     }
 }
 
-#[derive(PartialEq)]
-pub enum StackLayoutDirection {
-    Vertical,
-    Horizontal,
+pub struct WidgetObj<'a, D, C>
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor,
+{
+    widget: Box<dyn Widget<'a, D, C>>,
+}
+
+impl<'a, D, C> WidgetObj<'a, D, C>
+where
+    D: DrawTarget<Color = C> + 'a,
+    C: PixelColor + 'a,
+{
+    pub fn layout(&mut self, hint: Size) -> Size {
+        self.widget.layout(hint)
+    }
+
+    pub fn handle_event(&mut self, event: &Event) -> EventResult {
+        self.widget.handle_event(event)
+    }
+
+    pub fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        self.widget.draw(context, rect)
+    }
+}
+
+#[derive(Default)]
+pub struct LinearLayoutBuilder<'a, D, C>
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor,
+{
+    pub children: Vec<WidgetObj<'a, D, C>>,
+}
+
+impl<'a, D, C> UiBuilder<'a, D, C> for LinearLayoutBuilder<'a, D, C>
+where
+    D: DrawTarget<Color = C> + 'a,
+    C: PixelColor + 'a,
+{
+    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>) {
+        self.children.push(widget);
+    }
+
+    fn label(&mut self, text: &'a str) {
+        self.add_widget(Label { text })
+    }
+
+    fn finish(self) -> WidgetObj<'a, D, C> {
+        WidgetObj {
+            widget: Box::new(LinearLayout {
+                children: self.children,
+            }),
+        }
+    }
+}
+
+pub struct LinearLayout<'a, D, C>
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor,
+{
+    children: Vec<WidgetObj<'a, D, C>>,
+}
+
+impl<'a, D, C> Widget<'a, D, C> for LinearLayout<'a, D, C>
+where
+    D: DrawTarget<Color = C> + 'a,
+    C: PixelColor + 'a,
+{
+    fn layout(&mut self, _hint: Size) -> Size {
+        todo!("вычислить размер лаяута с учетом всех childrenов")
+    }
+
+    fn handle_event(&mut self, event: &Event) -> EventResult {
+        let mut result = EventResult::Pass;
+
+        for child in &mut self.children {
+            result = child.handle_event(event);
+            if result == EventResult::Stop {
+                break;
+            }
+        }
+
+        result
+    }
+
+    fn draw(&mut self, _encoder: &mut UiContext<'a, D, C>, _rect: Rectangle) {
+        todo!("отрисовать child виджеты с правильными координатами")
+    }
 }

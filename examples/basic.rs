@@ -1,5 +1,6 @@
-use edgy::Widget;
-use edgy::{Label, StackLayout, StackLayoutDirection, UiContext};
+use std::cell::RefCell;
+
+use edgy::{Label, LinearLayoutBuilder, UiBuilder, UiContext, WidgetObj};
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::Rgb888,
@@ -8,6 +9,28 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, Window};
+
+pub fn demo_ui<'a, D, C>(
+    counter: &'a mut i32,
+    counter2: &'a RefCell<&'a mut i32>,
+) -> WidgetObj<'a, D, C>
+where
+    D: DrawTarget<Color = C> + 'a,
+    C: PixelColor + 'a,
+{
+    let mut ui = LinearLayoutBuilder {
+        children: Vec::new(),
+    };
+    ui.label("привет");
+    ui.label("пока");
+
+    ui.linear_layout(|ui| {
+        ui.label("прощай");
+        ui.label("навсегда");
+    });
+
+    ui.finish()
+}
 
 fn main() -> Result<(), core::convert::Infallible> {
     let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
@@ -27,31 +50,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         let rect = Rectangle::new(Point::new(0, 20), display.size());
         let ui_context_render = std::time::Instant::now();
         let mut ui_ctx = UiContext::new(&mut display, rect);
-
-        let mut stack = StackLayout::new(StackLayoutDirection::Vertical, |add| {
-            add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
-                text_style,
-                "Hello world",
-            )));
-            add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
-                text_style,
-                "Nested layout!",
-            )));
-
-            add(Box::new(StackLayout::new(
-                StackLayoutDirection::Horizontal,
-                |add| {
-                    add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
-                        text_style, "Widget 1",
-                    )));
-                    add(Box::new(Label::new::<SimulatorDisplay<Rgb888>>(
-                        text_style, "Widget 2",
-                    )));
-                },
-            )));
-        });
-
-        stack.draw(&mut ui_ctx);
 
         let seconds_ui = ui_context_render.elapsed().as_millis();
         Text::new(
