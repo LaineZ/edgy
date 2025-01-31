@@ -1,4 +1,12 @@
-use edgy::{Label, LinearLayoutBuilder, UiBuilder, UiContext, WidgetObj};
+use edgy::widgets::margin::Margin;
+
+use edgy::{
+    widgets::{
+        linear_layout::{LayoutDirection, LinearLayoutBuilder},
+        UiBuilder, WidgetObj,
+    },
+    UiContext,
+};
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::Rgb888,
@@ -13,14 +21,16 @@ where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
     let mut ui = LinearLayoutBuilder {
-        direction: edgy::LayoutDirection::Horizontal,
+        direction: LayoutDirection::Horizontal,
         children: Vec::new(),
     };
     ui.label("hello", Rgb888::RED);
     ui.label("world", Rgb888::RED);
-    ui.linear_layout(edgy::LayoutDirection::Vertical, |ui| {
-        ui.label("good", Rgb888::WHITE);
-        ui.label("friend", Rgb888::BLUE);
+    ui.margin_layout(edgy::margin!(5, 5), |ui| {
+        ui.linear_layout(LayoutDirection::Vertical, |ui| {
+            ui.label("good", Rgb888::WHITE);
+            ui.label("friend", Rgb888::BLUE);
+        });
     });
 
     ui.finish()
@@ -32,6 +42,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
         .scale(2)
+        .max_fps(60)
         .build();
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::WHITE);
