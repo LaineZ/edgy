@@ -112,7 +112,7 @@ where
         let available_height = hint
             .height
             .saturating_sub((self.margin.top + self.margin.bottom) as u32);
-        let available_size = Size::new(available_width.max(0), available_height.max(0));
+        let available_size = Size::new(available_width, available_height);
 
         let child_size = self.child.as_mut().unwrap().size(available_size);
 

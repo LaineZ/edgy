@@ -13,12 +13,21 @@ pub enum LayoutDirection {
     VerticalFill,
 }
 
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum LayoutAlignment {
+    Start,
+    Center,
+    End
+}
+
 pub struct LinearLayoutBuilder<'a, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
     pub children: Vec<WidgetObj<'a, D, C>>,
+    pub alignment: LayoutAlignment,
     pub direction: LayoutDirection,
 }
 
@@ -30,6 +39,7 @@ where
     fn default() -> Self {
         Self {
             children: Vec::new(),
+            alignment: LayoutAlignment::Start,
             direction: LayoutDirection::Vertical,
         }
     }
@@ -49,6 +59,7 @@ where
             widget: Box::new(LinearLayout {
                 direction: self.direction,
                 children: self.children,
+                aligment: self.alignment
             }),
         }
     }
@@ -78,6 +89,7 @@ where
 {
     children: Vec<WidgetObj<'a, D, C>>,
     direction: LayoutDirection,
+    aligment: LayoutAlignment
 }
 impl<'a, D, C> Widget<'a, D, C> for LinearLayout<'a, D, C>
 where
@@ -132,9 +144,50 @@ where
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        let mut offset = Point::zero();
-
         let children_count = self.children.len() as u32;
+
+        let total_length = match self.direction {
+            LayoutDirection::Horizontal => {
+                let mut total = 0;
+                for child in &mut self.children {
+                    let child_size = child.size(Size::new(rect.size.width, rect.size.height));
+                    total += child_size.width;
+                }
+                total
+            }
+            LayoutDirection::Vertical => {
+                let mut total = 0;
+                for child in &mut self.children {
+                    let child_size = child.size(Size::new(rect.size.width, rect.size.height));
+                    total += child_size.height;
+                }
+                total
+            }
+            _ => 0
+        };
+
+
+        let mut offset = match (self.direction, self.aligment) {
+            (LayoutDirection::Horizontal, LayoutAlignment::Center) => {
+                let free_space = rect.size.width - total_length;
+                Point::new((free_space / 2) as i32, 0)
+            }
+            (LayoutDirection::Horizontal, LayoutAlignment::End) => {
+                let free_space = rect.size.width - total_length;
+                Point::new(free_space as i32, 0)
+            }
+            
+            (LayoutDirection::Vertical, LayoutAlignment::Center) => {
+                let free_space = rect.size.height - total_length;
+                Point::new(0, (free_space / 2) as i32)
+            }
+            (LayoutDirection::Vertical, LayoutAlignment::End) => {
+                let free_space = rect.size.height - total_length;
+                Point::new(0, free_space as i32)
+            }
+        
+            _ => Point::zero()
+        };
 
         for child in &mut self.children {
             let child_size = match self.direction {

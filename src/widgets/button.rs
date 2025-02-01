@@ -1,11 +1,11 @@
 use embedded_graphics::{
-    mono_font::MonoTextStyle,
+    mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
-    primitives::{PrimitiveStyle, Rectangle},
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
     text::{renderer::TextRenderer, Text},
 };
 
-use crate::{Event, EventResult, UiContext};
+use crate::{Theme, UiContext};
 
 use super::Widget;
 
@@ -13,7 +13,6 @@ pub struct Button<'a, C: PixelColor> {
     text: &'a str,
     text_style: MonoTextStyle<'a, C>,
     button_style: PrimitiveStyle<C>,
-    text_bounding_box: Rectangle,
     callback: Box<dyn FnMut() + 'a>,
 }
 
@@ -23,16 +22,17 @@ where
 {
     pub fn new(
         text: &'a str,
-        text_style: MonoTextStyle<'a, C>,
-        button_style: PrimitiveStyle<C>,
+        font: &'a MonoFont,
+        theme: Theme<C>,
         callback: Box<dyn FnMut() + 'a>,
     ) -> Self {
         Self {
             text,
-            text_style,
-            button_style,
+            text_style: MonoTextStyle::new(font, theme.foreground),
+            button_style: PrimitiveStyleBuilder::new()
+                .fill_color(theme.background)
+                .build(),
             callback,
-            text_bounding_box: Rectangle::zero(),
         }
     }
 }
@@ -74,7 +74,8 @@ where
             .bounding_box
             .size;
 
-        let text_pos = rect.center() - Size::new(text_size.width / 2, text_size.height / rect.size.height);
+        let text_pos =
+            rect.center() - Size::new(text_size.width / 2, text_size.height / rect.size.height);
         let text = Text::new(self.text, text_pos, self.text_style);
         let _ = text.draw(context.draw_target);
     }

@@ -1,15 +1,15 @@
 use alloc::{boxed::Box, vec::Vec};
 use button::Button;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_4X6, MonoTextStyle},
+    mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
     primitives::{PrimitiveStyle, Rectangle},
 };
 use label::Label;
-use linear_layout::{LayoutDirection, LinearLayoutBuilder};
+use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
 
-use crate::{Event, EventResult, UiContext};
+use crate::{Event, EventResult, Theme, UiContext};
 
 pub mod button;
 pub mod label;
@@ -84,14 +84,14 @@ where
     fn button(
         &mut self,
         text: &'a str,
-        button_style: PrimitiveStyle<C>,
-        text_style: MonoTextStyle<'a, C>,
+        theme: Theme<C>,
+        font: &'a MonoFont,
         callback: impl FnMut() + 'a,
     ) {
         self.add_widget(Button::new(
             text,
-            text_style,
-            button_style,
+            font,
+            theme,
             Box::new(callback),
         ));
     }
@@ -108,11 +108,13 @@ where
     fn linear_layout(
         &mut self,
         direction: LayoutDirection,
+        alignment: LayoutAlignment,
         fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>),
     ) {
         let mut builder = LinearLayoutBuilder {
             direction,
             children: Vec::new(),
+            alignment,
         };
         fill(&mut builder);
         self.add_widget_obj(builder.finish());

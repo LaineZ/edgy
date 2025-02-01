@@ -47,7 +47,7 @@ where
         //let govno = format!("{} {:?}", self.text, rect);
         let mut position = rect.top_left;
         position.y += self.style.font.character_size.height as i32;
-        let text = Text::new(&self.text, position, self.style);
+        let text = Text::new(self.text, position, self.style);
         let _ = text.draw(context.draw_target);
     }
 }
