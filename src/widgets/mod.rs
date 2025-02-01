@@ -63,6 +63,23 @@ where
         self.widget.size(hint)
     }
 
+    pub fn min_size(&mut self) -> Size {
+        self.widget.min_size()
+    }
+
+    pub fn max_size(&mut self) -> Size {
+        self.widget.max_size()
+    }
+
+    pub fn calculate_bound_sizes(&mut self, size: Size) -> Size {
+        Size::new(
+            size.width
+                .clamp(self.min_size().width, self.max_size().width),
+            size.height
+                .clamp(self.min_size().height, self.max_size().height),
+        )
+    }
+
     pub fn handle_event(&mut self, event: &Event) -> EventResult {
         self.widget.handle_event(event)
     }
@@ -98,12 +115,7 @@ where
         font: &'a MonoFont,
         callback: impl FnMut() + 'a,
     ) {
-        self.add_widget(Button::new(
-            text,
-            font,
-            theme,
-            Box::new(callback),
-        ));
+        self.add_widget(Button::new(text, font, theme, Box::new(callback)));
     }
 
     fn margin_layout(&mut self, margin: Margin, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {

@@ -19,6 +19,7 @@ pub enum LayoutAlignment {
     Center,
     End,
     Stretch,
+    StretchMain,
 }
 
 pub struct LinearLayoutBuilder<'a, D, C>
@@ -104,17 +105,24 @@ fn compute_child_size(
     hint: Size,
     children_count: usize,
 ) -> Size {
-    if alignment != LayoutAlignment::Stretch {
-        return child_size;
-    } else {
-        return match direction {
-            LayoutDirection::Horizontal => {
-                Size::new(hint.width / children_count as u32, child_size.height)
+
+    return match alignment {
+        LayoutAlignment::Stretch => {
+            match direction {
+                LayoutDirection::Horizontal => {
+                    Size::new(hint.width / children_count as u32, child_size.height)
+                }
+                LayoutDirection::Vertical => {
+                    Size::new(child_size.width, hint.height / children_count as u32)
+                }
             }
-            LayoutDirection::Vertical => {
-                Size::new(child_size.width, hint.height / children_count as u32)
-            }
-        };
+        },
+        LayoutAlignment::StretchMain => {
+            Size::new(hint.width.max(child_size.width), hint.height.max(child_size.height))
+        },
+        _ => {
+            return child_size;
+        }
     }
 }
 
@@ -171,14 +179,15 @@ where
             }
         }
 
-        Size::new(
-            width
-                .min(hint.width)
-                .clamp(self.min_size.width, self.max_size.width),
-            height
-                .min(hint.height)
-                .clamp(self.min_size.height, self.max_size.height),
-        )
+        Size::new(width.min(hint.width), height.min(hint.height))
+    }
+
+    fn max_size(&mut self) -> Size {
+        self.max_size
+    }
+
+    fn min_size(&mut self) -> Size {
+        self.min_size
     }
 
     fn handle_event(&mut self, event: &Event) -> EventResult {
@@ -233,7 +242,7 @@ where
             }
 
             (LayoutDirection::Vertical, LayoutAlignment::End) => {
-                let free_space = rect.size.height - total_length;
+                let free_space = rect.size.height.saturating_sub(total_length);
                 Point::new(0, free_space as i32)
             }
 
@@ -241,30 +250,24 @@ where
         };
 
         for child in &mut self.children {
+            let child_bounds = child.calculate_bound_sizes(rect.size);
+
             let child_size = if self.aligment != LayoutAlignment::Stretch {
-                child.size(Size::new(rect.size.width, rect.size.height))
+                child.size(child_bounds)
             } else {
                 match self.direction {
                     LayoutDirection::Horizontal => {
-                        Size::new(rect.size.width / children_count, rect.size.height)
+                        let even_size = Size::new(rect.size.width / children_count, rect.size.height);
+                        child.calculate_bound_sizes(even_size)
                     }
                     LayoutDirection::Vertical => {
-                        Size::new(rect.size.width, rect.size.height / children_count)
+                        let even_size = Size::new(rect.size.width, rect.size.height / children_count);
+                        child.calculate_bound_sizes(even_size)
                     }
                 }
             };
 
-            let mut child_rect = Rectangle::new(rect.top_left + offset, child_size);
-            child_rect.size = Size::new(
-                child_rect
-                    .size
-                    .width
-                    .clamp(self.min_size.width, self.max_size.width),
-                child_rect
-                    .size
-                    .height
-                    .clamp(self.min_size.height, self.max_size.height),
-            );
+            let child_rect = Rectangle::new(rect.top_left + offset, child_size);
             child.draw(context, child_rect);
 
             match self.direction {
