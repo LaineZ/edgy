@@ -12,7 +12,6 @@ use super::Widget;
 pub struct Label<'a, C: PixelColor> {
     text: &'a str,
     style: MonoTextStyle<'a, C>,
-    position: Point,
 }
 
 impl<'a, C> Label<'a, C>
@@ -23,7 +22,6 @@ where
         Self {
             text,
             style,
-            position: Point::default(),
         }
     }
 }
@@ -33,21 +31,23 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn layout(&mut self, _hint: Size) -> Size {
+    fn size(&mut self, _hint: Size) -> Size {
         let size_rect = self
             .style
             .measure_string(
                 &self.text,
-                self.position,
-                embedded_graphics::text::Baseline::Middle,
+                Point::zero(),
+                embedded_graphics::text::Baseline::Top,
             )
             .bounding_box;
         size_rect.size
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.position = rect.top_left;
-        let text = Text::new(&self.text, rect.top_left, self.style);
+        //let govno = format!("{} {:?}", self.text, rect);
+        let mut position = rect.top_left;
+        position.y += self.style.font.character_size.height as i32;
+        let text = Text::new(&self.text, position, self.style);
         let _ = text.draw(context.draw_target);
     }
 }

@@ -105,7 +105,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn layout(&mut self, hint: Size) -> Size {
+    fn size(&mut self, hint: Size) -> Size {
         let available_width = hint
             .width
             .saturating_sub((self.margin.left + self.margin.right) as u32);
@@ -114,7 +114,7 @@ where
             .saturating_sub((self.margin.top + self.margin.bottom) as u32);
         let available_size = Size::new(available_width.max(0), available_height.max(0));
 
-        let child_size = self.child.as_mut().unwrap().layout(available_size);
+        let child_size = self.child.as_mut().unwrap().size(available_size);
 
         Size::new(
             child_size.width + (self.margin.left + self.margin.right) as u32,
@@ -137,7 +137,7 @@ where
             .saturating_sub((self.margin.top + self.margin.bottom) as u32);
         let available_size = Size::new(available_width, available_height);
 
-        let child_size = self.child.as_mut().unwrap().layout(available_size);
+        let child_size = self.child.as_mut().unwrap().size(available_size);
 
         let child_rect = Rectangle::new(
             Point::new(

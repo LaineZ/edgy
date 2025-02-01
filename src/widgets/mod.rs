@@ -1,15 +1,17 @@
 use alloc::{boxed::Box, vec::Vec};
+use button::Button;
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     prelude::*,
-    primitives::Rectangle,
+    primitives::{PrimitiveStyle, Rectangle},
 };
 use label::Label;
 use linear_layout::{LayoutDirection, LinearLayoutBuilder};
-use margin::{Margin, MarginLayout, MarginLayoutBuilder};
+use margin::{Margin, MarginLayout};
 
 use crate::{Event, EventResult, UiContext};
 
+pub mod button;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
@@ -21,7 +23,8 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    fn layout(&mut self, hint: Size) -> Size;
+    /// Gets a size for widget (for layout compulation)
+    fn size(&mut self, hint: Size) -> Size;
 
     fn handle_event(&mut self, event: &Event) -> EventResult {
         let _ = event;
@@ -45,14 +48,16 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    pub fn layout(&mut self, hint: Size) -> Size {
-        self.widget.layout(hint)
+    /// Gets a size for widget (for layout compulation)
+    pub fn size(&mut self, hint: Size) -> Size {
+        self.widget.size(hint)
     }
 
     pub fn handle_event(&mut self, event: &Event) -> EventResult {
         self.widget.handle_event(event)
     }
 
+    /// Actual draw function for widget. `rect` parameter contains actual allocated space for widget in container
     pub fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         self.widget.draw(context, rect)
     }
@@ -72,15 +77,26 @@ where
         });
     }
 
-    fn label(&mut self, text: &'a str, color: C) {
-        self.add_widget(Label::new(text, MonoTextStyle::new(&FONT_4X6, color)))
+    fn label(&mut self, text: &'a str, style: MonoTextStyle<'a, C>) {
+        self.add_widget(Label::new(text, style))
     }
 
-    fn margin_layout(
+    fn button(
         &mut self,
-        margin: Margin,
-        fill: impl FnOnce(&mut MarginLayout<'a, D, C>),
+        text: &'a str,
+        button_style: PrimitiveStyle<C>,
+        text_style: MonoTextStyle<'a, C>,
+        callback: impl FnMut() + 'a,
     ) {
+        self.add_widget(Button::new(
+            text,
+            text_style,
+            button_style,
+            Box::new(callback),
+        ));
+    }
+
+    fn margin_layout(&mut self, margin: Margin, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
         let mut builder = MarginLayout {
             margin,
             child: None,
