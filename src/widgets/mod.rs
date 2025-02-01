@@ -1,3 +1,5 @@
+use std::u32;
+
 use alloc::{boxed::Box, vec::Vec};
 use button::Button;
 use embedded_graphics::{
@@ -25,6 +27,14 @@ where
 {
     /// Gets a size for widget (for layout compulation)
     fn size(&mut self, hint: Size) -> Size;
+
+    fn min_size(&mut self) -> Size {
+        Size::zero()
+    }
+
+    fn max_size(&mut self) -> Size {
+        Size::new(u32::MAX, u32::MAX)
+    }
 
     fn handle_event(&mut self, event: &Event) -> EventResult {
         let _ = event;
@@ -115,6 +125,7 @@ where
             direction,
             children: Vec::new(),
             alignment,
+            ..Default::default()
         };
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
