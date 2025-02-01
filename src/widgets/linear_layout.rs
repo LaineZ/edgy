@@ -19,7 +19,6 @@ pub enum LayoutAlignment {
     Center,
     End,
     Stretch,
-    StretchMain,
 }
 
 pub struct LinearLayoutBuilder<'a, D, C>
@@ -116,9 +115,6 @@ fn compute_child_size(
                     Size::new(child_size.width, hint.height / children_count as u32)
                 }
             }
-        },
-        LayoutAlignment::StretchMain => {
-            Size::new(hint.width.max(child_size.width), hint.height.max(child_size.height))
         },
         _ => {
             return child_size;

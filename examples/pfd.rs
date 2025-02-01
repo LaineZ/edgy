@@ -1,7 +1,6 @@
 use std::u32;
 
 use edgy::widgets::linear_layout::LayoutAlignment;
-use edgy::widgets::margin::Margin;
 use edgy::Theme;
 use edgy::{
     widgets::{
@@ -31,7 +30,7 @@ where
 {
     let style = MonoTextStyle::new(&FONT_5X7, Rgb888::WHITE);
     let mut ui = LinearLayoutBuilder::default()
-        .aligment(LayoutAlignment::Start)
+        .aligment(LayoutAlignment::End)
         .direction(LayoutDirection::Vertical);
 
     let mut menu_layout = LinearLayoutBuilder::default()
@@ -41,21 +40,20 @@ where
     menu_layout.button("PFD", theme, &FONT_5X7, move || todo!());
     menu_layout.button("ENG", theme, &FONT_5X7, move || todo!());
 
-    ui.add_widget_obj(menu_layout.finish());
-
-
     match page {
         Pages::PFD => {
-            ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::StretchMain, |ui| {
-                ui.label("альтитуд-хуитьюд", style);
-                ui.label("скорость-хуёрость", style);
-                ui.label("вертикалка", style);
+            ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
+                ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
+                    ui.label("альтитуд-хуитьюд", style);
+                    ui.label("скорость-хуёрость", style);
+                    ui.label("вертикалка", style);
+                });
             });
         }
         Pages::Engine => {
             ui.linear_layout(
                 LayoutDirection::Vertical,
-                LayoutAlignment::StretchMain,
+                LayoutAlignment::Stretch,
                 |ui| {
                     ui.label("эрпики", style);
                     ui.linear_layout(LayoutDirection::Horizontal, LayoutAlignment::Center, |ui| {
@@ -65,6 +63,9 @@ where
             );
         }
     };
+
+    ui.add_widget_obj(menu_layout.finish());
+
 
     ui.finish()
 }
