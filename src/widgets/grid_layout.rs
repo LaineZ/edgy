@@ -3,8 +3,6 @@ use crate::{Event, EventResult, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-
-
 /// Grid layout
 /// ```
 /// +-----|-----+         
@@ -65,13 +63,11 @@ where
     }
 
     fn finish(self) -> WidgetObj<'a, D, C> {
-        WidgetObj {
-            widget: Box::new(GridLayout {
-                children: self.children,
-                col_fracs: self.col_fracs,
-                row_fracs: self.row_fracs,
-            }),
-        }
+        WidgetObj::new(Box::new(GridLayout {
+            children: self.children,
+            col_fracs: self.col_fracs,
+            row_fracs: self.row_fracs,
+        }))
     }
 }
 
@@ -94,11 +90,11 @@ where
         hint
     }
 
-    fn handle_event(&mut self, event: &Event) -> EventResult {
+    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
         let mut result = EventResult::Pass;
 
         for child in &mut self.children {
-            result = child.handle_event(event);
+            result = child.handle_event(context, event);
             if result == EventResult::Stop {
                 break;
             }
@@ -107,7 +103,7 @@ where
         result
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+    fn layout(&mut self, rect: Rectangle) {
         let cols = self.col_fracs.len();
         let rows = self.row_fracs.len();
 
@@ -160,9 +156,15 @@ where
                     rect.top_left + Point::new(x_offset, y_offset),
                     Size::new(col_widths[c], row_heights[r]),
                 );
-
-                self.children[cell_index].draw(context, cell_rect);
+                
+                self.children[cell_index].layout(cell_rect);
             }
+        }
+    }
+
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, _rect: Rectangle) {
+        for child in self.children.iter_mut() {
+            child.draw(context);
         }
     }
 }

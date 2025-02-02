@@ -3,7 +3,7 @@ use button::Button;
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
-    primitives::{PrimitiveStyle, Rectangle},
+    primitives::{PrimitiveStyleBuilder, Rectangle},
 };
 use grid_layout::GridLayoutBuilder;
 use label::Label;
@@ -13,10 +13,10 @@ use margin::{Margin, MarginLayout};
 use crate::{Event, EventResult, Theme, UiContext};
 
 pub mod button;
+pub mod grid_layout;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
-pub mod grid_layout;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -25,8 +25,11 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    /// Gets a size for widget (for layout compulation)
+    /// Returns the size the widget wants. use for auto-calculate in layouts
     fn size(&mut self, hint: Size) -> Size;
+
+    /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
+    fn layout(&mut self, rect: Rectangle) {}
 
     fn min_size(&mut self) -> Size {
         Size::zero()
@@ -36,7 +39,7 @@ where
         Size::new(u32::MAX, u32::MAX)
     }
 
-    fn handle_event(&mut self, event: &Event) -> EventResult {
+    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
         let _ = event;
         EventResult::Pass
     }
@@ -51,6 +54,20 @@ where
     C: PixelColor,
 {
     pub(crate) widget: Box<dyn Widget<'a, D, C>>,
+    pub(crate) computed_rect: Rectangle,
+}
+
+impl<'a, D, C> WidgetObj<'a, D, C>
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor,
+{
+    pub fn new(widget: Box<dyn Widget<'a, D, C>>) -> Self {
+        Self {
+            computed_rect: Rectangle::default(),
+            widget,
+        }
+    }
 }
 
 impl<'a, D, C> WidgetObj<'a, D, C>
@@ -71,6 +88,16 @@ where
         self.widget.max_size()
     }
 
+    pub fn rect(&self) -> Rectangle {
+        self.computed_rect
+    }
+
+    /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
+    pub fn layout(&mut self, rect: Rectangle) {
+        self.computed_rect = rect;
+        self.widget.layout(rect);
+    }
+
     pub fn calculate_bound_sizes(&mut self, size: Size) -> Size {
         Size::new(
             size.width
@@ -80,13 +107,29 @@ where
         )
     }
 
-    pub fn handle_event(&mut self, event: &Event) -> EventResult {
-        self.widget.handle_event(event)
+    pub fn handle_event(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        event: &Event,
+    ) -> EventResult {
+        self.widget.handle_event(context, event)
     }
 
-    /// Actual draw function for widget. `rect` parameter contains actual allocated space for widget in container
-    pub fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.widget.draw(context, rect)
+    /// Actual draw function for widget.
+    pub fn draw(&mut self, context: &mut UiContext<'a, D, C>) {
+        self.widget.draw(context, self.rect());
+
+        if context.debug_mode {
+            let _ = self
+                .rect()
+                .into_styled(
+                    PrimitiveStyleBuilder::new()
+                        .stroke_color(context.theme.debug_rect)
+                        .stroke_width(1)
+                        .build(),
+                )
+                .draw(context.draw_target);
+        }
     }
 }
 
@@ -99,9 +142,7 @@ where
     fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>);
 
     fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W) {
-        self.add_widget_obj(WidgetObj {
-            widget: Box::new(widget),
-        });
+        self.add_widget_obj(WidgetObj::new(Box::new(widget)));
     }
 
     fn label(&mut self, text: &'a str, style: MonoTextStyle<'a, C>) {
@@ -143,7 +184,12 @@ where
         self.add_widget_obj(builder.finish());
     }
 
-    fn grid_layout(&mut self, rows: Vec<u32>, colums: Vec<u32>, fill: impl FnOnce(&mut GridLayoutBuilder<'a, D, C>)) {
+    fn grid_layout(
+        &mut self,
+        rows: Vec<u32>,
+        colums: Vec<u32>,
+        fill: impl FnOnce(&mut GridLayoutBuilder<'a, D, C>),
+    ) {
         let mut builder = GridLayoutBuilder {
             children: Vec::new(),
             col_fracs: colums,

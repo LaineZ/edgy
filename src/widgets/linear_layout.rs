@@ -83,15 +83,13 @@ where
     }
 
     fn finish(self) -> WidgetObj<'a, D, C> {
-        WidgetObj {
-            widget: Box::new(LinearLayout {
-                direction: self.direction,
-                children: self.children,
-                aligment: self.alignment,
-                min_size: self.min_size,
-                max_size: self.max_size,
-            }),
-        }
+        WidgetObj::new(Box::new(LinearLayout {
+            direction: self.direction,
+            children: self.children,
+            aligment: self.alignment,
+            min_size: self.min_size,
+            max_size: self.max_size,
+        }))
     }
 }
 
@@ -184,11 +182,11 @@ where
         self.min_size
     }
 
-    fn handle_event(&mut self, event: &Event) -> EventResult {
+    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
         let mut result = EventResult::Pass;
 
         for child in &mut self.children {
-            result = child.handle_event(event);
+            result = child.handle_event(context, event);
             if result == EventResult::Stop {
                 break;
             }
@@ -197,7 +195,7 @@ where
         result
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+    fn layout(&mut self, rect: Rectangle) {
         let children_count = self.children.len() as u32;
 
         let total_length = match self.direction {
@@ -243,6 +241,7 @@ where
             _ => Point::zero(),
         };
 
+
         for child in &mut self.children {
             let child_bounds = child.calculate_bound_sizes(rect.size);
 
@@ -262,7 +261,8 @@ where
             };
 
             let child_rect = Rectangle::new(rect.top_left + offset, child_size);
-            child.draw(context, child_rect);
+            child.computed_rect = child_rect;
+            child.layout(child_rect);
 
             match self.direction {
                 LayoutDirection::Horizontal => {
@@ -272,6 +272,12 @@ where
                     offset.y += child_size.height as i32;
                 }
             }
+        }
+    }
+
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, _rect: Rectangle) {
+        for child in &mut self.children {
+            child.draw(context);
         }
     }
 }

@@ -6,7 +6,7 @@ use embedded_graphics::{
     text::{renderer::TextRenderer, Text},
 };
 
-use crate::{Theme, UiContext};
+use crate::{contains, EventResult, Theme, UiContext};
 
 use super::Widget;
 
@@ -15,6 +15,7 @@ pub struct Button<'a, C: PixelColor> {
     text_style: MonoTextStyle<'a, C>,
     button_style: PrimitiveStyle<C>,
     callback: Box<dyn FnMut() + 'a>,
+    rect: Rectangle,
 }
 
 impl<'a, C> Button<'a, C>
@@ -32,8 +33,11 @@ where
             text_style: MonoTextStyle::new(font, theme.foreground),
             button_style: PrimitiveStyleBuilder::new()
                 .fill_color(theme.background)
+                .stroke_color(theme.background2)
+                .stroke_width(1)
                 .build(),
             callback,
+            rect: Rectangle::default(),
         }
     }
 }
@@ -59,6 +63,35 @@ where
             text_size.width + 2 * padding,
             text_size.height + 2 * padding,
         )
+    }
+
+    fn layout(&mut self, rect: Rectangle) {
+        self.rect = rect;
+    }
+
+    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &crate::Event) -> crate::EventResult {
+        match event {
+            crate::Event::NextWidgetFocus => todo!(),
+            crate::Event::PreviousWidgetFocus => todo!(),
+            crate::Event::Active(point) => {
+                if contains(self.rect, *point) {
+                    self.button_style.fill_color = Some(context.theme.foreground2);
+                    (self.callback)();
+                    return EventResult::Stop
+                }
+
+                EventResult::Pass
+            },
+            crate::Event::Hover(point) => {
+                if contains(self.rect, *point) {
+                    self.button_style.fill_color = Some(context.theme.background2);
+                    return EventResult::Stop
+                }
+
+                EventResult::Pass
+            },
+            _ => EventResult::Pass,
+        }
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {

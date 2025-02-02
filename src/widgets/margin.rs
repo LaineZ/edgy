@@ -67,9 +67,11 @@ where
         if self.child.is_none() {
             panic!("MarginContainer must have a child before finishing!");
         }
-        WidgetObj {
-            widget: Box::new(self),
-        }
+
+        WidgetObj::new(Box::new(MarginLayout {
+            margin: self.margin,
+            child: self.child,
+        }))
     }
 }
 
@@ -92,12 +94,10 @@ where
     }
 
     fn finish(self) -> WidgetObj<'a, D, C> {
-        WidgetObj {
-            widget: Box::new(MarginLayout {
-                margin: self.margin,
-                child: self.child,
-            }),
-        }
+        WidgetObj::new(Box::new(MarginLayout {
+            margin: self.margin,
+            child: self.child,
+        }))
     }
 }
 impl<'a, D, C> Widget<'a, D, C> for MarginLayout<'a, D, C>
@@ -122,11 +122,7 @@ where
         )
     }
 
-    fn draw(
-        &mut self,
-        context: &mut crate::UiContext<'a, D, C>,
-        rect: embedded_graphics::primitives::Rectangle,
-    ) {
+    fn layout(&mut self, rect: Rectangle) {
         let available_width = rect
             .size
             .width
@@ -147,6 +143,14 @@ where
             child_size,
         );
 
-        self.child.as_mut().unwrap().draw(context, child_rect);
+        self.child.as_mut().unwrap().layout(child_rect);
+    }
+
+    fn draw(
+        &mut self,
+        context: &mut crate::UiContext<'a, D, C>,
+        _rect: embedded_graphics::primitives::Rectangle,
+    ) {
+        self.child.as_mut().unwrap().draw(context);
     }
 }
