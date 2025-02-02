@@ -1,4 +1,4 @@
-//#![no_std]
+#![no_std]
 pub use embedded_graphics;
 use embedded_graphics::{
     pixelcolor::{Rgb565, Rgb888},

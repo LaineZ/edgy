@@ -1,5 +1,3 @@
-use std::u32;
-
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 

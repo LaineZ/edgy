@@ -46,10 +46,9 @@ where
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        let govno = format!("{} {:?}", self.text, rect.size);
         let mut position = rect.top_left;
         position.y += self.style.font.character_size.height as i32;
-        let text = Text::new(&govno, position, self.style);
+        let text = Text::new(&self.text, position, self.style);
         let _ = text.draw(context.draw_target);
     }
 }

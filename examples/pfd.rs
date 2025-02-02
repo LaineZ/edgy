@@ -1,5 +1,3 @@
-use std::u32;
-
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::Theme;
 use edgy::{

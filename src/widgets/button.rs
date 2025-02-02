@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
