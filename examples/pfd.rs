@@ -28,7 +28,10 @@ where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
     let style = MonoTextStyle::new(&FONT_5X7, Rgb888::WHITE);
-    let mut ui = GridLayoutBuilder::default().add_column(100).add_row(80).add_row(20);
+    let mut ui = GridLayoutBuilder::default()
+        .add_column(100)
+        .add_row(80)
+        .add_row(10);
 
     let mut menu_layout = LinearLayoutBuilder::default()
         .aligment(LayoutAlignment::Stretch)
@@ -71,13 +74,13 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let debug_text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::RED);
-
+    let rect = Rectangle::new(Point::new(0, 0), display.size());
+    
     loop {
         let frame_render = std::time::Instant::now();
         window.update(&display);
         display.clear(Rgb888::BLACK)?;
 
-        let rect = Rectangle::new(Point::new(0, 0), display.size());
         let ui_context_render = std::time::Instant::now();
         let mut ui_ctx = UiContext::new(&mut display, rect, Theme::hope_diamond());
         demo_ui(ui_ctx.theme, Pages::PFD).draw(&mut ui_ctx, rect);

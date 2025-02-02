@@ -3,6 +3,18 @@ use crate::{Event, EventResult, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
+
+
+/// Grid layout
+/// ```
+/// +-----|-----+         
+/// |     |     |         
+/// |     |     |         
+/// |-----|-----|         
+/// |     |     |         
+/// |     |     |         
+/// +-----|-----+
+/// ```
 pub struct GridLayoutBuilder<'a, D, C>
 where
     D: DrawTarget<Color = C>,
