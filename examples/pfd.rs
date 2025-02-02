@@ -1,3 +1,4 @@
+use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::Theme;
 use edgy::{
@@ -27,14 +28,11 @@ where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
     let style = MonoTextStyle::new(&FONT_5X7, Rgb888::WHITE);
-    let mut ui = LinearLayoutBuilder::default()
-        .aligment(LayoutAlignment::End)
-        .direction(LayoutDirection::Vertical);
+    let mut ui = GridLayoutBuilder::default().add_column(100).add_row(80).add_row(20);
 
     let mut menu_layout = LinearLayoutBuilder::default()
         .aligment(LayoutAlignment::Stretch)
-        .direction(LayoutDirection::Horizontal)
-        .max_size(Size::new(u32::MAX, 40));
+        .direction(LayoutDirection::Horizontal);
     menu_layout.button("PFD", theme, &FONT_5X7, move || todo!());
     menu_layout.button("ENG", theme, &FONT_5X7, move || todo!());
 
@@ -49,21 +47,16 @@ where
             });
         }
         Pages::Engine => {
-            ui.linear_layout(
-                LayoutDirection::Vertical,
-                LayoutAlignment::Stretch,
-                |ui| {
-                    ui.label("эрпики", style);
-                    ui.linear_layout(LayoutDirection::Horizontal, LayoutAlignment::Center, |ui| {
-                        ui.button("START ENG", theme, &FONT_5X7, move || todo!());
-                    });
-                },
-            );
+            ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
+                ui.label("эрпики", style);
+                ui.linear_layout(LayoutDirection::Horizontal, LayoutAlignment::Center, |ui| {
+                    ui.button("START ENG", theme, &FONT_5X7, move || todo!());
+                });
+            });
         }
     };
 
     ui.add_widget_obj(menu_layout.finish());
-
 
     ui.finish()
 }

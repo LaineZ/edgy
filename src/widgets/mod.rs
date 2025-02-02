@@ -5,6 +5,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::{PrimitiveStyle, Rectangle},
 };
+use grid_layout::GridLayoutBuilder;
 use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
@@ -15,6 +16,7 @@ pub mod button;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
+pub mod grid_layout;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -136,6 +138,16 @@ where
             children: Vec::new(),
             alignment,
             ..Default::default()
+        };
+        fill(&mut builder);
+        self.add_widget_obj(builder.finish());
+    }
+
+    fn grid_layout(&mut self, rows: Vec<u32>, colums: Vec<u32>, fill: impl FnOnce(&mut GridLayoutBuilder<'a, D, C>)) {
+        let mut builder = GridLayoutBuilder {
+            children: Vec::new(),
+            col_fracs: colums,
+            row_fracs: rows,
         };
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
