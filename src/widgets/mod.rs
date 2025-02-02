@@ -31,19 +31,23 @@ where
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
     fn layout(&mut self, rect: Rectangle) {}
 
+    /// Returns a minimum size of widget
     fn min_size(&mut self) -> Size {
         Size::zero()
     }
 
+    /// Returs a maximum size of widget
     fn max_size(&mut self) -> Size {
         Size::new(u32::MAX, u32::MAX)
     }
 
+    /// Event processing in widget
     fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
         let _ = event;
         EventResult::Pass
     }
 
+    /// Widget drawing logic
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle);
 }
 
@@ -80,14 +84,17 @@ where
         self.widget.size(hint)
     }
 
+    /// Returns a minimum size of widget
     pub fn min_size(&mut self) -> Size {
         self.widget.min_size()
     }
 
+    /// Returns a maximum size of widget
     pub fn max_size(&mut self) -> Size {
         self.widget.max_size()
     }
 
+    /// Returns a actually computed rectangle for widget
     pub fn rect(&self) -> Rectangle {
         self.computed_rect
     }
@@ -98,6 +105,7 @@ where
         self.widget.layout(rect);
     }
 
+    /// Calculate sizes clamping to minimum and maximum sizes
     pub fn calculate_bound_sizes(&mut self, size: Size) -> Size {
         Size::new(
             size.width
@@ -107,6 +115,7 @@ where
         )
     }
 
+    /// Event processing in widget
     pub fn handle_event(
         &mut self,
         context: &mut UiContext<'a, D, C>,

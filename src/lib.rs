@@ -1,4 +1,9 @@
 #![no_std]
+/// # Edgy
+/// no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
+/// rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
+/// dynamic dispatch, threfore a allocator is required.
+
 pub use embedded_graphics;
 use embedded_graphics::{pixelcolor::Rgb888, prelude::*, primitives::Rectangle};
 use widgets::WidgetObj;
@@ -6,6 +11,7 @@ use widgets::WidgetObj;
 pub mod widgets;
 extern crate alloc;
 
+/// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EventResult {
     /// Event processed
@@ -14,6 +20,8 @@ pub enum EventResult {
     Pass,
 }
 
+
+/// Events that can be inserted into UI context
 #[derive(Clone, Copy)]
 pub enum Event {
     /// Idle event (None, Null) event
@@ -35,6 +43,7 @@ pub(crate) fn contains(rectangle: Rectangle, position: Point) -> bool {
         && position.y < rectangle.top_left.y + rectangle.size.height as i32
 }
 
+/// Theme struct. You can freely create own themes
 #[derive(Clone, Copy)]
 pub struct Theme<C: PixelColor> {
     pub background: C,
@@ -47,6 +56,7 @@ pub struct Theme<C: PixelColor> {
 }
 
 impl<C: PixelColor + From<Rgb888>> Theme<C> {
+    /// Hope diamond theme - recommended for color screens
     pub fn hope_diamond() -> Self {
         Self {
             background: Rgb888::new(21, 14, 16).into(),
@@ -58,7 +68,8 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
             debug_rect: Rgb888::RED.into(),
         }
     }
-
+    
+    /// Binary color theme - recommended for 1-bit displays, like OLED SSD1306
     pub fn binary() -> Self {
         Self {
             background: Rgb888::BLACK.into(),
@@ -72,15 +83,21 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
     }
 }
 
+/// Primary UI Context
 pub struct UiContext<'a, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
+    /// ``DrawTarget`` basically is display for drawing
     pub draw_target: &'a mut D,
+    /// Rectangular bounds. Probaly you need to pass display dimensions 
     pub bounds: Rectangle,
+    /// Theme for widgets for this comtext
     pub theme: Theme<C>,
+    /// Event to pass in the library
     pub last_event: Event,
+    /// Enable/disable debug mode - displays red rectangles around widget bounds
     pub debug_mode: bool,
 }
 
@@ -89,6 +106,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
+    /// Creates a new UI context
     pub fn new(draw_target: &'a mut D, bounds: Rectangle, theme: Theme<C>) -> Self {
         Self {
             draw_target,
@@ -99,11 +117,11 @@ where
         }
     }
 
+    /// Updates and draws the UI, probably you want run this in some loop
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
-        let rect = self.draw_target.bounding_box();
         let event = self.last_event;
-        root.size(rect.size);
-        root.layout(rect);
+        root.size(self.bounds.size);
+        root.layout(self.bounds);
         root.handle_event(self, &event);
 
         root.draw(self);
