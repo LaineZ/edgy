@@ -83,7 +83,7 @@ where
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
+    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(160, 128));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
@@ -110,7 +110,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     std::process::exit(0);
                 }
                 embedded_graphics_simulator::SimulatorEvent::MouseButtonDown {
-                    mouse_btn,
+                    mouse_btn: _,
                     point,
                 } => ui_ctx.last_event = Event::Active(point),
                 embedded_graphics_simulator::SimulatorEvent::MouseMove { point } => {
@@ -118,8 +118,8 @@ fn main() -> Result<(), core::convert::Infallible> {
                 }
                 embedded_graphics_simulator::SimulatorEvent::KeyDown {
                     keycode,
-                    keymod,
-                    repeat,
+                    keymod: _,
+                    repeat: _,
                 } => {
                     if keycode == Keycode::F1 {
                         ui_ctx.debug_mode = !ui_ctx.debug_mode;

@@ -3,10 +3,10 @@ use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
     primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
-    text::{renderer::TextRenderer, Text},
+    text::{renderer::TextRenderer, Alignment, Text},
 };
 
-use crate::{contains, EventResult, Theme, UiContext};
+use crate::{contains, EventResult, UiContext};
 
 use super::Widget;
 
@@ -103,23 +103,12 @@ where
         let styled_rect = rect.into_styled(self.button_style);
         let _ = styled_rect.draw(context.draw_target);
 
-        let text_size = self
-            .text_style
-            .unwrap()
-            .measure_string(
-                self.text,
-                Point::zero(),
-                embedded_graphics::text::Baseline::Top,
-            )
-            .bounding_box
-            .size;
-
-        let text_pos = rect.center()
-            - Size::new(
-                text_size.width / 2,
-                text_size.height / rect.size.height - (text_size.height / rect.size.height),
-            );
-        let text = Text::new(self.text, text_pos, self.text_style.unwrap());
+        let text = Text::with_alignment(
+            self.text,
+            rect.center(),
+            self.text_style.unwrap(),
+            Alignment::Center,
+        );
         let _ = text.draw(context.draw_target);
     }
 }

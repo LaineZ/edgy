@@ -86,7 +86,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         hint
     }
 

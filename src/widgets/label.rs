@@ -31,7 +31,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
         let mut size_rect = self
             .style
             .measure_string(

@@ -10,7 +10,7 @@ use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
 
-use crate::{Event, EventResult, Theme, UiContext};
+use crate::{Event, EventResult, UiContext};
 
 pub mod button;
 pub mod grid_layout;
@@ -29,7 +29,7 @@ where
     fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size;
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
-    fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {}
+    fn layout(&mut self, _context: &mut UiContext<'a, D, C>, _rect: Rectangle) {}
 
     /// Returns a minimum size of widget
     fn min_size(&mut self) -> Size {
@@ -42,7 +42,7 @@ where
     }
 
     /// Event processing in widget
-    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
+    fn handle_event(&mut self, _context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
         let _ = event;
         EventResult::Pass
     }
