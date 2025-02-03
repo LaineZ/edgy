@@ -86,7 +86,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, hint: Size) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         hint
     }
 
@@ -103,7 +103,7 @@ where
         result
     }
 
-    fn layout(&mut self, rect: Rectangle) {
+    fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         let cols = self.col_fracs.len();
         let rows = self.row_fracs.len();
 
@@ -157,7 +157,7 @@ where
                     Size::new(col_widths[c], row_heights[r]),
                 );
                 
-                self.children[cell_index].layout(cell_rect);
+                self.children[cell_index].layout(context, cell_rect);
             }
         }
     }

@@ -105,7 +105,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, hint: Size) -> Size {
+    fn size(&mut self, context: &mut crate::UiContext<'a, D, C>, hint: Size) -> Size {
         let available_width = hint
             .width
             .saturating_sub((self.margin.left + self.margin.right) as u32);
@@ -114,7 +114,7 @@ where
             .saturating_sub((self.margin.top + self.margin.bottom) as u32);
         let available_size = Size::new(available_width, available_height);
 
-        let child_size = self.child.as_mut().unwrap().size(available_size);
+        let child_size = self.child.as_mut().unwrap().size(context, available_size);
 
         Size::new(
             child_size.width + (self.margin.left + self.margin.right) as u32,
@@ -122,7 +122,7 @@ where
         )
     }
 
-    fn layout(&mut self, rect: Rectangle) {
+    fn layout(&mut self, context: &mut crate::UiContext<'a, D, C>, rect: Rectangle) {
         let available_width = rect
             .size
             .width
@@ -133,7 +133,7 @@ where
             .saturating_sub((self.margin.top + self.margin.bottom) as u32);
         let available_size = Size::new(available_width, available_height);
 
-        let child_size = self.child.as_mut().unwrap().size(available_size);
+        let child_size = self.child.as_mut().unwrap().size(context, available_size);
 
         let child_rect = Rectangle::new(
             Point::new(
@@ -143,7 +143,7 @@ where
             child_size,
         );
 
-        self.child.as_mut().unwrap().layout(child_rect);
+        self.child.as_mut().unwrap().layout(context, child_rect);
     }
 
     fn draw(

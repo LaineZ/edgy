@@ -120,8 +120,8 @@ where
     /// Updates and draws the UI, probably you want run this in some loop
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
         let event = self.last_event;
-        root.size(self.bounds.size);
-        root.layout(self.bounds);
+        root.size(self, self.bounds.size);
+        root.layout(self, self.bounds);
         root.handle_event(self, &event);
 
         root.draw(self);

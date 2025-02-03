@@ -134,7 +134,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, hint: Size) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         let children_count = self.children.len();
         let mut width = 0;
         let mut height = 0;
@@ -143,7 +143,7 @@ where
             let child_size = compute_child_size(
                 self.direction,
                 self.aligment,
-                child.size(hint),
+                child.size(context, hint),
                 hint,
                 children_count,
             );
@@ -195,14 +195,14 @@ where
         result
     }
 
-    fn layout(&mut self, rect: Rectangle) {
+    fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         let children_count = self.children.len() as u32;
 
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
                 let mut total = 0;
                 for child in &mut self.children {
-                    let child_size = child.size(Size::new(rect.size.width, rect.size.height));
+                    let child_size = child.size(context, Size::new(rect.size.width, rect.size.height));
                     total += child_size.width;
                 }
                 total
@@ -210,7 +210,7 @@ where
             LayoutDirection::Vertical => {
                 let mut total = 0;
                 for child in &mut self.children {
-                    let child_size = child.size(Size::new(rect.size.width, rect.size.height));
+                    let child_size = child.size(context, Size::new(rect.size.width, rect.size.height));
                     total += child_size.height;
                 }
                 total
@@ -246,7 +246,7 @@ where
             let child_bounds = child.calculate_bound_sizes(rect.size);
 
             let child_size = if self.aligment != LayoutAlignment::Stretch {
-                child.size(child_bounds)
+                child.size(context, child_bounds)
             } else {
                 match self.direction {
                     LayoutDirection::Horizontal => {
@@ -262,7 +262,7 @@ where
 
             let child_rect = Rectangle::new(rect.top_left + offset, child_size);
             child.computed_rect = child_rect;
-            child.layout(child_rect);
+            child.layout(context, child_rect);
 
             match self.direction {
                 LayoutDirection::Horizontal => {

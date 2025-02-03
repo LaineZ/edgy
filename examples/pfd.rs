@@ -25,7 +25,7 @@ pub enum Pages {
     Engine = 1,
 }
 
-pub fn demo_ui<'a, D>(theme: Theme<Rgb888>, page: Pages) -> WidgetObj<'a, D, Rgb888>
+pub fn demo_ui<'a, D>(page: Pages) -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
@@ -38,8 +38,8 @@ where
     let mut menu_layout = LinearLayoutBuilder::default()
         .aligment(LayoutAlignment::Stretch)
         .direction(LayoutDirection::Horizontal);
-    menu_layout.button("PFD", theme, &FONT_5X7, move || todo!());
-    menu_layout.button("ENG", theme, &FONT_5X7, move || todo!());
+    menu_layout.button("PFD", &FONT_5X7, move || todo!());
+    menu_layout.button("ENG", &FONT_5X7, move || todo!());
 
     match page {
         Pages::PFD => {
@@ -59,18 +59,18 @@ where
                     LayoutDirection::Horizontal,
                     LayoutAlignment::Stretch,
                     |ui| {
-                        ui.button("BAT 1", theme, &FONT_5X7, move || todo!());
-                        ui.button("BAT 2", theme, &FONT_5X7, move || todo!());
-                        ui.button("ALTN 1", theme, &FONT_5X7, move || todo!());
-                        ui.button("ALTN 2", theme, &FONT_5X7, move || todo!());
+                        ui.button("BAT 1", &FONT_5X7, move || todo!());
+                        ui.button("BAT 2", &FONT_5X7, move || todo!());
+                        ui.button("ALTN 1", &FONT_5X7, move || todo!());
+                        ui.button("ALTN 2", &FONT_5X7, move || todo!());
                     },
                 );
                 ui.linear_layout(
                     LayoutDirection::Horizontal,
                     LayoutAlignment::Stretch,
                     |ui| {
-                        ui.button("MAGNETO", theme, &FONT_5X7, move || todo!());
-                        ui.button("STARTER", theme, &FONT_5X7, move || todo!());
+                        ui.button("MAGNETO", &FONT_5X7, move || todo!());
+                        ui.button("STARTER", &FONT_5X7, move || todo!());
                     },
                 );
             });
@@ -138,7 +138,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         let ui_context_render = std::time::Instant::now();
-        ui_ctx.update(&mut demo_ui(ui_ctx.theme, page));
+        ui_ctx.update(&mut demo_ui(page));
         let seconds_ui = ui_context_render.elapsed().as_secs_f32();
 
         if ui_ctx.debug_mode {

@@ -26,10 +26,10 @@ where
     C: PixelColor,
 {
     /// Returns the size the widget wants. use for auto-calculate in layouts
-    fn size(&mut self, hint: Size) -> Size;
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size;
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
-    fn layout(&mut self, rect: Rectangle) {}
+    fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {}
 
     /// Returns a minimum size of widget
     fn min_size(&mut self) -> Size {
@@ -80,8 +80,8 @@ where
     C: PixelColor + 'a,
 {
     /// Gets a size for widget (for layout compulation)
-    pub fn size(&mut self, hint: Size) -> Size {
-        self.widget.size(hint)
+    pub fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+        self.widget.size(context, hint)
     }
 
     /// Returns a minimum size of widget
@@ -100,9 +100,9 @@ where
     }
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
-    pub fn layout(&mut self, rect: Rectangle) {
+    pub fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         self.computed_rect = rect;
-        self.widget.layout(rect);
+        self.widget.layout(context, rect);
     }
 
     /// Calculate sizes clamping to minimum and maximum sizes
@@ -115,7 +115,7 @@ where
         )
     }
 
-    /// Event processing in widget
+    /// Event processing in widget. You can also use like update callback
     pub fn handle_event(
         &mut self,
         context: &mut UiContext<'a, D, C>,
@@ -161,11 +161,10 @@ where
     fn button(
         &mut self,
         text: &'a str,
-        theme: Theme<C>,
         font: &'a MonoFont,
         callback: impl FnMut() + 'a,
     ) {
-        self.add_widget(Button::new(text, font, theme, Box::new(callback)));
+        self.add_widget(Button::new(text, font, Box::new(callback)));
     }
 
     fn margin_layout(&mut self, margin: Margin, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
