@@ -32,7 +32,7 @@ where
     let style = MonoTextStyle::new(&FONT_5X7, Rgb888::WHITE);
     let mut ui = GridLayoutBuilder::default()
         .add_column(100)
-        .add_row(80)
+        .add_row(90)
         .add_row(10);
 
     let mut menu_layout = LinearLayoutBuilder::default()
@@ -45,15 +45,16 @@ where
         Pages::PFD => {
             ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
                 ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
-                    ui.label("альтитуд-хуитьюд", style);
-                    ui.label("скорость-хуёрость", style);
-                    ui.label("вертикалка", style);
+                    ui.label("ALTITUDE", style);
+                    ui.label("SPEED", style);
+                    ui.label("VSPEED", style);
                 });
             });
         }
         Pages::Engine => {
             ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
-                ui.label("эрпики", style);
+                ui.label("RPM", style);
+                ui.label("MIXTURE", style);
                 ui.linear_layout(
                     LayoutDirection::Horizontal,
                     LayoutAlignment::Stretch,

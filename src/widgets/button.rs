@@ -109,7 +109,7 @@ where
             .size;
 
         let text_pos =
-            rect.center() - Size::new(text_size.width / 2, text_size.height / rect.size.height);
+            rect.center() - Size::new(text_size.width / 2, text_size.height / rect.size.height - (text_size.height / rect.size.height));
         let text = Text::new(self.text, text_pos, self.text_style);
         let _ = text.draw(context.draw_target);
     }
