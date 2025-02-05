@@ -1,4 +1,4 @@
-//#![no_std]
+#![no_std]
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use alloc::{collections::btree_map::BTreeMap, vec::Vec};
@@ -156,7 +156,6 @@ where
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
         let event = self.last_event;
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
-        println!("{:?}", self.last_event);
         WIDGET_IDS.store(0, Ordering::Relaxed);
         root.size(self, self.bounds.size);
         root.layout(self, self.bounds);
