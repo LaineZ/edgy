@@ -37,8 +37,8 @@ pub enum SystemEvent {
     ActiveTo(usize),
     /// Active press at surface (e.g touch or mouse press)
     Active(Point),
-    /// Hover at surface event (e.g mouse moved to element)
-    Hover(Point),
+    /// Movement at surface event (e.g mouse moved to element)
+    Move(Point),
 }
 
 
@@ -113,7 +113,7 @@ where
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
     /// Event to pass in the library
-    pub last_event: SystemEvent,
+    event_queue: heapless::Vec<SystemEvent, 5>,
     /// Enable/disable debug mode - displays red rectangles around widget bounds
     pub debug_mode: bool,
     pub elements_count: usize,
@@ -132,10 +132,18 @@ where
             draw_target,
             bounds,
             theme,
-            last_event: SystemEvent::Idle,
+            event_queue: heapless::Vec::new(),
             focused_element: 0,
             debug_mode: false,
         }
+    }
+
+    pub fn push_event(&mut self, event: SystemEvent) {
+        if self.event_queue.is_full() {
+            self.event_queue.remove(0);
+        }
+
+        self.event_queue.push(event).unwrap();
     }
 
     pub fn next_widget(&mut self) {
@@ -145,21 +153,25 @@ where
             self.focused_element += 1;
         }
 
-        self.last_event = SystemEvent::FocusTo(self.focused_element);
+        self.push_event(SystemEvent::FocusTo(self.focused_element));
     }
 
     pub fn activate_selected_widget(&mut self) {
-        self.last_event = SystemEvent::ActiveTo(self.focused_element);
+        self.push_event(SystemEvent::ActiveTo(self.focused_element));
     }
 
     /// Updates and draws the UI, probably you want run this in some loop
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
-        let event = self.last_event;
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
         WIDGET_IDS.store(0, Ordering::Relaxed);
         root.size(self, self.bounds.size);
         root.layout(self, self.bounds);
-        root.handle_event(self, &event);
+
+        if self.event_queue.len() > 0 {
+            let event = self.event_queue[self.event_queue.len() - 1]; 
+            root.handle_event(self, &event);
+        }
+        
 
         root.draw(self);
     }

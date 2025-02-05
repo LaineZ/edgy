@@ -16,6 +16,7 @@ pub struct Button<'a, C: PixelColor> {
     font: &'a MonoFont<'a>,
     button_style: PrimitiveStyle<C>,
     callback: Box<dyn FnMut() + 'a>,
+    is_hovered: bool,
     rect: Rectangle,
 }
 
@@ -25,6 +26,7 @@ where
 {
     pub fn new(text: &'a str, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
+            is_hovered: false,
             text,
             font,
             text_style: None,
@@ -83,6 +85,7 @@ where
     ) -> crate::EventResult {
         match event {
             Event::Focus => {
+                self.is_hovered = true;
                 self.button_style.fill_color = Some(context.theme.background2);
                 return EventResult::Stop;
             },

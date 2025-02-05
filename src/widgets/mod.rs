@@ -172,7 +172,7 @@ where
                         .handle_event(context, system_event, &Event::Idle)
                 }
             }
-            SystemEvent::Hover(point) => {
+            SystemEvent::Move(point) => {
                 if crate::contains(self.computed_rect, point) {
                     self.widget
                         .handle_event(context, system_event, &Event::Focus)

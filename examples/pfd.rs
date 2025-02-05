@@ -95,13 +95,11 @@ fn main() -> Result<(), core::convert::Infallible> {
     let rect = Rectangle::new(Point::new(0, 0), display.size());
     let mut ui_ctx = UiContext::new(&mut display, rect, Theme::hope_diamond());
     let mut page = Pages::Engine;
-    let mut mouse_pos = Point::new(0, 0);
 
     loop {
         let frame_render = std::time::Instant::now();
         window.update(&ui_ctx.draw_target);
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.last_event = SystemEvent::Hover(mouse_pos);
 
         for event in window.events() {
             match event {
@@ -111,9 +109,9 @@ fn main() -> Result<(), core::convert::Infallible> {
                 embedded_graphics_simulator::SimulatorEvent::MouseButtonDown {
                     mouse_btn: _,
                     point,
-                } => ui_ctx.last_event = SystemEvent::Active(point),
+                } => ui_ctx.push_event(SystemEvent::Active(point)),
                 embedded_graphics_simulator::SimulatorEvent::MouseMove { point } => {
-                    mouse_pos = point;
+                    ui_ctx.push_event(SystemEvent::Move(point));
                 }
                 embedded_graphics_simulator::SimulatorEvent::KeyDown {
                     keycode,
