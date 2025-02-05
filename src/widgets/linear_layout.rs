@@ -1,7 +1,9 @@
+use std::alloc::System;
+
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-use crate::{Event, EventResult, UiContext};
+use crate::{Event, EventResult, SystemEvent, UiContext};
 
 use super::{UiBuilder, Widget, WidgetObj};
 
@@ -182,11 +184,11 @@ where
         self.min_size
     }
 
-    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
+    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, system_event: &SystemEvent, event: &Event) -> EventResult {
         let mut result = EventResult::Pass;
 
         for child in &mut self.children {
-            result = child.handle_event(context, event);
+            result = child.handle_event(context, system_event);
             if result == EventResult::Stop {
                 break;
             }

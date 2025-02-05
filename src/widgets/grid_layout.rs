@@ -1,5 +1,5 @@
 use super::{UiBuilder, Widget, WidgetObj};
-use crate::{Event, EventResult, UiContext};
+use crate::{Event, EventResult, SystemEvent, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
@@ -90,11 +90,11 @@ where
         hint
     }
 
-    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
+    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, system_event: &SystemEvent, _event: &Event) -> EventResult {
         let mut result = EventResult::Pass;
 
         for child in &mut self.children {
-            result = child.handle_event(context, event);
+            result = child.handle_event(context, system_event);
             if result == EventResult::Stop {
                 break;
             }

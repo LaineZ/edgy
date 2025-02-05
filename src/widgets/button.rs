@@ -6,7 +6,7 @@ use embedded_graphics::{
     text::{renderer::TextRenderer, Alignment, Text},
 };
 
-use crate::{contains, EventResult, UiContext};
+use crate::{contains, Event, EventResult, SystemEvent, UiContext};
 
 use super::Widget;
 
@@ -70,32 +70,30 @@ where
         self.rect = rect;
     }
 
+
+    fn is_interactive(&mut self) -> bool {
+        true
+    }
+
     fn handle_event(
         &mut self,
         context: &mut UiContext<'a, D, C>,
-        event: &crate::Event,
+        _system_event: &SystemEvent,
+        event: &Event,
     ) -> crate::EventResult {
         match event {
-            crate::Event::NextWidgetFocus => todo!(),
-            crate::Event::PreviousWidgetFocus => todo!(),
-            crate::Event::Active(point) => {
-                if contains(self.rect, *point) {
-                    self.button_style.fill_color = Some(context.theme.foreground2);
-                    (self.callback)();
-                    return EventResult::Stop;
-                }
-
+            Event::Focus => {
+                self.button_style.fill_color = Some(context.theme.background2);
+                return EventResult::Stop;
+            },
+            Event::Active => {
+                self.button_style.fill_color = Some(context.theme.background3);
+                (self.callback)();
+                return EventResult::Stop;
+            },
+            _ => {
                 EventResult::Pass
             }
-            crate::Event::Hover(point) => {
-                if contains(self.rect, *point) {
-                    self.button_style.fill_color = Some(context.theme.background2);
-                    return EventResult::Stop;
-                }
-
-                EventResult::Pass
-            }
-            _ => EventResult::Pass,
         }
     }
 

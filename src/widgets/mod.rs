@@ -1,16 +1,19 @@
-use alloc::{boxed::Box, vec::Vec};
+use core::{any::Any, ptr, sync::atomic::AtomicUsize};
+
+use alloc::{boxed::Box, format, vec::Vec};
 use button::Button;
 use embedded_graphics::{
-    mono_font::{MonoFont, MonoTextStyle},
+    mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
     prelude::*,
     primitives::{PrimitiveStyleBuilder, Rectangle},
+    text::Text,
 };
 use grid_layout::GridLayoutBuilder;
 use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
 
-use crate::{Event, EventResult, UiContext};
+use crate::{Event, EventResult, SystemEvent, UiContext};
 
 pub mod button;
 pub mod grid_layout;
@@ -25,6 +28,11 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
+    /// Defines is interactivity of widget. (Currently only implement for cycling between widgets, like Tab key behaviour on PC)
+    fn is_interactive(&mut self) -> bool {
+        false
+    }
+
     /// Returns the size the widget wants. use for auto-calculate in layouts
     fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size;
 
@@ -42,7 +50,12 @@ where
     }
 
     /// Event processing in widget
-    fn handle_event(&mut self, _context: &mut UiContext<'a, D, C>, event: &Event) -> EventResult {
+    fn handle_event(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        _system_event: &SystemEvent,
+        event: &Event,
+    ) -> EventResult {
         let _ = event;
         EventResult::Pass
     }
@@ -59,6 +72,7 @@ where
 {
     pub(crate) widget: Box<dyn Widget<'a, D, C>>,
     pub(crate) computed_rect: Rectangle,
+    pub(crate) id: usize,
 }
 
 impl<'a, D, C> WidgetObj<'a, D, C>
@@ -70,6 +84,7 @@ where
         Self {
             computed_rect: Rectangle::default(),
             widget,
+            id: 0,
         }
     }
 }
@@ -82,6 +97,14 @@ where
     /// Gets a size for widget (for layout compulation)
     pub fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         self.widget.size(context, hint)
+    }
+
+    fn assign_id(&mut self) {
+        if self.widget.is_interactive() {
+            let id = crate::WIDGET_IDS.load(core::sync::atomic::Ordering::Relaxed) + 1;
+            crate::WIDGET_IDS.store(id, core::sync::atomic::Ordering::Relaxed);
+            self.id = id;
+        }
     }
 
     /// Returns a minimum size of widget
@@ -119,9 +142,47 @@ where
     pub fn handle_event(
         &mut self,
         context: &mut UiContext<'a, D, C>,
-        event: &Event,
+        system_event: &SystemEvent,
     ) -> EventResult {
-        self.widget.handle_event(context, event)
+        match *system_event {
+            SystemEvent::FocusTo(id) => {
+                if self.id == id {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Focus)
+                } else {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Idle)
+                }
+            }
+            SystemEvent::ActiveTo(id) => {
+                if self.id == id {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Active)
+                } else {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Idle)
+                }
+            }
+            SystemEvent::Active(point) => {
+                if crate::contains(self.computed_rect, point) {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Active)
+                } else {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Idle)
+                }
+            }
+            SystemEvent::Hover(point) => {
+                if crate::contains(self.computed_rect, point) {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Focus)
+                } else {
+                    self.widget
+                        .handle_event(context, system_event, &Event::Idle)
+                }
+            }
+            _ => self.widget.handle_event(context, system_event, &Event::Idle),
+        }
     }
 
     /// Actual draw function for widget.
@@ -129,6 +190,16 @@ where
         self.widget.draw(context, self.rect());
 
         if context.debug_mode {
+            let text = MonoTextStyle::new(&FONT_4X6, context.theme.foreground2);
+            let _ = Text::new(
+                &format!("id: {}", self.id),
+                Point::new(
+                    self.computed_rect.top_left.x,
+                    self.computed_rect.top_left.y + 6,
+                ),
+                text,
+            )
+            .draw(context.draw_target);
             let _ = self
                 .rect()
                 .into_styled(
@@ -151,19 +222,16 @@ where
     fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>);
 
     fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W) {
-        self.add_widget_obj(WidgetObj::new(Box::new(widget)));
+        let mut object = WidgetObj::new(Box::new(widget));
+        object.assign_id();
+        self.add_widget_obj(object);
     }
 
     fn label(&mut self, text: &'a str, style: MonoTextStyle<'a, C>) {
         self.add_widget(Label::new(text, style))
     }
 
-    fn button(
-        &mut self,
-        text: &'a str,
-        font: &'a MonoFont,
-        callback: impl FnMut() + 'a,
-    ) {
+    fn button(&mut self, text: &'a str, font: &'a MonoFont, callback: impl FnMut() + 'a) {
         self.add_widget(Button::new(text, font, Box::new(callback)));
     }
 

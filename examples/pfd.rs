@@ -7,7 +7,7 @@ use edgy::{
     },
     UiContext,
 };
-use edgy::{Event, Theme};
+use edgy::{SystemEvent, Theme};
 use embedded_graphics::mono_font::iso_8859_5::FONT_5X7;
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -83,11 +83,11 @@ where
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(160, 128));
+    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
-        .scale(4)
+        .scale(3)
         .max_fps(60)
         .build();
     let mut window = Window::new("a bit edgy ui", &output_settings);
@@ -95,14 +95,13 @@ fn main() -> Result<(), core::convert::Infallible> {
     let rect = Rectangle::new(Point::new(0, 0), display.size());
     let mut ui_ctx = UiContext::new(&mut display, rect, Theme::hope_diamond());
     let mut page = Pages::Engine;
-    let mut mouse_pos = Point::new(0, 20);
+    let mut mouse_pos = Point::new(0, 0);
 
     loop {
         let frame_render = std::time::Instant::now();
         window.update(&ui_ctx.draw_target);
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.last_event = Event::Hover(mouse_pos);
-
+        ui_ctx.last_event = SystemEvent::Hover(mouse_pos);
 
         for event in window.events() {
             match event {
@@ -112,7 +111,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                 embedded_graphics_simulator::SimulatorEvent::MouseButtonDown {
                     mouse_btn: _,
                     point,
-                } => ui_ctx.last_event = Event::Active(point),
+                } => ui_ctx.last_event = SystemEvent::Active(point),
                 embedded_graphics_simulator::SimulatorEvent::MouseMove { point } => {
                     mouse_pos = point;
                 }
@@ -121,6 +120,14 @@ fn main() -> Result<(), core::convert::Infallible> {
                     keymod: _,
                     repeat: _,
                 } => {
+                    if keycode == Keycode::Tab {
+                        ui_ctx.next_widget();
+                    }
+
+                    if keycode == Keycode::Return {
+                        ui_ctx.activate_selected_widget();
+                    }
+
                     if keycode == Keycode::F1 {
                         ui_ctx.debug_mode = !ui_ctx.debug_mode;
                     }
