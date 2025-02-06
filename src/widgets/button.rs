@@ -6,7 +6,7 @@ use embedded_graphics::{
     text::{renderer::TextRenderer, Alignment, Text},
 };
 
-use crate::{contains, Event, EventResult, SystemEvent, UiContext};
+use crate::{Event, EventResult, SystemEvent, UiContext};
 
 use super::Widget;
 

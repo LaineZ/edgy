@@ -1,5 +1,3 @@
-use core::{any::Any, ptr, sync::atomic::AtomicUsize};
-
 use alloc::{boxed::Box, format, vec::Vec};
 use button::Button;
 use embedded_graphics::{

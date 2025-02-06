@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::{
@@ -13,7 +15,6 @@ use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
-    primitives::Rectangle,
     text::Text,
 };
 use embedded_graphics_simulator::sdl2::Keycode;
@@ -25,7 +26,38 @@ pub enum Pages {
     Engine = 1,
 }
 
-pub fn demo_ui<'a, D>(page: Pages) -> WidgetObj<'a, D, Rgb888>
+impl From<u8> for Pages {
+    fn from(value: u8) -> Self {
+        unsafe {
+            core::mem::transmute(value)
+        }
+    }
+}
+
+pub struct UiState {
+    page: Pages
+}
+
+impl UiState {
+    fn cycle_page(&mut self) {
+        let current_page_index = self.page as u8;
+        if current_page_index <= 0 {
+            self.page = Pages::from((current_page_index + 1).clamp(0, 1));   
+        } else {
+            self.page = Pages::PFD;
+        }
+    }
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self {
+            page: Pages::PFD
+        }
+    }
+}
+
+pub fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
@@ -38,10 +70,14 @@ where
     let mut menu_layout = LinearLayoutBuilder::default()
         .aligment(LayoutAlignment::Stretch)
         .direction(LayoutDirection::Horizontal);
-    menu_layout.button("PFD", &FONT_5X7, move || todo!());
-    menu_layout.button("ENG", &FONT_5X7, move || todo!());
+    menu_layout.button("PFD", &FONT_5X7, move || {
+        state.borrow_mut().page = Pages::PFD;
+    });
+    menu_layout.button("ENG", &FONT_5X7, move || {
+        state.borrow_mut().page = Pages::Engine;
+    });
 
-    match page {
+    match state.borrow().page {
         Pages::PFD => {
             ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
                 ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
@@ -92,9 +128,11 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let debug_text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::BLUE);
-    let rect = Rectangle::new(Point::new(0, 0), display.size());
-    let mut ui_ctx = UiContext::new(&mut display, rect, Theme::hope_diamond());
-    let mut page = Pages::Engine;
+
+
+    let mut ui_ctx = UiContext::new(&mut display, Theme::hope_diamond());
+    let mut default_state = UiState::default();
+    let state = &RefCell::new(&mut default_state);
 
     loop {
         let frame_render = std::time::Instant::now();
@@ -131,11 +169,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     }
 
                     if keycode == Keycode::F2 {
-                        if page == Pages::PFD {
-                            page = Pages::Engine;
-                        } else {
-                            page = Pages::PFD;
-                        }
+                        state.borrow_mut().cycle_page();
                     }
                 }
                 _ => {}
@@ -143,7 +177,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         let ui_context_render = std::time::Instant::now();
-        ui_ctx.update(&mut demo_ui(page));
+        ui_ctx.update(&mut demo_ui(state));
         let seconds_ui = ui_context_render.elapsed().as_secs_f32();
 
         if ui_ctx.debug_mode {

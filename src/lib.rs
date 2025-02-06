@@ -1,15 +1,13 @@
 #![no_std]
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 /// # Edgy
 /// no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 /// rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 /// dynamic dispatch, threfore a allocator is required.
-
 pub use embedded_graphics;
 use embedded_graphics::{pixelcolor::Rgb888, prelude::*, primitives::Rectangle};
-use widgets::{Widget, WidgetObj};
+use widgets::WidgetObj;
 
 pub mod widgets;
 extern crate alloc;
@@ -25,7 +23,6 @@ pub enum EventResult {
     Pass,
 }
 
-
 /// Your events that can be inserted into UI context
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum SystemEvent {
@@ -40,7 +37,6 @@ pub enum SystemEvent {
     /// Movement at surface event (e.g mouse moved to element)
     Move(Point),
 }
-
 
 /// Event that can widget recieve
 #[derive(Clone, Copy, PartialEq)]
@@ -85,7 +81,7 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
             debug_rect: Rgb888::RED.into(),
         }
     }
-    
+
     /// Binary color theme - recommended for 1-bit displays, like OLED SSD1306
     pub fn binary() -> Self {
         Self {
@@ -108,16 +104,14 @@ where
 {
     /// ``DrawTarget`` basically is display for drawing
     pub draw_target: &'a mut D,
-    /// Rectangular bounds. Probaly you need to pass display dimensions 
-    pub bounds: Rectangle,
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
     /// Event to pass in the library
     event_queue: heapless::Vec<SystemEvent, 5>,
     /// Enable/disable debug mode - displays red rectangles around widget bounds
     pub debug_mode: bool,
-    pub elements_count: usize,
-    pub focused_element: usize,
+    elements_count: usize,
+    focused_element: usize,
 }
 
 impl<'a, D, C> UiContext<'a, D, C>
@@ -126,11 +120,10 @@ where
     C: PixelColor,
 {
     /// Creates a new UI context
-    pub fn new(draw_target: &'a mut D, bounds: Rectangle, theme: Theme<C>) -> Self {
+    pub fn new(draw_target: &'a mut D, theme: Theme<C>) -> Self {
         Self {
             elements_count: 0,
             draw_target,
-            bounds,
             theme,
             event_queue: heapless::Vec::new(),
             focused_element: 0,
@@ -160,18 +153,18 @@ where
         self.push_event(SystemEvent::ActiveTo(self.focused_element));
     }
 
-    /// Updates and draws the UI, probably you want run this in some loop
+    /// Updates and draws the UI, probably you want run this in main loop
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
+        let bounds = self.draw_target.bounding_box();
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
         WIDGET_IDS.store(0, Ordering::Relaxed);
-        root.size(self, self.bounds.size);
-        root.layout(self, self.bounds);
+        root.size(self, bounds.size);
+        root.layout(self, bounds);
 
         if self.event_queue.len() > 0 {
-            let event = self.event_queue[self.event_queue.len() - 1]; 
+            let event = self.event_queue[self.event_queue.len() - 1];
             root.handle_event(self, &event);
         }
-        
 
         root.draw(self);
     }
