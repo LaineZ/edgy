@@ -29,22 +29,25 @@ pub enum Pages {
 
 impl From<u8> for Pages {
     fn from(value: u8) -> Self {
-        unsafe {
-            mem::transmute(value)
-        }
+        unsafe { mem::transmute(value) }
     }
 }
 
 pub struct UiState {
     page: Pages,
     engine: bool,
+    magneto: bool,
+    battery1: bool,
+    battery2: bool,
+    alternator1: bool,
+    alternator2: bool,
 }
 
 impl UiState {
     fn cycle_page(&mut self) {
         let current_page_index = self.page as u8;
         if current_page_index <= 0 {
-            self.page = Pages::from((current_page_index + 1).clamp(0, 1));   
+            self.page = Pages::from((current_page_index + 1).clamp(0, 1));
         } else {
             self.page = Pages::PFD;
         }
@@ -56,6 +59,11 @@ impl Default for UiState {
         Self {
             page: Pages::PFD,
             engine: false,
+            magneto: false,
+            battery1: false,
+            battery2: false,
+            alternator1: false,
+            alternator2: false,
         }
     }
 }
@@ -73,13 +81,22 @@ where
     let mut menu_layout = LinearLayoutBuilder::default()
         .aligment(LayoutAlignment::Stretch)
         .direction(LayoutDirection::Horizontal);
-    menu_layout.button("PFD", &FONT_5X7, move || {
-        state.borrow_mut().page = Pages::PFD;
-    });
-    menu_layout.button("ENG", &FONT_5X7, move || {
-        state.borrow_mut().page = Pages::Engine;
-    });
-
+    menu_layout.toggle_button(
+        "PFD",
+        &FONT_5X7,
+        state.borrow().page == Pages::PFD,
+        move |_| {
+            state.borrow_mut().page = Pages::PFD;
+        },
+    );
+    menu_layout.toggle_button(
+        "ENGINE",
+        &FONT_5X7,
+        state.borrow().page == Pages::Engine,
+        move |_| {
+            state.borrow_mut().page = Pages::Engine;
+        },
+    );
     match state.borrow().page {
         Pages::PFD => {
             ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
@@ -91,32 +108,68 @@ where
             });
         }
         Pages::Engine => {
-            ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
-                if state.borrow().engine {
-                    ui.label("engine started", style);
-                }
-                ui.label("RPM", style);
-                ui.label("MIXTURE", style);
-                ui.linear_layout(
-                    LayoutDirection::Horizontal,
-                    LayoutAlignment::Stretch,
-                    |ui| {
-                        ui.button("BAT 1", &FONT_5X7, move || todo!());
-                        ui.button("BAT 2", &FONT_5X7, move || todo!());
-                        ui.button("ALTN 1", &FONT_5X7, move || todo!());
-                        ui.button("ALTN 2", &FONT_5X7, move || todo!());
-                    },
-                );
-                ui.linear_layout(
-                    LayoutDirection::Horizontal,
-                    LayoutAlignment::Stretch,
-                    |ui| {
-                        ui.button("MAGNETO", &FONT_5X7, move || todo!());
-                        ui.toggle_button("ENGINE", &FONT_5X7, state.borrow().engine, move |value| {
-                            state.borrow_mut().engine = value;
-                        });
-                    },
-                );
+            ui.grid_layout([50, 50].into(), [100].into(), |ui| {
+                ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
+                    if state.borrow().engine {
+                        ui.label("engine started", style);
+                    }
+                });
+
+                ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
+                    ui.linear_layout(
+                        LayoutDirection::Horizontal,
+                        LayoutAlignment::Stretch,
+                        |ui| {
+                            ui.toggle_button(
+                                "BAT 1",
+                                &FONT_5X7,
+                                state.borrow().battery1,
+                                move |value| {
+                                    state.borrow_mut().battery1 = value;
+                                },
+                            );
+                            ui.toggle_button(
+                                "BAT 2",
+                                &FONT_5X7,
+                                state.borrow().battery2,
+                                move |value| {
+                                    state.borrow_mut().battery2 = value;
+                                },
+                            );
+                            ui.toggle_button(
+                                "ALTN 1",
+                                &FONT_5X7,
+                                state.borrow().alternator1,
+                                move |value| {
+                                    state.borrow_mut().alternator1 = value;
+                                },
+                            );
+                            ui.toggle_button(
+                                "ALTN 2",
+                                &FONT_5X7,
+                                state.borrow().alternator2,
+                                move |value| {
+                                    state.borrow_mut().alternator2 = value;
+                                },
+                            );
+                        },
+                    );
+                    ui.linear_layout(
+                        LayoutDirection::Horizontal,
+                        LayoutAlignment::Stretch,
+                        |ui| {
+                            ui.toggle_button(
+                                "MAGNETO",
+                                &FONT_5X7,
+                                state.borrow().magneto,
+                                move |value| {
+                                    state.borrow_mut().magneto = value;
+                                },
+                            );
+                            ui.button("STARTER", &FONT_5X7, move || todo!());
+                        },
+                    );
+                });
             });
         }
     };
@@ -136,7 +189,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let debug_text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::BLUE);
-
 
     let mut ui_ctx = UiContext::new(&mut display, Theme::hope_diamond());
     let mut default_state = UiState::default();

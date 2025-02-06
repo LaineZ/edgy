@@ -67,13 +67,10 @@ where
         let styled_rect = rect.into_styled(self.style);
         let _ = styled_rect.draw(context.draw_target);
 
-        let text = Text::with_alignment(
-            self.text,
-            rect.center(),
-            self.text_style.unwrap(),
-            Alignment::Center,
-        );
-        let _ = text.draw(context.draw_target);
+        if let Some(style) = self.text_style {
+            let text = Text::with_alignment(self.text, rect.center(), style, Alignment::Center);
+            let _ = text.draw(context.draw_target);
+        }
     }
 }
 

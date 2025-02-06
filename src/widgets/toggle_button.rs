@@ -2,11 +2,11 @@ use alloc::boxed::Box;
 use embedded_graphics::{
     mono_font::MonoFont,
     prelude::*,
-    primitives::Rectangle,
+    primitives::{PrimitiveStyleBuilder, Rectangle},
 };
 
-use crate::{Event, EventResult, SystemEvent, UiContext};
 use super::{button::ButtonGeneric, Widget};
+use crate::{Event, EventResult, SystemEvent, UiContext};
 
 pub struct ToggleButton<'a, C: PixelColor> {
     base: ButtonGeneric<'a, C>,
@@ -18,7 +18,12 @@ impl<'a, C> ToggleButton<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(text: &'a str, font: &'a MonoFont, state: bool, callback: Box<dyn FnMut(bool) + 'a>) -> Self {
+    pub fn new(
+        text: &'a str,
+        font: &'a MonoFont,
+        state: bool,
+        callback: Box<dyn FnMut(bool) + 'a>,
+    ) -> Self {
         Self {
             base: ButtonGeneric::new(text, font),
             state,
@@ -54,20 +59,39 @@ where
             Event::Focus => {
                 self.base.style.fill_color = Some(context.theme.background2);
                 return EventResult::Stop;
-            },
+            }
             Event::Active => {
                 self.base.style.fill_color = Some(context.theme.background3);
                 (self.callback)(!self.state);
                 context.consume_event(system_event);
                 return EventResult::Stop;
-            },
-            _ => {
-                EventResult::Pass
             }
+            _ => EventResult::Pass,
         }
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         self.base.draw(context, rect);
+        let style = if self.state {
+            PrimitiveStyleBuilder::new()
+                .fill_color(context.theme.success)
+                .build()
+        } else {
+            PrimitiveStyleBuilder::new()
+            .fill_color(context.theme.background3)
+            .build()
+        };
+
+        let light_size = (rect.size.height / 8).clamp(1, 4);
+
+        _ = Rectangle::new(
+            Point::new(
+                rect.top_left.x + 1,
+                (rect.top_left.y + rect.size.height as i32) - light_size as i32,
+            ),
+            Size::new(rect.size.width - 2, light_size),
+        )
+        .into_styled(style)
+        .draw(context.draw_target);
     }
 }

@@ -66,6 +66,7 @@ pub struct Theme<C: PixelColor> {
     pub foreground2: C,
     pub foreground3: C,
     pub debug_rect: C,
+    pub success: C,
 }
 
 impl<C: PixelColor + From<Rgb888>> Theme<C> {
@@ -78,6 +79,7 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
             foreground: Rgb888::new(119, 136, 140).into(),
             foreground2: Rgb888::new(79, 90, 100).into(),
             foreground3: Rgb888::new(59, 65, 82).into(),
+            success: Rgb888::new(79, 113, 75).into(),
             debug_rect: Rgb888::RED.into(),
         }
     }
@@ -91,6 +93,7 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
             foreground: Rgb888::WHITE.into(),
             foreground2: Rgb888::WHITE.into(),
             foreground3: Rgb888::WHITE.into(),
+            success: Rgb888::WHITE.into(),
             debug_rect: Rgb888::WHITE.into(),
         }
     }
