@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::mem;
 
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
@@ -29,13 +30,14 @@ pub enum Pages {
 impl From<u8> for Pages {
     fn from(value: u8) -> Self {
         unsafe {
-            core::mem::transmute(value)
+            mem::transmute(value)
         }
     }
 }
 
 pub struct UiState {
-    page: Pages
+    page: Pages,
+    engine: bool,
 }
 
 impl UiState {
@@ -52,7 +54,8 @@ impl UiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
-            page: Pages::PFD
+            page: Pages::PFD,
+            engine: false,
         }
     }
 }
@@ -89,6 +92,9 @@ where
         }
         Pages::Engine => {
             ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
+                if state.borrow().engine {
+                    ui.label("engine started", style);
+                }
                 ui.label("RPM", style);
                 ui.label("MIXTURE", style);
                 ui.linear_layout(
@@ -106,7 +112,9 @@ where
                     LayoutAlignment::Stretch,
                     |ui| {
                         ui.button("MAGNETO", &FONT_5X7, move || todo!());
-                        ui.button("STARTER", &FONT_5X7, move || todo!());
+                        ui.toggle_button("ENGINE", &FONT_5X7, state.borrow().engine, move |value| {
+                            state.borrow_mut().engine = value;
+                        });
                     },
                 );
             });

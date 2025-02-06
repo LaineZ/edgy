@@ -139,6 +139,10 @@ where
         self.event_queue.push(event).unwrap();
     }
 
+    pub fn consume_event(&mut self, event: &SystemEvent) {
+        self.event_queue.retain(|f| f != event);
+    }
+
     pub fn next_widget(&mut self) {
         if self.focused_element > self.elements_count - 1 {
             self.focused_element = 1;

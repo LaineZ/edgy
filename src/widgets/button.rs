@@ -6,47 +6,38 @@ use embedded_graphics::{
     text::{renderer::TextRenderer, Alignment, Text},
 };
 
-use crate::{Event, EventResult, SystemEvent, UiContext};
+use crate::{Event, EventResult, SystemEvent, Theme, UiContext};
 
 use super::Widget;
 
-pub struct Button<'a, C: PixelColor> {
-    text: &'a str,
-    text_style: Option<MonoTextStyle<'a, C>>,
-    font: &'a MonoFont<'a>,
-    button_style: PrimitiveStyle<C>,
-    callback: Box<dyn FnMut() + 'a>,
-    is_hovered: bool,
-    rect: Rectangle,
+/// Generic button style and drawing implementation
+pub struct ButtonGeneric<'a, C: PixelColor> {
+    pub text: &'a str,
+    pub text_style: Option<MonoTextStyle<'a, C>>,
+    pub font: &'a MonoFont<'a>,
+    pub style: PrimitiveStyle<C>,
+    pub rect: Rectangle,
 }
 
-impl<'a, C> Button<'a, C>
+impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(text: &'a str, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
+    pub fn new(text: &'a str, font: &'a MonoFont) -> Self {
         Self {
-            is_hovered: false,
             text,
             font,
             text_style: None,
-            button_style: PrimitiveStyleBuilder::new().build(),
-            callback,
+            style: PrimitiveStyleBuilder::new().build(),
             rect: Rectangle::default(),
         }
     }
-}
 
-impl<'a, D, C> Widget<'a, D, C> for Button<'a, C>
-where
-    D: DrawTarget<Color = C>,
-    C: PixelColor + 'a,
-{
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        self.text_style = Some(MonoTextStyle::new(self.font, context.theme.foreground));
-        self.button_style = PrimitiveStyleBuilder::new()
-            .fill_color(context.theme.background)
-            .stroke_color(context.theme.background2)
+    pub fn size(&mut self, theme: Theme<C>) -> Size {
+        self.text_style = Some(MonoTextStyle::new(self.font, theme.foreground));
+        self.style = PrimitiveStyleBuilder::new()
+            .fill_color(theme.background)
+            .stroke_color(theme.background2)
             .stroke_width(1)
             .build();
 
@@ -68,40 +59,12 @@ where
         )
     }
 
-    fn layout(&mut self, _context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.rect = rect;
-    }
-
-
-    fn is_interactive(&mut self) -> bool {
-        true
-    }
-
-    fn handle_event(
+    pub fn draw<D: DrawTarget<Color = C>>(
         &mut self,
         context: &mut UiContext<'a, D, C>,
-        _system_event: &SystemEvent,
-        event: &Event,
-    ) -> crate::EventResult {
-        match event {
-            Event::Focus => {
-                self.is_hovered = true;
-                self.button_style.fill_color = Some(context.theme.background2);
-                return EventResult::Stop;
-            },
-            Event::Active => {
-                self.button_style.fill_color = Some(context.theme.background3);
-                (self.callback)();
-                return EventResult::Stop;
-            },
-            _ => {
-                EventResult::Pass
-            }
-        }
-    }
-
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        let styled_rect = rect.into_styled(self.button_style);
+        rect: Rectangle,
+    ) {
+        let styled_rect = rect.into_styled(self.style);
         let _ = styled_rect.draw(context.draw_target);
 
         let text = Text::with_alignment(
@@ -111,5 +74,66 @@ where
             Alignment::Center,
         );
         let _ = text.draw(context.draw_target);
+    }
+}
+
+/// Button widget
+pub struct Button<'a, C: PixelColor> {
+    base: ButtonGeneric<'a, C>,
+    callback: Box<dyn FnMut() + 'a>,
+}
+
+impl<'a, C> Button<'a, C>
+where
+    C: PixelColor + 'a,
+{
+    pub fn new(text: &'a str, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
+        Self {
+            base: ButtonGeneric::new(text, font),
+            callback,
+        }
+    }
+}
+
+impl<'a, D, C> Widget<'a, D, C> for Button<'a, C>
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor + 'a,
+{
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+        self.base.size(context.theme)
+    }
+
+    fn layout(&mut self, _context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        self.base.rect = rect;
+    }
+
+    fn is_interactive(&mut self) -> bool {
+        true
+    }
+
+    fn handle_event(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        system_event: &SystemEvent,
+        event: &Event,
+    ) -> crate::EventResult {
+        match event {
+            Event::Focus => {
+                self.base.style.fill_color = Some(context.theme.background2);
+                return EventResult::Stop;
+            }
+            Event::Active => {
+                self.base.style.fill_color = Some(context.theme.background3);
+                (self.callback)();
+                context.consume_event(system_event);
+                return EventResult::Stop;
+            }
+            _ => EventResult::Pass,
+        }
+    }
+
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        self.base.draw(context, rect);
     }
 }

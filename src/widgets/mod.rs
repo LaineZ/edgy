@@ -10,6 +10,7 @@ use grid_layout::GridLayoutBuilder;
 use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
+use toggle_button::ToggleButton;
 
 use crate::{Event, EventResult, SystemEvent, UiContext};
 
@@ -18,6 +19,7 @@ pub mod grid_layout;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
+pub mod toggle_button;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -231,6 +233,10 @@ where
 
     fn button(&mut self, text: &'a str, font: &'a MonoFont, callback: impl FnMut() + 'a) {
         self.add_widget(Button::new(text, font, Box::new(callback)));
+    }
+
+    fn toggle_button(&mut self, text: &'a str, font: &'a MonoFont, state: bool, callback: impl FnMut(bool) + 'a) {
+        self.add_widget(ToggleButton::new(text, font, state, Box::new(callback)));
     }
 
     fn margin_layout(&mut self, margin: Margin, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
