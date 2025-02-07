@@ -187,7 +187,9 @@ where
                         .handle_event(context, system_event, &Event::Idle)
                 }
             }
-            _ => self.widget.handle_event(context, system_event, &Event::Idle),
+            _ => self
+                .widget
+                .handle_event(context, system_event, &Event::Idle),
         }
     }
 
@@ -248,7 +250,13 @@ where
     }
 
     /// Shorthand construct for [ToggleButton] widget
-    fn toggle_button(&mut self, text: &'a str, font: &'a MonoFont, state: bool, callback: impl FnMut(bool) + 'a) {
+    fn toggle_button(
+        &mut self,
+        text: &'a str,
+        font: &'a MonoFont,
+        state: bool,
+        callback: impl FnMut(bool) + 'a,
+    ) {
         self.add_widget(ToggleButton::new(text, font, state, Box::new(callback)));
     }
 
@@ -263,7 +271,11 @@ where
     }
 
     /// Shorthand construct for [LinearLayout] widget. Creates a linear layout with in vertical direction
-    fn vertical_linear_layout(&mut self, alignment: LayoutAlignment, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
+    fn vertical_linear_layout(
+        &mut self,
+        alignment: LayoutAlignment,
+        fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>),
+    ) {
         let mut builder = LinearLayoutBuilder {
             direction: LayoutDirection::Vertical,
             children: Vec::new(),
@@ -275,7 +287,11 @@ where
     }
 
     /// Shorthand construct for [LinearLayout] widget. Creates a linear layout with in horizontal direction
-    fn horizontal_linear_layout(&mut self, alignment: LayoutAlignment, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
+    fn horizontal_linear_layout(
+        &mut self,
+        alignment: LayoutAlignment,
+        fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>),
+    ) {
         let mut builder = LinearLayoutBuilder {
             direction: LayoutDirection::Horizontal,
             children: Vec::new(),
@@ -286,7 +302,7 @@ where
         self.add_widget_obj(builder.finish());
     }
 
-        /// Shorthand construct for [GridLayout] widget.
+    /// Shorthand construct for [GridLayout] widget.
     fn grid_layout(
         &mut self,
         rows: Vec<u32>,
