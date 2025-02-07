@@ -1,10 +1,8 @@
 #![no_std]
+//! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
+//! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
+//! dynamic dispatch, threfore a allocator is required.
 use core::sync::atomic::{AtomicUsize, Ordering};
-
-/// # Edgy
-/// no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
-/// rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
-/// dynamic dispatch, threfore a allocator is required.
 pub use embedded_graphics;
 use embedded_graphics::{pixelcolor::Rgb888, prelude::*, primitives::Rectangle};
 use widgets::WidgetObj;
@@ -12,7 +10,7 @@ use widgets::WidgetObj;
 pub mod widgets;
 extern crate alloc;
 
-pub static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(1);
+pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(1);
 
 /// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,9 +57,11 @@ pub(crate) fn contains(rectangle: Rectangle, position: Point) -> bool {
 /// Theme struct. You can freely create own themes
 #[derive(Clone, Copy)]
 pub struct Theme<C: PixelColor> {
+    /// Primary background
     pub background: C,
     pub background2: C,
     pub background3: C,
+    /// Primary foreground
     pub foreground: C,
     pub foreground2: C,
     pub foreground3: C,
@@ -122,7 +122,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    /// Creates a new UI context
+    /// Creates a new UI context with specified `DrawTaget` and `Theme`
     pub fn new(draw_target: &'a mut D, theme: Theme<C>) -> Self {
         Self {
             elements_count: 0,
@@ -146,6 +146,7 @@ where
         self.event_queue.retain(|f| f != event);
     }
 
+    /// Cycles to next widget (like Tab key on PC)
     pub fn next_widget(&mut self) {
         if self.focused_element > self.elements_count - 1 {
             self.focused_element = 1;
@@ -156,6 +157,16 @@ where
         self.push_event(SystemEvent::FocusTo(self.focused_element));
     }
 
+    /// Cycles to previous widget (like Shift+Tab key on PC)
+    pub fn previous_widget(&mut self) {
+        if self.focused_element != 0 {
+            self.focused_element -= 1;
+        }
+
+        self.push_event(SystemEvent::FocusTo(self.focused_element));
+    }
+
+    /// Activates selected widget (like Enter key on PC)
     pub fn activate_selected_widget(&mut self) {
         self.push_event(SystemEvent::ActiveTo(self.focused_element));
     }

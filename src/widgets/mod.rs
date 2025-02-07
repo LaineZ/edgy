@@ -1,3 +1,9 @@
+//! This module contains all widgets available in edgy.
+//! ## Common concept definitions:
+//! `Widget` - Any UI-object both interactive and static, including `Layout`
+//!
+//! `Layout` - A container(-like) widget that holds another widgets
+
 use alloc::{boxed::Box, format, vec::Vec};
 use button::Button;
 use embedded_graphics::{
@@ -248,14 +254,20 @@ where
         self.add_widget_obj(builder.finish());
     }
 
-    fn linear_layout(
-        &mut self,
-        direction: LayoutDirection,
-        alignment: LayoutAlignment,
-        fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>),
-    ) {
+    fn vertical_linear_layout(&mut self, alignment: LayoutAlignment, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
         let mut builder = LinearLayoutBuilder {
-            direction,
+            direction: LayoutDirection::Vertical,
+            children: Vec::new(),
+            alignment,
+            ..Default::default()
+        };
+        fill(&mut builder);
+        self.add_widget_obj(builder.finish());
+    }
+
+    fn horizontal_linear_layout(&mut self, alignment: LayoutAlignment, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
+        let mut builder = LinearLayoutBuilder {
+            direction: LayoutDirection::Horizontal,
             children: Vec::new(),
             alignment,
             ..Default::default()

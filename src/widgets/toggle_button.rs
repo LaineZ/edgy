@@ -8,6 +8,8 @@ use embedded_graphics::{
 use super::{button::ButtonGeneric, Widget};
 use crate::{Event, EventResult, SystemEvent, UiContext};
 
+
+/// Toggle button (Korry-like switches)
 pub struct ToggleButton<'a, C: PixelColor> {
     base: ButtonGeneric<'a, C>,
     state: bool,

@@ -99,8 +99,8 @@ where
     );
     match state.borrow().page {
         Pages::PFD => {
-            ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
-                ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Start, |ui| {
+            ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
+                ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
                     ui.label("ALTITUDE", style);
                     ui.label("SPEED", style);
                     ui.label("VSPEED", style);
@@ -109,66 +109,58 @@ where
         }
         Pages::Engine => {
             ui.grid_layout([50, 50].into(), [100].into(), |ui| {
-                ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
+                ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
                     if state.borrow().engine {
                         ui.label("engine started", style);
                     }
                 });
 
-                ui.linear_layout(LayoutDirection::Vertical, LayoutAlignment::Stretch, |ui| {
-                    ui.linear_layout(
-                        LayoutDirection::Horizontal,
-                        LayoutAlignment::Stretch,
-                        |ui| {
-                            ui.toggle_button(
-                                "BAT 1",
-                                &FONT_5X7,
-                                state.borrow().battery1,
-                                move |value| {
-                                    state.borrow_mut().battery1 = value;
-                                },
-                            );
-                            ui.toggle_button(
-                                "BAT 2",
-                                &FONT_5X7,
-                                state.borrow().battery2,
-                                move |value| {
-                                    state.borrow_mut().battery2 = value;
-                                },
-                            );
-                            ui.toggle_button(
-                                "ALTN 1",
-                                &FONT_5X7,
-                                state.borrow().alternator1,
-                                move |value| {
-                                    state.borrow_mut().alternator1 = value;
-                                },
-                            );
-                            ui.toggle_button(
-                                "ALTN 2",
-                                &FONT_5X7,
-                                state.borrow().alternator2,
-                                move |value| {
-                                    state.borrow_mut().alternator2 = value;
-                                },
-                            );
-                        },
-                    );
-                    ui.linear_layout(
-                        LayoutDirection::Horizontal,
-                        LayoutAlignment::Stretch,
-                        |ui| {
-                            ui.toggle_button(
-                                "MAGNETO",
-                                &FONT_5X7,
-                                state.borrow().magneto,
-                                move |value| {
-                                    state.borrow_mut().magneto = value;
-                                },
-                            );
-                            ui.button("STARTER", &FONT_5X7, move || todo!());
-                        },
-                    );
+                ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
+                    ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
+                        ui.toggle_button(
+                            "BAT 1",
+                            &FONT_5X7,
+                            state.borrow().battery1,
+                            move |value| {
+                                state.borrow_mut().battery1 = value;
+                            },
+                        );
+                        ui.toggle_button(
+                            "BAT 2",
+                            &FONT_5X7,
+                            state.borrow().battery2,
+                            move |value| {
+                                state.borrow_mut().battery2 = value;
+                            },
+                        );
+                        ui.toggle_button(
+                            "ALTN 1",
+                            &FONT_5X7,
+                            state.borrow().alternator1,
+                            move |value| {
+                                state.borrow_mut().alternator1 = value;
+                            },
+                        );
+                        ui.toggle_button(
+                            "ALTN 2",
+                            &FONT_5X7,
+                            state.borrow().alternator2,
+                            move |value| {
+                                state.borrow_mut().alternator2 = value;
+                            },
+                        );
+                    });
+                    ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
+                        ui.toggle_button(
+                            "MAGNETO",
+                            &FONT_5X7,
+                            state.borrow().magneto,
+                            move |value| {
+                                state.borrow_mut().magneto = value;
+                            },
+                        );
+                        ui.button("STARTER", &FONT_5X7, move || todo!());
+                    });
                 });
             });
         }
