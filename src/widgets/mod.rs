@@ -225,26 +225,34 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
+    // here add function for building widgets like button
+
+    /// Method for adding widget in Layouts
     fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>);
 
+    /// Adds a widget in current layout
     fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W) {
         let mut object = WidgetObj::new(Box::new(widget));
         object.assign_id();
         self.add_widget_obj(object);
     }
 
+    /// Creates a [Label] widget
     fn label(&mut self, text: &'a str, style: MonoTextStyle<'a, C>) {
         self.add_widget(Label::new(text, style))
     }
 
+    /// Shorthand construct for [Button] widget
     fn button(&mut self, text: &'a str, font: &'a MonoFont, callback: impl FnMut() + 'a) {
         self.add_widget(Button::new(text, font, Box::new(callback)));
     }
 
+    /// Shorthand construct for [ToggleButton] widget
     fn toggle_button(&mut self, text: &'a str, font: &'a MonoFont, state: bool, callback: impl FnMut(bool) + 'a) {
         self.add_widget(ToggleButton::new(text, font, state, Box::new(callback)));
     }
 
+    /// Shorthand construct for [MarginLayout] widget
     fn margin_layout(&mut self, margin: Margin, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
         let mut builder = MarginLayout {
             margin,
@@ -254,6 +262,7 @@ where
         self.add_widget_obj(builder.finish());
     }
 
+    /// Shorthand construct for [LinearLayout] widget. Creates a linear layout with in vertical direction
     fn vertical_linear_layout(&mut self, alignment: LayoutAlignment, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
         let mut builder = LinearLayoutBuilder {
             direction: LayoutDirection::Vertical,
@@ -265,6 +274,7 @@ where
         self.add_widget_obj(builder.finish());
     }
 
+    /// Shorthand construct for [LinearLayout] widget. Creates a linear layout with in horizontal direction
     fn horizontal_linear_layout(&mut self, alignment: LayoutAlignment, fill: impl FnOnce(&mut LinearLayoutBuilder<'a, D, C>)) {
         let mut builder = LinearLayoutBuilder {
             direction: LayoutDirection::Horizontal,
@@ -276,6 +286,7 @@ where
         self.add_widget_obj(builder.finish());
     }
 
+        /// Shorthand construct for [GridLayout] widget.
     fn grid_layout(
         &mut self,
         rows: Vec<u32>,
@@ -290,8 +301,6 @@ where
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
     }
-
-    // сюда добавлять функции для стройки виджетов, типа button
 
     fn finish(self) -> WidgetObj<'a, D, C>;
 }
