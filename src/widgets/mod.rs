@@ -13,6 +13,7 @@ use embedded_graphics::{
     text::Text,
 };
 use grid_layout::GridLayoutBuilder;
+use image::Image;
 use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
@@ -26,6 +27,7 @@ pub mod label;
 pub mod linear_layout;
 pub mod margin;
 pub mod toggle_button;
+pub mod image;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -150,6 +152,7 @@ where
         context: &mut UiContext<'a, D, C>,
         system_event: &SystemEvent,
     ) -> EventResult {
+        // TODO: Reconsider a better solution
         match *system_event {
             SystemEvent::FocusTo(id) => {
                 if self.id == id {
@@ -247,6 +250,11 @@ where
     /// Shorthand construct for [Button] widget
     fn button(&mut self, text: &'a str, font: &'a MonoFont, callback: impl FnMut() + 'a) {
         self.add_widget(Button::new(text, font, Box::new(callback)));
+    }
+
+    /// Shorthand construct for [Image] widget
+    fn image<I: ImageDrawable<Color = C>>(&mut self, image: &'a I) {
+        self.add_widget(Image::<'a, I>::new(image));
     }
 
     /// Shorthand construct for [ToggleButton] widget

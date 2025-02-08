@@ -219,17 +219,17 @@ where
 
         let mut offset = match (self.direction, self.aligment) {
             (LayoutDirection::Horizontal, LayoutAlignment::Center) => {
-                let free_space = rect.size.width - total_length;
+                let free_space = rect.size.width.saturating_sub(total_length);
                 Point::new((free_space / 2) as i32, 0)
             }
 
             (LayoutDirection::Horizontal, LayoutAlignment::End) => {
-                let free_space = rect.size.width - total_length;
+                let free_space = rect.size.width.saturating_sub(total_length);
                 Point::new(free_space as i32, 0)
             }
 
             (LayoutDirection::Vertical, LayoutAlignment::Center) => {
-                let free_space = rect.size.height - total_length;
+                let free_space = rect.size.height.saturating_sub(total_length);
                 Point::new(0, (free_space / 2) as i32)
             }
 
