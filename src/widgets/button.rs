@@ -112,7 +112,7 @@ where
     fn handle_event(
         &mut self,
         context: &mut UiContext<'a, D, C>,
-        system_event: &SystemEvent,
+        _system_event: &SystemEvent,
         event: &Event,
     ) -> crate::EventResult {
         match event {
@@ -123,7 +123,6 @@ where
             Event::Active => {
                 self.base.style.fill_color = Some(context.theme.background3);
                 (self.callback)();
-                context.consume_event(system_event);
                 return EventResult::Stop;
             }
             _ => EventResult::Pass,

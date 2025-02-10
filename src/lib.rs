@@ -10,7 +10,7 @@ use widgets::WidgetObj;
 pub mod widgets;
 extern crate alloc;
 
-pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(1);
+pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
 /// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,6 +34,16 @@ pub enum SystemEvent {
     Active(Point),
     /// Movement at surface event (e.g mouse moved to element)
     Move(Point),
+}
+
+impl SystemEvent {
+    fn is_motion_event(&self) -> bool {
+        match self {
+            SystemEvent::FocusTo(_) => true,
+            SystemEvent::Move(_) => true,
+            _ => false
+        }
+    } 
 }
 
 /// Event that can widget recieve
@@ -135,8 +145,8 @@ where
     }
 
     pub fn push_event(&mut self, event: SystemEvent) {
-        if self.event_queue.is_full() {
-            self.event_queue.remove(0);
+        if self.event_queue.is_full() || event.is_motion_event() {
+            self.event_queue.clear();
         }
 
         self.event_queue.push(event).unwrap();
@@ -181,7 +191,9 @@ where
 
         if self.event_queue.len() > 0 {
             let event = self.event_queue[self.event_queue.len() - 1];
-            root.handle_event(self, &event);
+            if root.handle_event(self, &event) == EventResult::Stop && !event.is_motion_event() {
+                self.consume_event(&event);
+            }
         }
 
         root.draw(self);
