@@ -10,8 +10,9 @@ use embedded_graphics::{
     mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
     prelude::*,
     primitives::{PrimitiveStyleBuilder, Rectangle},
-    text::Text,
+    text::{Alignment, Text},
 };
+use filler::{FillStrategy, Filler};
 use grid_layout::GridLayoutBuilder;
 use image::Image;
 use label::Label;
@@ -22,12 +23,13 @@ use toggle_button::ToggleButton;
 use crate::{Event, EventResult, SystemEvent, UiContext};
 
 pub mod button;
+pub mod filler;
 pub mod grid_layout;
+pub mod image;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
 pub mod toggle_button;
-pub mod image;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -201,16 +203,18 @@ where
         self.widget.draw(context, self.rect());
 
         if context.debug_mode {
-            let text = MonoTextStyle::new(&FONT_4X6, context.theme.foreground2);
-            let _ = Text::new(
-                &format!("id: {}", self.id),
-                Point::new(
-                    self.computed_rect.top_left.x,
-                    self.computed_rect.top_left.y + 6,
-                ),
-                text,
-            )
-            .draw(context.draw_target);
+            if self.id > 0 {
+                let text = MonoTextStyle::new(&FONT_4X6, context.theme.foreground2);
+                let _ = Text::new(
+                    &format!("id: {}", self.id),
+                    Point::new(
+                        self.computed_rect.top_left.x,
+                        self.computed_rect.top_left.y + 6,
+                    ),
+                    text,
+                )
+                .draw(context.draw_target);
+            }
             let _ = self
                 .rect()
                 .into_styled(
@@ -243,8 +247,8 @@ where
     }
 
     /// Creates a [Label] widget
-    fn label(&mut self, text: &'a str, style: MonoTextStyle<'a, C>) {
-        self.add_widget(Label::new(text, style))
+    fn label(&mut self, text: &'a str, text_alignment: Alignment, style: MonoTextStyle<'a, C>) {
+        self.add_widget(Label::new(text, text_alignment, style))
     }
 
     /// Shorthand construct for [Button] widget
@@ -324,6 +328,10 @@ where
         };
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
+    }
+
+    fn filler(&mut self, fill: FillStrategy) {
+        self.add_widget(Filler::new(fill));
     }
 
     fn finish(self) -> WidgetObj<'a, D, C>;

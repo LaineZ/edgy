@@ -1,10 +1,16 @@
 use edgy::{
     widgets::{
-        linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder}, UiBuilder, WidgetObj
+        linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
+        UiBuilder, WidgetObj,
     },
     Theme, UiContext,
 };
-use embedded_graphics::{mono_font::{iso_8859_10::FONT_4X6, MonoTextStyle}, pixelcolor::Rgb888, prelude::*};
+use embedded_graphics::{
+    mono_font::{iso_8859_10::{FONT_10X20, FONT_4X6}, MonoTextStyle},
+    pixelcolor::Rgb888,
+    prelude::*,
+    text::Alignment,
+};
 use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, SimulatorDisplay, Window};
 use tinybmp::Bmp;
 
@@ -14,16 +20,18 @@ where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
     let mut ui = LinearLayoutBuilder::default()
-        .aligment(LayoutAlignment::Center)
+        .aligment(LayoutAlignment::Start)
         .direction(LayoutDirection::Vertical);
 
-    ui.label("Displaying bee!", MonoTextStyle::new(&FONT_4X6, Rgb888::WHITE));
+    ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
+        ui.label("DISPLAYING BEE!", Alignment::Center, MonoTextStyle::new(&FONT_10X20, Rgb888::WHITE));
+    });
     ui.image(image);
     ui.finish()
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(256, 260));
+    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(256, 286));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
@@ -34,10 +42,13 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut ui_ctx = UiContext::new(&mut display, Theme::hope_diamond());
 
     let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("bee.bmp")).unwrap();
-    println!("bitmap: {} pixels: {}", bmp.bounding_box().size, bmp.pixels().count());
+    println!(
+        "bitmap: {} pixels: {}",
+        bmp.bounding_box().size,
+        bmp.pixels().count()
+    );
 
     loop {
-
         window.update(&ui_ctx.draw_target);
 
         for event in window.events() {

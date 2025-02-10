@@ -12,6 +12,7 @@ use edgy::{
 };
 use edgy::{SystemEvent, Theme};
 use embedded_graphics::mono_font::iso_8859_5::FONT_5X7;
+use embedded_graphics::text::Alignment;
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::Rgb888,
@@ -101,9 +102,9 @@ where
         Pages::PFD => {
             ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
                 ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
-                    ui.label("ALTITUDE", style);
-                    ui.label("SPEED", style);
-                    ui.label("VSPEED", style);
+                    ui.label("ALTITUDE", Alignment::Center, style);
+                    ui.label("SPEED", Alignment::Center, style);
+                    ui.label("VSPEED", Alignment::Center, style);
                 });
             });
         }
@@ -111,7 +112,7 @@ where
             ui.grid_layout([50, 50].into(), [100].into(), |ui| {
                 ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
                     if state.borrow().engine {
-                        ui.label("engine started", style);
+                        ui.label("engine started", Alignment::Center, style);
                     }
                 });
 

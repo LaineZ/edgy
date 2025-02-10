@@ -3,6 +3,7 @@ use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 use super::{UiBuilder, Widget, WidgetObj};
 
+/// Margin struct
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Margin {
     pub top: i32,
@@ -11,6 +12,10 @@ pub struct Margin {
     pub left: i32,
 }
 
+/// Margin definition macro returns [Margin]. Defines in CSS fashion
+/// `margin!(top, right, bottom, left)`
+/// `margin!(vertical (top, bottom), horizontal (left, right))
+/// `margin!(all sides)`
 #[macro_export]
 macro_rules! margin {
     ($all:expr) => {
@@ -41,6 +46,8 @@ macro_rules! margin {
     };
 }
 
+
+/// Container with margins
 pub struct MarginLayout<'a, D, C>
 where
     D: DrawTarget<Color = C>,
