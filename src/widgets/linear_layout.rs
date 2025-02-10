@@ -31,7 +31,7 @@ where
     pub max_size: Size,
 }
 
-impl<'a, D, C> LinearLayoutBuilder<'a, D, C>
+impl<D, C> LinearLayoutBuilder<'_, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
@@ -57,7 +57,7 @@ where
     }
 }
 
-impl<'a, D, C> Default for LinearLayoutBuilder<'a, D, C>
+impl<D, C> Default for LinearLayoutBuilder<'_, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
@@ -101,7 +101,7 @@ fn compute_child_size(
     children_count: usize,
 ) -> Size {
 
-    return match alignment {
+    match alignment {
         LayoutAlignment::Stretch => {
             match direction {
                 LayoutDirection::Horizontal => {

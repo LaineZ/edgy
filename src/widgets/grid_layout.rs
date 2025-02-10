@@ -23,7 +23,7 @@ where
     pub row_fracs: Vec<u32>,
 }
 
-impl<'a, D, C> GridLayoutBuilder<'a, D, C>
+impl<D, C> GridLayoutBuilder<'_, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
@@ -39,7 +39,7 @@ where
     }
 }
 
-impl<'a, D, C> Default for GridLayoutBuilder<'a, D, C>
+impl<D, C> Default for GridLayoutBuilder<'_, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,

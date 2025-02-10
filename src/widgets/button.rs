@@ -118,12 +118,12 @@ where
         match event {
             Event::Focus => {
                 self.base.style.fill_color = Some(context.theme.background2);
-                return EventResult::Stop;
+                EventResult::Stop
             }
             Event::Active => {
                 self.base.style.fill_color = Some(context.theme.background3);
                 (self.callback)();
-                return EventResult::Stop;
+                EventResult::Stop
             }
             _ => EventResult::Pass,
         }

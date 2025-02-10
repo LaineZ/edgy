@@ -189,7 +189,7 @@ where
         root.size(self, bounds.size);
         root.layout(self, bounds);
 
-        if self.event_queue.len() > 0 {
+        if !self.event_queue.is_empty() {
             let event = self.event_queue[self.event_queue.len() - 1];
             if root.handle_event(self, &event) == EventResult::Stop && !event.is_motion_event() {
                 self.consume_event(&event);
