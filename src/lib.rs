@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.

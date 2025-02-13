@@ -75,16 +75,17 @@ fn gauge_with_text<'a, D>(value: f32, text: &'a str) -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
-    let mut ui = LinearLayoutBuilder::default()
+    let mut linear = LinearLayoutBuilder::default()
         .aligment(LayoutAlignment::Center)
         .direction(LayoutDirection::Vertical);
-    ui.label(
+
+    linear.label(
         text,
         Alignment::Center,
         MonoTextStyle::new(&FONT_4X6, Rgb888::WHITE),
     );
-    ui.gauge(value);
-    ui.finish()
+    linear.gauge(value);
+    linear.finish()
 }
 
 fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObj<'a, D, Rgb888>
@@ -121,13 +122,22 @@ where
             ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
                 ui.horizontal_linear_layout(LayoutAlignment::Center, |ui| {
                     ui.label("TODO", Alignment::Center, style);
+                    ui.label("TODO", Alignment::Center, style);
                 });
             });
         }
         Pages::Engine => {
             ui.grid_layout([50, 50].into(), [100].into(), |ui| {
-                ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                    ui.add_widget_obj(gauge_with_text(state.borrow().rpm, "RPM"));
+                ui.horizontal_linear_layout(LayoutAlignment::Center, |ui| {
+                    ui.margin_layout(margin!(5), |ui| {
+                        ui.add_widget_obj(gauge_with_text(state.borrow().rpm, "RPM"));
+                    });
+                    ui.margin_layout(margin!(5), |ui| {
+                        ui.add_widget_obj(gauge_with_text(
+                            if state.borrow().battery1 { 0.7 } else { 0.0 },
+                            "VOLT",
+                        ));
+                    });
                 });
 
                 ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
@@ -174,7 +184,9 @@ where
                                 state.borrow_mut().magneto = value;
                             },
                         );
-                        ui.button("STARTER", &FONT_5X7, move || todo!());
+                        ui.button("STARTER", &FONT_5X7, move || {
+                            state.borrow_mut().engine = true;
+                        });
                     });
                 });
             });

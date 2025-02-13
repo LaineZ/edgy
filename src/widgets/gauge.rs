@@ -5,7 +5,7 @@ use crate::UiContext;
 use embedded_graphics::{
     prelude::*,
     primitives::{
-        Arc, Circle, Line, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StyledDrawable,
+        Circle, Line, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StyledDrawable,
     },
 };
 
@@ -32,7 +32,7 @@ where
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        let circle = Circle::with_center(Point::new(rect.center().x, rect.center().y - 5), rect.size.height - 10).into_styled(
+        let circle = Circle::with_center(Point::new(rect.center().x, rect.center().y), rect.size.width - GAUGE_STROKE_WIDTH).into_styled(
             PrimitiveStyleBuilder::new()
                 .stroke_color(context.theme.foreground)
                 .stroke_width(GAUGE_STROKE_WIDTH)
@@ -45,7 +45,7 @@ where
         let max_angle = 320.0;
 
         // draw a dashes
-        let divisions = 3;
+        let divisions = 20;
         let total_angle = max_angle - min_angle;
         let angle_step = total_angle / (divisions - 1) as f32;
 

@@ -25,13 +25,13 @@ use crate::{Event, EventResult, SystemEvent, UiContext};
 
 pub mod button;
 pub mod filler;
+pub mod gauge;
 pub mod grid_layout;
 pub mod image;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
 pub mod toggle_button;
-pub mod gauge;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -86,6 +86,7 @@ where
 {
     pub(crate) widget: Box<dyn Widget<'a, D, C>>,
     pub(crate) computed_rect: Rectangle,
+    requested_size: Size,
     pub(crate) id: usize,
 }
 
@@ -97,6 +98,7 @@ where
     pub fn new(widget: Box<dyn Widget<'a, D, C>>) -> Self {
         Self {
             computed_rect: Rectangle::default(),
+            requested_size: Size::default(),
             widget,
             id: 0,
         }
@@ -110,7 +112,11 @@ where
 {
     /// Gets a size for widget (for layout compulation)
     pub fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
-        self.widget.size(context, hint)
+        if self.requested_size == Size::zero() {
+            self.requested_size = self.widget.size(context, hint);
+        }
+
+        self.requested_size
     }
 
     fn assign_id(&mut self) {
@@ -220,7 +226,10 @@ where
                 .draw(context.draw_target);
             } else {
                 let _ = Text::new(
-                    &format!("{}x{}", self.computed_rect.size.width, self.computed_rect.size.height),
+                    &format!(
+                        "{}x{}",
+                        self.computed_rect.size.width, self.computed_rect.size.height
+                    ),
                     Point::new(
                         self.computed_rect.top_left.x,
                         self.computed_rect.top_left.y + 6,
