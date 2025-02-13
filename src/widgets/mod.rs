@@ -13,6 +13,7 @@ use embedded_graphics::{
     text::{Alignment, Text},
 };
 use filler::{FillStrategy, Filler};
+use gauge::Gauge;
 use grid_layout::GridLayoutBuilder;
 use image::Image;
 use label::Label;
@@ -30,6 +31,7 @@ pub mod label;
 pub mod linear_layout;
 pub mod margin;
 pub mod toggle_button;
+pub mod gauge;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -43,8 +45,10 @@ where
         false
     }
 
-    /// Returns the size the widget wants. use for auto-calculate in layouts
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size;
+    /// Returns the size the widget wants. use for auto-calculate in layouts. Default implementation occupies all available space
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+        hint
+    }
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
     fn layout(&mut self, _context: &mut UiContext<'a, D, C>, _rect: Rectangle) {}
@@ -203,10 +207,20 @@ where
         self.widget.draw(context, self.rect());
 
         if context.debug_mode {
+            let text = MonoTextStyle::new(&FONT_4X6, context.theme.foreground2);
             if self.id > 0 {
-                let text = MonoTextStyle::new(&FONT_4X6, context.theme.foreground2);
                 let _ = Text::new(
                     &format!("id: {}", self.id),
+                    Point::new(
+                        self.computed_rect.top_left.x,
+                        self.computed_rect.top_left.y + 6,
+                    ),
+                    text,
+                )
+                .draw(context.draw_target);
+            } else {
+                let _ = Text::new(
+                    &format!("{}x{}", self.computed_rect.size.width, self.computed_rect.size.height),
                     Point::new(
                         self.computed_rect.top_left.x,
                         self.computed_rect.top_left.y + 6,
@@ -249,6 +263,11 @@ where
     /// Creates a [Label] widget
     fn label(&mut self, text: &'a str, text_alignment: Alignment, style: MonoTextStyle<'a, C>) {
         self.add_widget(Label::new(text, text_alignment, style))
+    }
+
+    /// Creates a [Gauge] widget
+    fn gauge(&mut self, value: f32) {
+        self.add_widget(Gauge::new(value));
     }
 
     /// Shorthand construct for [Button] widget

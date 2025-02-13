@@ -3,6 +3,7 @@ use std::mem;
 
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
+use edgy::{margin, SystemEvent, Theme};
 use edgy::{
     widgets::{
         linear_layout::{LayoutDirection, LinearLayoutBuilder},
@@ -10,7 +11,6 @@ use edgy::{
     },
     UiContext,
 };
-use edgy::{SystemEvent, Theme};
 use embedded_graphics::mono_font::iso_8859_5::FONT_5X7;
 use embedded_graphics::text::Alignment;
 use embedded_graphics::{
@@ -42,6 +42,7 @@ pub struct UiState {
     battery2: bool,
     alternator1: bool,
     alternator2: bool,
+    rpm: f32,
 }
 
 impl UiState {
@@ -58,6 +59,7 @@ impl UiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
+            rpm: 0.0,
             page: Pages::PFD,
             engine: false,
             magneto: false,
@@ -69,7 +71,23 @@ impl Default for UiState {
     }
 }
 
-pub fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObj<'a, D, Rgb888>
+fn gauge_with_text<'a, D>(value: f32, text: &'a str) -> WidgetObj<'a, D, Rgb888>
+where
+    D: DrawTarget<Color = Rgb888> + 'a,
+{
+    let mut ui = LinearLayoutBuilder::default()
+        .aligment(LayoutAlignment::Center)
+        .direction(LayoutDirection::Vertical);
+    ui.label(
+        text,
+        Alignment::Center,
+        MonoTextStyle::new(&FONT_4X6, Rgb888::WHITE),
+    );
+    ui.gauge(value);
+    ui.finish()
+}
+
+fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
@@ -100,20 +118,16 @@ where
     );
     match state.borrow().page {
         Pages::PFD => {
-            ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
-                ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
-                    ui.label("ALTITUDE", Alignment::Center, style);
-                    ui.label("SPEED", Alignment::Center, style);
-                    ui.label("VSPEED", Alignment::Center, style);
+            ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
+                ui.horizontal_linear_layout(LayoutAlignment::Center, |ui| {
+                    ui.label("TODO", Alignment::Center, style);
                 });
             });
         }
         Pages::Engine => {
             ui.grid_layout([50, 50].into(), [100].into(), |ui| {
                 ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                    if state.borrow().engine {
-                        ui.label("engine started", Alignment::Center, style);
-                    }
+                    ui.add_widget_obj(gauge_with_text(state.borrow().rpm, "RPM"));
                 });
 
                 ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
@@ -222,7 +236,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     }
 
                     if keycode == Keycode::F2 {
-                        state.borrow_mut().cycle_page();
+                        state.borrow_mut().rpm += 0.01;
                     }
                 }
                 _ => {}

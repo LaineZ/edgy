@@ -6,7 +6,7 @@ use edgy::{
     Theme, UiContext,
 };
 use embedded_graphics::{
-    mono_font::{iso_8859_10::{FONT_10X20, FONT_4X6}, MonoTextStyle},
+    mono_font::{iso_8859_10::FONT_10X20, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
     text::Alignment,
@@ -24,7 +24,11 @@ where
         .direction(LayoutDirection::Vertical);
 
     ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
-        ui.label("DISPLAYING BEE!", Alignment::Center, MonoTextStyle::new(&FONT_10X20, Rgb888::WHITE));
+        ui.label(
+            "DISPLAYING BEE!",
+            Alignment::Center,
+            MonoTextStyle::new(&FONT_10X20, Rgb888::WHITE),
+        );
     });
     ui.image(image);
     ui.finish()

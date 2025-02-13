@@ -66,7 +66,7 @@ where
         if self.child.is_none() {
             self.child = Some(widget);
         } else {
-            panic!("MarginContainer can only have one child!");
+            panic!("MarginContainer must have at least one child!");
         }
     }
 

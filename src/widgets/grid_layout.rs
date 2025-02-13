@@ -86,10 +86,6 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
-        hint
-    }
-
     fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, system_event: &SystemEvent, _event: &Event) -> EventResult {
         let mut result = EventResult::Pass;
 

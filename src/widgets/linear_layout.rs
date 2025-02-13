@@ -100,16 +100,13 @@ fn compute_child_size(
     hint: Size,
     children_count: usize,
 ) -> Size {
-
     match alignment {
-        LayoutAlignment::Stretch => {
-            match direction {
-                LayoutDirection::Horizontal => {
-                    Size::new(hint.width / children_count as u32, child_size.height)
-                }
-                LayoutDirection::Vertical => {
-                    Size::new(child_size.width, hint.height / children_count as u32)
-                }
+        LayoutAlignment::Stretch => match direction {
+            LayoutDirection::Horizontal => {
+                Size::new(hint.width / children_count as u32, child_size.height)
+            }
+            LayoutDirection::Vertical => {
+                Size::new(child_size.width, hint.height / children_count as u32)
             }
         },
         _ => {
@@ -136,8 +133,7 @@ where
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         let children_count = self.children.len();
-        let mut width = 0;
-        let mut height = 0;
+        let mut computed_size = Size::zero();
 
         for child in &mut self.children {
             let child_size = compute_child_size(
@@ -150,12 +146,12 @@ where
 
             match self.direction {
                 LayoutDirection::Horizontal => {
-                    width += child_size.width;
-                    height = height.max(child_size.height);
+                    computed_size.width += child_size.width;
+                    computed_size.height = computed_size.height.max(child_size.height);
                 }
                 LayoutDirection::Vertical => {
-                    width = width.max(child_size.width);
-                    height += child_size.height;
+                    computed_size.width = computed_size.width.max(child_size.width);
+                    computed_size.height += child_size.height;
                 }
             }
         }
@@ -163,15 +159,15 @@ where
         if self.aligment == LayoutAlignment::Stretch {
             match self.direction {
                 LayoutDirection::Horizontal => {
-                    width = hint.width;
+                    computed_size.width = hint.width;
                 }
                 LayoutDirection::Vertical => {
-                    height = hint.height;
+                    computed_size.height = hint.height;
                 }
             }
         }
 
-        Size::new(width.min(hint.width), height.min(hint.height))
+        computed_size.min(hint)
     }
 
     fn max_size(&mut self) -> Size {
@@ -182,7 +178,12 @@ where
         self.min_size
     }
 
-    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, system_event: &SystemEvent, _event: &Event) -> EventResult {
+    fn handle_event(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        system_event: &SystemEvent,
+        _event: &Event,
+    ) -> EventResult {
         let mut result = EventResult::Pass;
 
         for child in &mut self.children {
@@ -202,7 +203,8 @@ where
             LayoutDirection::Horizontal => {
                 let mut total = 0;
                 for child in &mut self.children {
-                    let child_size = child.size(context, Size::new(rect.size.width, rect.size.height));
+                    let child_size =
+                        child.size(context, Size::new(rect.size.width, rect.size.height));
                     total += child_size.width;
                 }
                 total
@@ -210,7 +212,8 @@ where
             LayoutDirection::Vertical => {
                 let mut total = 0;
                 for child in &mut self.children {
-                    let child_size = child.size(context, Size::new(rect.size.width, rect.size.height));
+                    let child_size =
+                        child.size(context, Size::new(rect.size.width, rect.size.height));
                     total += child_size.height;
                 }
                 total
@@ -241,7 +244,6 @@ where
             _ => Point::zero(),
         };
 
-
         for child in &mut self.children {
             let child_bounds = child.calculate_bound_sizes(rect.size);
 
@@ -250,11 +252,13 @@ where
             } else {
                 match self.direction {
                     LayoutDirection::Horizontal => {
-                        let even_size = Size::new(rect.size.width / children_count, rect.size.height);
+                        let even_size =
+                            Size::new(rect.size.width / children_count, rect.size.height);
                         child.calculate_bound_sizes(even_size)
                     }
                     LayoutDirection::Vertical => {
-                        let even_size = Size::new(rect.size.width, rect.size.height / children_count);
+                        let even_size =
+                            Size::new(rect.size.width, rect.size.height / children_count);
                         child.calculate_bound_sizes(even_size)
                     }
                 }
