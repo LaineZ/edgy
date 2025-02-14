@@ -1,31 +1,47 @@
+#![allow(unused_imports)]
+
 use core::f32::consts::PI;
+use micromath::F32Ext;
 
 use super::Widget;
 use crate::UiContext;
+use alloc::vec::Vec;
 use embedded_graphics::{
     prelude::*,
     primitives::{
-        Circle, Line, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StyledDrawable,
+        Arc, Circle, Line, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StyledDrawable
     },
 };
 
 const GAUGE_STROKE_WIDTH: u32 = 2;
 
-/// Gauge widget, uses [GaugeDrawable] trait for data (raw) you can use any supported Gauge parser for this. Or even, generate Gauge from pixel data! So check the [GaugeDrawable] documentation for more info
-pub struct Gauge {
-    pub value: f32,
+
+#[derive(Copy, Clone)]
+pub struct GaugeDetent<C: PixelColor> {
+    pub range: [f32; 2],
+    pub color: C
 }
 
-impl Gauge {
+/// Gauge widget
+pub struct Gauge<C: PixelColor> {
+    pub value: f32,
+    detents: Vec<GaugeDetent<C>>
+}
+
+impl<C: PixelColor> Gauge<C> {
     pub fn new(value: f32) -> Self {
-        Self { value }
+        Self { value, detents: Vec::new() }
+    }
+
+    pub fn add_detent(&mut self, detent: GaugeDetent<C>) {
+        self.detents.push(detent);
     }
 }
 
-impl<'a, D, C> Widget<'a, D, C> for Gauge
+impl<'a, D, C> Widget<'a, D, C> for Gauge<C>
 where
     D: DrawTarget<Color = C>,
-    C: PixelColor,
+    C: PixelColor + 'a,
 {
     fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         Size::new(hint.height, hint.height)
@@ -43,6 +59,17 @@ where
         let center = circle.primitive.center();
         let min_angle = 40.0;
         let max_angle = 320.0;
+
+        // draw detents
+        for detent in self.detents.iter() {
+            let angle_start = min_angle + (max_angle - min_angle) * detent.range[0];
+            let angle_end = min_angle + (max_angle - min_angle) * detent.range[1];
+            let angle_sweep = angle_end - angle_start;
+            let arc = Arc::from_circle(circle.primitive, Angle::from_degrees(angle_start + 90.0), Angle::from_degrees(angle_sweep))
+                .into_styled(PrimitiveStyle::with_stroke(detent.color, GAUGE_STROKE_WIDTH + 1));
+        
+            let _ = arc.draw(context.draw_target);
+        }
 
         // draw a dashes
         let divisions = 20;

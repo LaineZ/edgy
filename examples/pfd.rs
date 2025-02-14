@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::mem;
 
+use edgy::widgets::gauge::{Gauge, GaugeDetent};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::{margin, SystemEvent, Theme};
@@ -84,7 +85,29 @@ where
         Alignment::Center,
         MonoTextStyle::new(&FONT_4X6, Rgb888::WHITE),
     );
-    linear.gauge(value);
+
+    let mut gauge = Gauge::new(value);
+
+    gauge.add_detent(GaugeDetent {
+        color: Rgb888::WHITE,
+        range: [0.0, 0.2]
+    });
+
+    gauge.add_detent(GaugeDetent {
+        color: Rgb888::GREEN,
+        range: [0.2, 0.5]
+    });
+
+    gauge.add_detent(GaugeDetent {
+        color: Rgb888::YELLOW,
+        range: [0.5, 0.8]
+    });
+
+    gauge.add_detent(GaugeDetent {
+        color: Rgb888::RED,
+        range: [0.8, 1.0]
+    });
+    linear.add_widget(gauge);
     linear.finish()
 }
 
