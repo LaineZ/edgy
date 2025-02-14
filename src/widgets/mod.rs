@@ -13,7 +13,7 @@ use embedded_graphics::{
     text::{Alignment, Text},
 };
 use filler::{FillStrategy, Filler};
-use gauge::Gauge;
+use gauge::{Gauge, GaugeStyle};
 use grid_layout::GridLayoutBuilder;
 use image::Image;
 use label::Label;
@@ -276,7 +276,7 @@ where
 
     /// Creates a [Gauge] widget
     fn gauge(&mut self, value: f32) {
-        self.add_widget(Gauge::new(value));
+        self.add_widget(Gauge::new(value, "text", GaugeStyle::default()));
     }
 
     /// Shorthand construct for [Button] widget
