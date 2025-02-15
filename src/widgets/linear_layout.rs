@@ -139,7 +139,7 @@ where
             let child_size = compute_child_size(
                 self.direction,
                 self.aligment,
-                child.size(context, hint - computed_size),
+                child.size(context, hint.saturating_sub(computed_size)),
                 hint,
                 children_count,
             );

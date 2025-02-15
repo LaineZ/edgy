@@ -1,3 +1,4 @@
+use alloc::string::String;
 use embedded_graphics::{
     mono_font::MonoTextStyle,
     prelude::*,
@@ -10,7 +11,7 @@ use crate::UiContext;
 use super::Widget;
 
 pub struct Label<'a, C: PixelColor> {
-    text: &'a str,
+    text: String,
     style: MonoTextStyle<'a, C>,
     alignment: Alignment,
 }
@@ -19,7 +20,7 @@ impl<'a, C> Label<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(text: &'a str, alignment: Alignment, style: MonoTextStyle<'a, C>) -> Self {
+    pub fn new(text: String, alignment: Alignment, style: MonoTextStyle<'a, C>) -> Self {
         Self {
             text,
             alignment,
@@ -37,7 +38,7 @@ where
         let mut size_rect = self
             .style
             .measure_string(
-                self.text,
+                &self.text,
                 Point::zero(),
                 embedded_graphics::text::Baseline::Top,
             )
@@ -63,7 +64,7 @@ where
         }
 
         position.y += self.style.font.character_size.height as i32;
-        let text = Text::with_alignment(self.text, position, self.style, self.alignment);
+        let text = Text::with_alignment(&self.text, position, self.style, self.alignment);
         let _ = text.draw(context.draw_target);
     }
 }

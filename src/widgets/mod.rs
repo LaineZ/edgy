@@ -4,7 +4,8 @@
 //!
 //! `Layout` - A container(-like) widget that holds another widgets
 
-use alloc::{boxed::Box, format, vec::Vec};
+
+use alloc::{boxed::Box, format, string::String, vec::Vec};
 use button::Button;
 use embedded_graphics::{
     mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
@@ -19,6 +20,7 @@ use image::Image;
 use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin::{Margin, MarginLayout};
+use plot::Plot;
 use toggle_button::ToggleButton;
 
 use crate::{Event, EventResult, SystemEvent, UiContext};
@@ -32,6 +34,7 @@ pub mod label;
 pub mod linear_layout;
 pub mod margin;
 pub mod toggle_button;
+pub mod plot;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -270,8 +273,8 @@ where
     }
 
     /// Creates a [Label] widget
-    fn label(&mut self, text: &'a str, text_alignment: Alignment, style: MonoTextStyle<'a, C>) {
-        self.add_widget(Label::new(text, text_alignment, style))
+    fn label<S: Into<String>>(&mut self, text: S, text_alignment: Alignment, style: MonoTextStyle<'a, C>) {
+        self.add_widget(Label::new(text.into(), text_alignment, style))
     }
 
     /// Creates a [Gauge] widget
@@ -356,6 +359,12 @@ where
         };
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
+    }
+
+    fn plot<V: Into<Vec<Point>>>(&mut self, points: V, scale: f32, offset: Point) {
+        let mut plot = Plot::new(scale, offset);
+        plot.points = points.into();
+        self.add_widget(plot);
     }
 
     fn filler(&mut self, fill: FillStrategy) {

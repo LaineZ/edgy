@@ -47,7 +47,7 @@ pub struct UiState {
 }
 
 impl UiState {
-    fn cycle_page(&mut self) {
+    fn _cycle_page(&mut self) {
         let current_page_index = self.page as u8;
         if current_page_index <= 0 {
             self.page = Pages::from((current_page_index + 1).clamp(0, 1));

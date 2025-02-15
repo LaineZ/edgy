@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 
-use core::{f32::consts::PI, u32};
+use core::f32::consts::PI;
 use micromath::F32Ext;
 
 use super::Widget;
@@ -193,10 +193,11 @@ where
             .draw(context.draw_target);
 
         let _ = Text::with_alignment(
-            &self.text,
+            self.text,
             Point::new(center.x, center.y + 10),
             MonoTextStyle::new(&FONT_4X6, context.theme.foreground),
-            Alignment::Center
-        ).draw(context.draw_target);
+            Alignment::Center,
+        )
+        .draw(context.draw_target);
     }
 }
