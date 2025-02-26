@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::mem;
 
+use edgy::widgets::filler::FillStrategy;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
@@ -12,6 +13,7 @@ use edgy::{
     },
     UiContext,
 };
+use embedded_graphics::mono_font::ascii::FONT_10X20;
 use embedded_graphics::mono_font::iso_8859_5::FONT_5X7;
 use embedded_graphics::text::Alignment;
 use embedded_graphics::{
@@ -120,11 +122,15 @@ where
     );
     match state.borrow().page {
         Pages::PFD => {
-            ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                ui.horizontal_linear_layout(LayoutAlignment::Center, |ui| {
-                    ui.label("TODO", Alignment::Center, style);
-                    ui.label("TODO", Alignment::Center, style);
+            ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
+                ui.filler(FillStrategy::Horizontal);
+                ui.vertical_linear_layout(LayoutAlignment::Center, |ui| {
+                    ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
+                        ui.label("ATT", Alignment::Center, MonoTextStyle::new(&FONT_10X20, Rgb888::RED));
+                        //ui.label("GPS PRIMARY LOST", Alignment::Center, MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE));
+                    });
                 });
+                ui.filler(FillStrategy::Horizontal);
             });
         }
         Pages::Engine => {

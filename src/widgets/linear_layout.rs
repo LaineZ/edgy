@@ -93,28 +93,6 @@ where
     }
 }
 
-fn compute_child_size(
-    direction: LayoutDirection,
-    alignment: LayoutAlignment,
-    child_size: Size,
-    hint: Size,
-    children_count: usize,
-) -> Size {
-    match alignment {
-        LayoutAlignment::Stretch => match direction {
-            LayoutDirection::Horizontal => {
-                Size::new(hint.width / children_count as u32, child_size.height)
-            }
-            LayoutDirection::Vertical => {
-                Size::new(child_size.width, hint.height / children_count as u32)
-            }
-        },
-        _ => {
-            return child_size;
-        }
-    }
-}
-
 pub struct LinearLayout<'a, D, C>
 where
     D: DrawTarget<Color = C>,
@@ -136,22 +114,26 @@ where
         let mut computed_size = Size::zero();
 
         for child in &mut self.children {
-            let child_size = compute_child_size(
-                self.direction,
-                self.aligment,
-                child.size(context, hint.saturating_sub(computed_size)),
-                hint,
-                children_count,
-            );
-
-            match self.direction {
-                LayoutDirection::Horizontal => {
-                    computed_size.width += child_size.width;
-                    computed_size.height = computed_size.height.max(child_size.height);
+            let child_size = child.size(context, hint.saturating_sub(computed_size));
+            if self.aligment == LayoutAlignment::Stretch {
+                match self.direction {
+                    LayoutDirection::Horizontal => {
+                        computed_size += Size::new(hint.width / children_count as u32, child_size.height)
+                    }
+                    LayoutDirection::Vertical => {
+                        computed_size += Size::new(child_size.width, hint.height / children_count as u32)
+                    }
                 }
-                LayoutDirection::Vertical => {
-                    computed_size.width = computed_size.width.max(child_size.width);
-                    computed_size.height += child_size.height;
+            } else {
+                match self.direction {
+                    LayoutDirection::Horizontal => {
+                        computed_size.width += child_size.width;
+                        computed_size.height = computed_size.height.max(child_size.height);
+                    }
+                    LayoutDirection::Vertical => {
+                        computed_size.width = computed_size.width.max(child_size.width);
+                        computed_size.height += child_size.height;
+                    }
                 }
             }
         }
