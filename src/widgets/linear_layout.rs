@@ -19,13 +19,15 @@ pub enum LayoutAlignment {
     Stretch,
 }
 
+/// Builder for linear layout
 pub struct LinearLayoutBuilder<'a, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
     pub children: Vec<WidgetObj<'a, D, C>>,
-    pub alignment: LayoutAlignment,
+    pub horizontal_alignment: LayoutAlignment,
+    pub vertical_alignment: LayoutAlignment,
     pub direction: LayoutDirection,
     pub min_size: Size,
     pub max_size: Size,
@@ -46,8 +48,33 @@ where
         self
     }
 
-    pub fn aligment(mut self, alignment: LayoutAlignment) -> Self {
-        self.alignment = alignment;
+    pub fn horizontal_alignment(mut self, alignment: LayoutAlignment) -> Self {
+        self.horizontal_alignment = alignment;
+        self
+    }
+    
+    pub fn alignment(mut self, alignment: LayoutAlignment) -> Self {
+        if alignment == LayoutAlignment::Stretch {
+            self.horizontal_alignment = LayoutAlignment::Stretch;
+            self.vertical_alignment = LayoutAlignment::Stretch;
+            return self
+        }
+
+        match self.direction {
+            LayoutDirection::Horizontal => {
+                self.horizontal_alignment = alignment;
+                self.vertical_alignment = LayoutAlignment::Start;
+            },
+            LayoutDirection::Vertical => {
+                self.vertical_alignment = alignment;
+                self.horizontal_alignment = LayoutAlignment::Start;
+            },
+        }
+        self
+    }
+
+    pub fn vertical_alignment(mut self, alignment: LayoutAlignment) -> Self {
+        self.vertical_alignment = alignment;
         self
     }
 
@@ -65,7 +92,8 @@ where
     fn default() -> Self {
         Self {
             children: Vec::new(),
-            alignment: LayoutAlignment::Start,
+            horizontal_alignment: LayoutAlignment::Start,
+            vertical_alignment: LayoutAlignment::Start,
             direction: LayoutDirection::Vertical,
             min_size: Size::zero(),
             max_size: Size::new(u32::MAX, u32::MAX),
@@ -86,13 +114,15 @@ where
         WidgetObj::new(Box::new(LinearLayout {
             direction: self.direction,
             children: self.children,
-            aligment: self.alignment,
+            horizontal_alignment: self.horizontal_alignment,
+            vertical_alignment: self.vertical_alignment,
             min_size: self.min_size,
             max_size: self.max_size,
         }))
     }
 }
 
+/// Linear layout
 pub struct LinearLayout<'a, D, C>
 where
     D: DrawTarget<Color = C>,
@@ -100,51 +130,30 @@ where
 {
     children: Vec<WidgetObj<'a, D, C>>,
     direction: LayoutDirection,
-    aligment: LayoutAlignment,
+    horizontal_alignment: LayoutAlignment,
+    vertical_alignment: LayoutAlignment,
     min_size: Size,
     max_size: Size,
 }
+
 impl<'a, D, C> Widget<'a, D, C> for LinearLayout<'a, D, C>
 where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
-        let children_count = self.children.len();
         let mut computed_size = Size::zero();
 
         for child in &mut self.children {
             let child_size = child.size(context, hint.saturating_sub(computed_size));
-            if self.aligment == LayoutAlignment::Stretch {
-                match self.direction {
-                    LayoutDirection::Horizontal => {
-                        computed_size += Size::new(hint.width / children_count as u32, child_size.height)
-                    }
-                    LayoutDirection::Vertical => {
-                        computed_size += Size::new(child_size.width, hint.height / children_count as u32)
-                    }
-                }
-            } else {
-                match self.direction {
-                    LayoutDirection::Horizontal => {
-                        computed_size.width += child_size.width;
-                        computed_size.height = computed_size.height.max(child_size.height);
-                    }
-                    LayoutDirection::Vertical => {
-                        computed_size.width = computed_size.width.max(child_size.width);
-                        computed_size.height += child_size.height;
-                    }
-                }
-            }
-        }
-
-        if self.aligment == LayoutAlignment::Stretch {
             match self.direction {
                 LayoutDirection::Horizontal => {
-                    computed_size.width = hint.width;
+                    computed_size.width += child_size.width;
+                    computed_size.height = computed_size.height.max(child_size.height);
                 }
                 LayoutDirection::Vertical => {
-                    computed_size.height = hint.height;
+                    computed_size.width = computed_size.width.max(child_size.width);
+                    computed_size.height += child_size.height;
                 }
             }
         }
@@ -179,8 +188,6 @@ where
     }
 
     fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        let children_count = self.children.len() as u32;
-
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
                 let mut total = 0;
@@ -202,61 +209,102 @@ where
             }
         };
 
-        let mut offset = match (self.direction, self.aligment) {
-            (LayoutDirection::Horizontal, LayoutAlignment::Center) => {
-                let free_space = rect.size.width.saturating_sub(total_length);
-                Point::new((free_space / 2) as i32, 0)
-            }
+        let main_axis_free_space = match self.direction {
+            LayoutDirection::Horizontal => rect.size.width.saturating_sub(total_length),
+            LayoutDirection::Vertical => rect.size.height.saturating_sub(total_length),
+        };
 
-            (LayoutDirection::Horizontal, LayoutAlignment::End) => {
-                let free_space = rect.size.width.saturating_sub(total_length);
-                Point::new(free_space as i32, 0)
-            }
+        let main_alignment = if self.direction == LayoutDirection::Horizontal {
+            self.horizontal_alignment
+        } else {
+            self.vertical_alignment
+        };
 
-            (LayoutDirection::Vertical, LayoutAlignment::Center) => {
-                let free_space = rect.size.height.saturating_sub(total_length);
-                Point::new(0, (free_space / 2) as i32)
-            }
+        let mut main_offset = match main_alignment {
+            LayoutAlignment::Center => main_axis_free_space / 2,
+            LayoutAlignment::End => main_axis_free_space,
+            _ => 0,
+        } as i32;
 
-            (LayoutDirection::Vertical, LayoutAlignment::End) => {
-                let free_space = rect.size.height.saturating_sub(total_length);
-                Point::new(0, free_space as i32)
-            }
+        let children_count = self.children.len();
 
-            _ => Point::zero(),
+        // compute stretched size
+        let stretched_size = if main_alignment == LayoutAlignment::Stretch {
+            match self.direction {
+                LayoutDirection::Horizontal => rect.size.width / children_count as u32,
+                LayoutDirection::Vertical => rect.size.height / children_count as u32,
+            }
+        } else {
+            0 // just do not stretch
         };
 
         for child in &mut self.children {
-            let child_bounds = child.calculate_bound_sizes(rect.size);
+            let child_bounds = Size::new(rect.size.width, rect.size.height);
+            let mut child_size = child.size(context, child_bounds);
 
-            let child_size = if self.aligment != LayoutAlignment::Stretch {
-                child.size(context, child_bounds)
+            let cross_alignment = if self.direction == LayoutDirection::Horizontal {
+                self.vertical_alignment
             } else {
-                match self.direction {
-                    LayoutDirection::Horizontal => {
-                        let even_size =
-                            Size::new(rect.size.width / children_count, rect.size.height);
-                        child.calculate_bound_sizes(even_size)
-                    }
-                    LayoutDirection::Vertical => {
-                        let even_size =
-                            Size::new(rect.size.width, rect.size.height / children_count);
-                        child.calculate_bound_sizes(even_size)
-                    }
-                }
+                self.horizontal_alignment
             };
 
-            let child_rect = Rectangle::new(rect.top_left + offset, child_size);
+            match self.direction {
+                LayoutDirection::Horizontal => {
+                    if cross_alignment == LayoutAlignment::Stretch {
+                        child_size.height = rect.size.height;
+                    }
+
+                    if main_alignment == LayoutAlignment::Stretch {
+                        child_size.width = stretched_size;
+                    }
+                }
+                LayoutDirection::Vertical => {
+                    if cross_alignment == LayoutAlignment::Stretch {
+                        child_size.width = rect.size.width;
+                    }
+
+                    if main_alignment == LayoutAlignment::Stretch {
+                        child_size.height = stretched_size;
+                    }
+                }
+            }
+
+            let cross_offset = match self.direction {
+                LayoutDirection::Horizontal => {
+                    let free_space = rect.size.height.saturating_sub(child_size.height);
+                    match self.vertical_alignment {
+                        LayoutAlignment::Center => free_space / 2,
+                        LayoutAlignment::End => free_space,
+                        _ => 0,
+                    }
+                }
+                LayoutDirection::Vertical => {
+                    let free_space = rect.size.width.saturating_sub(child_size.width);
+                    match self.horizontal_alignment {
+                        LayoutAlignment::Center => free_space / 2,
+                        LayoutAlignment::End => free_space,
+                        _ => 0,
+                    }
+                }
+            } as i32;
+
+            let child_rect = match self.direction {
+                LayoutDirection::Horizontal => Rectangle::new(
+                    Point::new(rect.top_left.x + main_offset, rect.top_left.y + cross_offset),
+                    child_size,
+                ),
+                LayoutDirection::Vertical => Rectangle::new(
+                    Point::new(rect.top_left.x + cross_offset, rect.top_left.y + main_offset),
+                    child_size,
+                ),
+            };
+
             child.computed_rect = child_rect;
             child.layout(context, child_rect);
 
             match self.direction {
-                LayoutDirection::Horizontal => {
-                    offset.x += child_size.width as i32;
-                }
-                LayoutDirection::Vertical => {
-                    offset.y += child_size.height as i32;
-                }
+                LayoutDirection::Horizontal => main_offset += child_size.width as i32,
+                LayoutDirection::Vertical => main_offset += child_size.height as i32,
             }
         }
     }

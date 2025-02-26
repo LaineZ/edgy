@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use edgy::{
     widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
@@ -17,7 +15,7 @@ use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, Simulato
 use rand::Rng;
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(128, 64));
+    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
@@ -75,7 +73,8 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         let mut ui = LinearLayoutBuilder::default()
-            .aligment(LayoutAlignment::Stretch)
+            .vertical_alignment(LayoutAlignment::Stretch)
+            .horizontal_alignment(LayoutAlignment::Stretch)
             .direction(LayoutDirection::Vertical);
 
         ui.label(

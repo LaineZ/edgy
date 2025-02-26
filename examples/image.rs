@@ -20,16 +20,15 @@ where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
     let mut ui = LinearLayoutBuilder::default()
-        .aligment(LayoutAlignment::Start)
+        .horizontal_alignment(LayoutAlignment::Center)
+        .vertical_alignment(LayoutAlignment::Center)
         .direction(LayoutDirection::Vertical);
 
-    ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
-        ui.label(
-            "DISPLAYING BEE!",
-            Alignment::Center,
-            MonoTextStyle::new(&FONT_10X20, Rgb888::WHITE),
-        );
-    });
+    ui.label(
+        "DISPLAYING BEE!",
+        Alignment::Center,
+        MonoTextStyle::new(&FONT_10X20, Rgb888::WHITE),
+    );
     ui.image(image);
     ui.finish()
 }

@@ -4,7 +4,6 @@
 //!
 //! `Layout` - A container(-like) widget that holds another widgets
 
-
 use alloc::{boxed::Box, format, string::String, vec::Vec};
 use button::Button;
 use embedded_graphics::{
@@ -33,8 +32,8 @@ pub mod image;
 pub mod label;
 pub mod linear_layout;
 pub mod margin;
-pub mod toggle_button;
 pub mod plot;
+pub mod toggle_button;
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -273,7 +272,12 @@ where
     }
 
     /// Creates a [Label] widget
-    fn label<S: Into<String>>(&mut self, text: S, text_alignment: Alignment, style: MonoTextStyle<'a, C>) {
+    fn label<S: Into<String>>(
+        &mut self,
+        text: S,
+        text_alignment: Alignment,
+        style: MonoTextStyle<'a, C>,
+    ) {
         self.add_widget(Label::new(text.into(), text_alignment, style))
     }
 
@@ -322,9 +326,9 @@ where
         let mut builder = LinearLayoutBuilder {
             direction: LayoutDirection::Vertical,
             children: Vec::new(),
-            alignment,
             ..Default::default()
-        };
+        }
+        .alignment(alignment);
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
     }
@@ -338,9 +342,9 @@ where
         let mut builder = LinearLayoutBuilder {
             direction: LayoutDirection::Horizontal,
             children: Vec::new(),
-            alignment,
             ..Default::default()
-        };
+        }
+        .alignment(alignment);
         fill(&mut builder);
         self.add_widget_obj(builder.finish());
     }

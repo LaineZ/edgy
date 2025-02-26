@@ -79,7 +79,7 @@ where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
     let mut linear = LinearLayoutBuilder::default()
-        .aligment(LayoutAlignment::Center)
+        .alignment(LayoutAlignment::Center)
         .direction(LayoutDirection::Vertical);
 
     let mut gauge = Gauge::new(value, &text, GaugeStyle::default().divisions(10));
@@ -102,7 +102,8 @@ where
         .add_row(10);
 
     let mut menu_layout = LinearLayoutBuilder::default()
-        .aligment(LayoutAlignment::Stretch)
+        .vertical_alignment(LayoutAlignment::Stretch)
+        .horizontal_alignment(LayoutAlignment::Stretch)
         .direction(LayoutDirection::Horizontal);
     menu_layout.toggle_button(
         "PFD",
@@ -122,16 +123,20 @@ where
     );
     match state.borrow().page {
         Pages::PFD => {
-            ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
-                ui.filler(FillStrategy::Horizontal);
-                ui.vertical_linear_layout(LayoutAlignment::Center, |ui| {
-                    ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                        ui.label("ATT", Alignment::Center, MonoTextStyle::new(&FONT_10X20, Rgb888::RED));
-                        //ui.label("GPS PRIMARY LOST", Alignment::Center, MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE));
-                    });
-                });
-                ui.filler(FillStrategy::Horizontal);
-            });
+            let mut pfd_layout = LinearLayoutBuilder::default()
+                .vertical_alignment(LayoutAlignment::Center)
+                .horizontal_alignment(LayoutAlignment::Center);
+            pfd_layout.label(
+                "ATT",
+                Alignment::Center,
+                MonoTextStyle::new(&FONT_10X20, Rgb888::RED),
+            );
+            pfd_layout.label(
+                "GPS PRIMARY LOST",
+                Alignment::Center,
+                MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE),
+            );
+            ui.add_widget_obj(pfd_layout.finish());
         }
         Pages::Engine => {
             ui.grid_layout([50, 50].into(), [100].into(), |ui| {
@@ -146,10 +151,7 @@ where
                         ));
                     });
                     ui.margin_layout(margin!(5), |ui| {
-                        ui.add_widget_obj(gauge_with_text(
-                            1.0,
-                            "INTERNET SPEED",
-                        ));
+                        ui.add_widget_obj(gauge_with_text(1.0, "INTERNET SPEED"));
                     });
                 });
 
