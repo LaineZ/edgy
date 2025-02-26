@@ -2,10 +2,24 @@
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
-use core::sync::atomic::{AtomicUsize, Ordering};
+use alloc::{rc::Rc, string::String};
+use core::{
+    cell::{Cell, RefCell},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 pub use embedded_graphics;
-use embedded_graphics::{pixelcolor::Rgb888, prelude::*, primitives::Rectangle};
-use widgets::WidgetObj;
+use embedded_graphics::{
+    mono_font::{ascii::FONT_4X6, MonoTextStyle},
+    pixelcolor::Rgb888,
+    prelude::*,
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle},
+    text::Alignment,
+};
+use widgets::{
+    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
+    UiBuilder, WidgetObj,
+};
+use embedded_graphics::prelude::Primitive;
 
 pub mod widgets;
 extern crate alloc;
@@ -41,9 +55,9 @@ impl SystemEvent {
         match self {
             SystemEvent::FocusTo(_) => true,
             SystemEvent::Move(_) => true,
-            _ => false
+            _ => false,
         }
-    } 
+    }
 }
 
 /// Event that can widget recieve
@@ -55,13 +69,6 @@ pub enum Event {
     Focus,
     // Active press at surface. E.g touch or mouse click
     Active,
-}
-
-pub(crate) fn contains(rectangle: Rectangle, position: Point) -> bool {
-    rectangle.top_left.x < position.x
-        && position.x < rectangle.top_left.x + rectangle.size.width as i32
-        && rectangle.top_left.y < position.y
-        && position.y < rectangle.top_left.y + rectangle.size.height as i32
 }
 
 /// Theme struct. You can freely create own themes
@@ -77,6 +84,7 @@ pub struct Theme<C: PixelColor> {
     pub foreground3: C,
     pub debug_rect: C,
     pub success: C,
+    pub warning: C,
 }
 
 impl<C: PixelColor + From<Rgb888>> Theme<C> {
@@ -90,6 +98,7 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
             foreground2: Rgb888::new(79, 90, 100).into(),
             foreground3: Rgb888::new(59, 65, 82).into(),
             success: Rgb888::new(79, 113, 75).into(),
+            warning: Rgb888::new(128, 126, 83).into(),
             debug_rect: Rgb888::RED.into(),
         }
     }
@@ -104,6 +113,7 @@ impl<C: PixelColor + From<Rgb888>> Theme<C> {
             foreground2: Rgb888::WHITE.into(),
             foreground3: Rgb888::WHITE.into(),
             success: Rgb888::WHITE.into(),
+            warning: Rgb888::WHITE.into(),
             debug_rect: Rgb888::WHITE.into(),
         }
     }
@@ -120,9 +130,11 @@ where
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
     /// Event to pass in the library
-    event_queue: heapless::Vec<SystemEvent, 5>,
+    event_queue: heapless::Vec<SystemEvent, 2>,
     /// Enable/disable debug mode - displays red rectangles around widget bounds
     pub debug_mode: bool,
+    alert_shown: Rc<Cell<bool>>,
+    alert_text: String,
     elements_count: usize,
     focused_element: usize,
 }
@@ -141,6 +153,8 @@ where
             event_queue: heapless::Vec::new(),
             focused_element: 0,
             debug_mode: false,
+            alert_text: String::new(),
+            alert_shown: Rc::new(Cell::new(false)),
         }
     }
 
@@ -181,6 +195,24 @@ where
         self.push_event(SystemEvent::ActiveTo(self.focused_element));
     }
 
+    pub fn dim_screen(&mut self) {
+        let bounds = self.draw_target.bounding_box();
+        let size = bounds.size;
+        for x in 0..size.width {
+            for y in 0..size.height {
+                if (x + y) % 2 == 0 {
+                    let _ = Pixel(Point::new(x as i32, y as i32), self.theme.background)
+                        .draw(self.draw_target);
+                }
+            }
+        }
+    }
+
+    pub fn alert<S: Into<String>>(&mut self, text: S) {
+        self.alert_shown.set(true);
+        self.alert_text = text.into();
+    }
+
     /// Updates and draws the UI, probably you want run this in main loop
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
         let bounds = self.draw_target.bounding_box();
@@ -189,13 +221,66 @@ where
         root.size(self, bounds.size);
         root.layout(self, bounds);
 
-        if !self.event_queue.is_empty() {
+        if !self.event_queue.is_empty() && !self.alert_shown.get() {
             let event = self.event_queue[self.event_queue.len() - 1];
+
             if root.handle_event(self, &event) == EventResult::Stop && !event.is_motion_event() {
                 self.consume_event(&event);
             }
         }
 
         root.draw(self);
+
+        if self.alert_shown.get() {
+            self.dim_screen();
+            let bounds = self.draw_target.bounding_box();
+            let mut layout = LinearLayoutBuilder::default()
+                .direction(LayoutDirection::Vertical)
+                .vertical_alignment(LayoutAlignment::Stretch)
+                .horizontal_alignment(LayoutAlignment::Stretch)
+                .style(
+                    PrimitiveStyleBuilder::new()
+                        .fill_color(self.theme.background)
+                        .stroke_color(self.theme.background2)
+                        .stroke_width(2)
+                        .build(),
+                );
+
+            let alert_shown = self.alert_shown.clone();
+
+            layout.margin_layout(margin!(5), |ui| {
+                ui.horizontal_linear_layout(LayoutAlignment::Start, |ui| {
+                    ui.primitive(
+                        Rectangle::new(Point::zero(), Size::new(32, 32))
+                            .into_styled(PrimitiveStyle::with_fill(self.theme.warning)),
+                    );
+                    ui.margin_layout(margin!(5), |ui| {
+                        ui.label(
+                            &self.alert_text,
+                            Alignment::Center,
+                            MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
+                        );
+                    });
+                });
+            });
+
+            layout.button("OK", &FONT_4X6, move || {
+                alert_shown.set(false);
+            });
+
+            let mut obj = layout.finish();
+
+            obj.size(self, Size::zero());
+            obj.layout(self, Rectangle::new(bounds.center() / 2, bounds.size / 2));
+
+            if !self.event_queue.is_empty() {
+                let event = self.event_queue[self.event_queue.len() - 1];
+                if obj.handle_event(self, &event) == EventResult::Stop && !event.is_motion_event() {
+                    self.consume_event(&event);
+                }
+            }
+
+            obj.draw(self);
+        }
     }
 }

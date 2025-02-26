@@ -1,9 +1,11 @@
+// this is a test bench rather than a example...
+
 use std::cell::RefCell;
 use std::mem;
 
-use edgy::widgets::filler::FillStrategy;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
+use edgy::widgets::label::Label;
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::{margin, SystemEvent, Theme};
 use edgy::{
@@ -136,6 +138,7 @@ where
                 Alignment::Center,
                 MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE),
             );
+
             ui.add_widget_obj(pfd_layout.finish());
         }
         Pages::Engine => {
@@ -201,7 +204,7 @@ where
                         );
                         ui.button("STARTER", &FONT_5X7, move || {
                             state.borrow_mut().engine = true;
-                        });
+                        })
                     });
                 });
             });
@@ -218,7 +221,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
-        .scale(3)
+        .scale(4)
         .max_fps(60)
         .build();
     let mut window = Window::new("a bit edgy ui", &output_settings);
@@ -264,6 +267,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                     if keycode == Keycode::F2 {
                         state.borrow_mut().rpm += 0.01;
+                        ui_ctx.alert("govno");
                     }
                 }
                 _ => {}

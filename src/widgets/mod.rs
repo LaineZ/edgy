@@ -4,7 +4,7 @@
 //!
 //! `Layout` - A container(-like) widget that holds another widgets
 
-use alloc::{boxed::Box, format, string::String, vec::Vec};
+use alloc::{boxed::Box, format, rc::Rc, string::String, vec::Vec};
 use button::Button;
 use embedded_graphics::{
     mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
@@ -18,8 +18,9 @@ use grid_layout::GridLayoutBuilder;
 use image::Image;
 use label::Label;
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
-use margin::{Margin, MarginLayout};
+use margin_layout::{Margin, MarginLayout};
 use plot::Plot;
+use primitive::Primitive;
 use toggle_button::ToggleButton;
 
 use crate::{Event, EventResult, SystemEvent, UiContext};
@@ -31,8 +32,9 @@ pub mod grid_layout;
 pub mod image;
 pub mod label;
 pub mod linear_layout;
-pub mod margin;
+pub mod margin_layout;
 pub mod plot;
+pub mod primitive;
 pub mod toggle_button;
 
 /// Trait for any widgets including containers
@@ -187,7 +189,7 @@ where
                 }
             }
             SystemEvent::Active(point) => {
-                if crate::contains(self.computed_rect, point) {
+                if self.computed_rect.contains(point) {
                     self.widget
                         .handle_event(context, system_event, &Event::Active)
                 } else {
@@ -196,7 +198,7 @@ where
                 }
             }
             SystemEvent::Move(point) => {
-                if crate::contains(self.computed_rect, point) {
+                if self.computed_rect.contains(point) {
                     self.widget
                         .handle_event(context, system_event, &Event::Focus)
                 } else {
@@ -240,15 +242,14 @@ where
                 )
                 .draw(context.draw_target);
             }
-            let _ = self
-                .rect()
-                .into_styled(
-                    PrimitiveStyleBuilder::new()
-                        .stroke_color(context.theme.debug_rect)
-                        .stroke_width(1)
-                        .build(),
-                )
-                .draw(context.draw_target);
+            let _ = embedded_graphics::prelude::Primitive::into_styled(
+                self.rect(),
+                PrimitiveStyleBuilder::new()
+                    .stroke_color(context.theme.debug_rect)
+                    .stroke_width(1)
+                    .build(),
+            )
+            .draw(context.draw_target);
         }
     }
 }
@@ -373,6 +374,11 @@ where
 
     fn filler(&mut self, fill: FillStrategy) {
         self.add_widget(Filler::new(fill));
+    }
+
+    /// Any embedded-graphics drawable (primitive)
+    fn primitive<P: Drawable<Color = C> + Dimensions + Transform + 'a>(&mut self, primitive: P) {
+        self.add_widget(Primitive::new(primitive));
     }
 
     fn finish(self) -> WidgetObj<'a, D, C>;

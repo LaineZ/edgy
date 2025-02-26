@@ -19,7 +19,7 @@ pub struct Margin {
 #[macro_export]
 macro_rules! margin {
     ($all:expr) => {
-        edgy::widgets::margin::Margin {
+        $crate::widgets::margin_layout::Margin {
             top: $all,
             right: $all,
             bottom: $all,
@@ -28,7 +28,7 @@ macro_rules! margin {
     };
 
     ($vertical:expr, $horizontal:expr) => {
-        edgy::widgets::margin::Margin {
+        $crate::widgets::margin_layout::Margin {
             top: $vertical,
             right: $horizontal,
             bottom: $vertical,
@@ -37,7 +37,7 @@ macro_rules! margin {
     };
 
     ($top:expr, $right:expr, $bottom:expr, $left:expr) => {
-        edgy::widgets::margin::Margin {
+        $crate::widgets::margin_layout::Margin {
             top: $top,
             right: $right,
             bottom: $bottom,

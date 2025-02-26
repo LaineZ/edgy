@@ -4,8 +4,7 @@ Portable, lightweight and robust `no_std` immediate-mode GUI library targeted fo
 
 Library uses ``alloc`` for widget dynamic dispatch, threfore a allocator is required.
 
-
-Work in progress, nothing works well atm...
+Work in progress, something is work, but is very ROUGH shape and requires polishing and improvements in many terms, including but not limited: code quality, documentation, features
 
 # System requirements
 

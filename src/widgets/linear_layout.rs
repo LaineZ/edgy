@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
-use embedded_graphics::{prelude::*, primitives::Rectangle};
+use embedded_graphics::{prelude::*, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle}};
 
 use crate::{Event, EventResult, SystemEvent, UiContext};
 
@@ -29,6 +29,7 @@ where
     pub horizontal_alignment: LayoutAlignment,
     pub vertical_alignment: LayoutAlignment,
     pub direction: LayoutDirection,
+    pub style: PrimitiveStyle<C>,
     pub min_size: Size,
     pub max_size: Size,
 }
@@ -73,6 +74,11 @@ where
         self
     }
 
+    pub fn style(mut self, style: PrimitiveStyle<C>) -> Self {
+        self.style = style;
+        self
+    }
+
     pub fn vertical_alignment(mut self, alignment: LayoutAlignment) -> Self {
         self.vertical_alignment = alignment;
         self
@@ -94,6 +100,7 @@ where
             children: Vec::new(),
             horizontal_alignment: LayoutAlignment::Start,
             vertical_alignment: LayoutAlignment::Start,
+            style: PrimitiveStyle::default(),
             direction: LayoutDirection::Vertical,
             min_size: Size::zero(),
             max_size: Size::new(u32::MAX, u32::MAX),
@@ -116,6 +123,7 @@ where
             children: self.children,
             horizontal_alignment: self.horizontal_alignment,
             vertical_alignment: self.vertical_alignment,
+            style: self.style,
             min_size: self.min_size,
             max_size: self.max_size,
         }))
@@ -132,6 +140,7 @@ where
     direction: LayoutDirection,
     horizontal_alignment: LayoutAlignment,
     vertical_alignment: LayoutAlignment,
+    style: PrimitiveStyle<C>,
     min_size: Size,
     max_size: Size,
 }
@@ -309,7 +318,8 @@ where
         }
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, _rect: Rectangle) {
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        let _ = rect.into_styled(self.style).draw(context.draw_target);
         for child in &mut self.children {
             child.draw(context);
         }
