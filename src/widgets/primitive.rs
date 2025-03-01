@@ -3,7 +3,7 @@ use crate::UiContext;
 use super::Widget;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-/// Primitive graphics widget e.g Square, Triangles, etc
+/// Widget which wraps any [Drawable].
 pub struct Primitive<C: PixelColor, T: Drawable<Color = C> + Dimensions + Transform> {
     primitive: T,
 }

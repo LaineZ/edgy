@@ -4,7 +4,7 @@
 //! dynamic dispatch, threfore a allocator is required.
 use alloc::{rc::Rc, string::String};
 use core::{
-    cell::{Cell, RefCell},
+    cell::Cell,
     sync::atomic::{AtomicUsize, Ordering},
 };
 pub use embedded_graphics;
@@ -12,14 +12,12 @@ use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
-    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle},
+    primitives::{PrimitiveStyleBuilder, Rectangle},
     text::Alignment,
 };
 use widgets::{
-    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
-    UiBuilder, WidgetObj,
+    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder}, warning_triangle::WarningTriangle, UiBuilder, WidgetObj
 };
-use embedded_graphics::prelude::Primitive;
 
 pub mod widgets;
 extern crate alloc;
@@ -249,15 +247,12 @@ where
             let alert_shown = self.alert_shown.clone();
 
             layout.margin_layout(margin!(5), |ui| {
-                ui.horizontal_linear_layout(LayoutAlignment::Start, |ui| {
-                    ui.primitive(
-                        Rectangle::new(Point::zero(), Size::new(32, 32))
-                            .into_styled(PrimitiveStyle::with_fill(self.theme.warning)),
-                    );
+                ui.grid_layout([100].into(), [25, 75].into(), |ui| {
+                    ui.add_widget(WarningTriangle::new_both_sizes(Size::new(16, 16), Size::new(32, 32)));
                     ui.margin_layout(margin!(5), |ui| {
                         ui.label(
                             &self.alert_text,
-                            Alignment::Center,
+                            Alignment::Left,
                             MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
                         );
                     });

@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
-use embedded_graphics::{prelude::*, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle}};
+use embedded_graphics::{prelude::*, primitives::{PrimitiveStyle, Rectangle}};
 
 use crate::{Event, EventResult, SystemEvent, UiContext};
 

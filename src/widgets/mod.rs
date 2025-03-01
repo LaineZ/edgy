@@ -4,7 +4,7 @@
 //!
 //! `Layout` - A container(-like) widget that holds another widgets
 
-use alloc::{boxed::Box, format, rc::Rc, string::String, vec::Vec};
+use alloc::{boxed::Box, format, string::String, vec::Vec};
 use button::Button;
 use embedded_graphics::{
     mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
@@ -36,6 +36,7 @@ pub mod margin_layout;
 pub mod plot;
 pub mod primitive;
 pub mod toggle_button;
+pub mod warning_triangle;
 
 /// Trait for any widgets including containers
 /// Can also used as object

@@ -267,7 +267,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                     if keycode == Keycode::F2 {
                         state.borrow_mut().rpm += 0.01;
-                        ui_ctx.alert("govno");
+                        ui_ctx.alert("GPS PRIMARY LOST\nYOU CANT START ENGINE!!!");
                     }
                 }
                 _ => {}
