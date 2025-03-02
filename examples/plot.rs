@@ -32,7 +32,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
     for x in 0..100 {
         let y = (x as f32).sin();
-        points.push(Point::new(x, (y * rng.random_range(-3.0..3.0)) as i32));
+        points.push(Point::new(x, (y * 5.0) as i32));
     }
 
     loop {
@@ -73,7 +73,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         let mut ui = LinearLayoutBuilder::default()
-            .vertical_alignment(LayoutAlignment::Stretch)
+            .vertical_alignment(LayoutAlignment::Center)
             .horizontal_alignment(LayoutAlignment::Stretch)
             .direction(LayoutDirection::Vertical);
 

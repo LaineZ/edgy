@@ -211,6 +211,10 @@ where
         self.alert_text = text.into();
     }
 
+    pub fn dismiss_alerts(&mut self) {
+        self.alert_shown.set(false);
+    }
+
     /// Updates and draws the UI, probably you want run this in main loop
     pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
         let bounds = self.draw_target.bounding_box();
@@ -229,6 +233,8 @@ where
 
         root.draw(self);
 
+
+        // alerts
         if self.alert_shown.get() {
             self.dim_screen();
             let bounds = self.draw_target.bounding_box();
@@ -246,17 +252,25 @@ where
 
             let alert_shown = self.alert_shown.clone();
 
+            // layout.margin_layout(margin!(5), |ui| {
+            //     ui.grid_layout([100].into(), [25, 75].into(), |ui| {
+            //         ui.add_widget(WarningTriangle::new_both_sizes(Size::new(16, 16), Size::new(32, 32)));
+            //         ui.margin_layout(margin!(5), |ui| {
+            //             ui.label(
+            //                 &self.alert_text,
+            //                 Alignment::Left,
+            //                 MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
+            //             );
+            //         });
+            //     });
+            // });
+
             layout.margin_layout(margin!(5), |ui| {
-                ui.grid_layout([100].into(), [25, 75].into(), |ui| {
-                    ui.add_widget(WarningTriangle::new_both_sizes(Size::new(16, 16), Size::new(32, 32)));
-                    ui.margin_layout(margin!(5), |ui| {
-                        ui.label(
-                            &self.alert_text,
-                            Alignment::Left,
-                            MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
-                        );
-                    });
-                });
+                ui.label(
+                    &self.alert_text,
+                    Alignment::Left,
+                    MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
+                );
             });
 
             layout.button("OK", &FONT_4X6, move || {
@@ -265,8 +279,13 @@ where
 
             let mut obj = layout.finish();
 
-            obj.size(self, Size::zero());
-            obj.layout(self, Rectangle::new(bounds.center() / 2, bounds.size / 2));
+            let size= obj.size(self, bounds.size);
+            let modal_size = Size::new(
+                size.width.min(bounds.size.width),
+                size.height.min(bounds.size.height),
+            );
+
+            obj.layout(self, Rectangle::new(bounds.center() - Rectangle::new(Point::zero(), modal_size).center(), modal_size));
 
             if !self.event_queue.is_empty() {
                 let event = self.event_queue[self.event_queue.len() - 1];

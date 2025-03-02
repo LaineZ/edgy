@@ -35,17 +35,21 @@ where
     C: PixelColor + 'a,
 {
     fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        let mut size_rect = self
-            .style
-            .measure_string(
-                &self.text,
-                Point::zero(),
-                embedded_graphics::text::Baseline::Top,
-            )
-            .bounding_box;
-
-        size_rect.size.height += size_rect.size.height / 2;
-        size_rect.size
+        let mut total_width = 0;
+        let mut total_height = 0;
+        let line_spacing = self.style.line_height() / 2;
+    
+        for line in self.text.lines() {
+            let line_rect = self
+                .style
+                .measure_string(line, Point::zero(), embedded_graphics::text::Baseline::Top)
+                .bounding_box;
+    
+            total_width = total_width.max(line_rect.size.width);
+            total_height += line_rect.size.height + line_spacing;
+        }
+    
+        Size::new(total_width, total_height)
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {

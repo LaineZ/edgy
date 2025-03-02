@@ -167,7 +167,11 @@ where
             }
         }
 
-        computed_size.min(hint)
+        if hint != Size::zero() {
+            computed_size.min(hint)
+        } else {
+            computed_size
+        }
     }
 
     fn max_size(&mut self) -> Size {

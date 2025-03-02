@@ -231,6 +231,8 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut default_state = UiState::default();
     let state = &RefCell::new(&mut default_state);
 
+    ui_ctx.alert("WELCOME TO EDGY!\nThis is testbed rather than example...\nSo, go ahead and test how it works (or not :P)");
+
     loop {
         let frame_render = std::time::Instant::now();
         window.update(&ui_ctx.draw_target);
@@ -259,6 +261,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                     if keycode == Keycode::Return {
                         ui_ctx.activate_selected_widget();
+                        ui_ctx.dismiss_alerts();
                     }
 
                     if keycode == Keycode::F1 {
@@ -267,7 +270,6 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                     if keycode == Keycode::F2 {
                         state.borrow_mut().rpm += 0.01;
-                        ui_ctx.alert("GPS PRIMARY LOST\nYOU CANT START ENGINE!!!");
                     }
                 }
                 _ => {}
