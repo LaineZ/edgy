@@ -6,17 +6,18 @@
 
 use alloc::{boxed::Box, format, string::String, vec::Vec};
 use button::Button;
+use eg_seven_segment::SevenSegmentStyle;
 use embedded_graphics::{
     mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
     prelude::*,
-    primitives::{PrimitiveStyleBuilder, Rectangle},
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
     text::{Alignment, Text},
 };
 use filler::{FillStrategy, Filler};
 use gauge::{Gauge, GaugeStyle};
 use grid_layout::GridLayoutBuilder;
 use image::Image;
-use label::Label;
+use label::{Label, SevenSegmentWidget};
 use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin_layout::{Margin, MarginLayout};
 use plot::Plot;
@@ -283,6 +284,11 @@ where
         self.add_widget(Label::new(text.into(), text_alignment, style))
     }
 
+    /// Creates a [SevenSegmentWidget] widget
+    fn seven_segment<S: Into<String>>(&mut self, text: S, style: SevenSegmentStyle<C>) {
+        self.add_widget(SevenSegmentWidget::new(text.into(), style));
+    }
+
     /// Creates a [Gauge] widget
     fn gauge(&mut self, value: f32) {
         self.add_widget(Gauge::new(value, "text", GaugeStyle::default()));
@@ -309,11 +315,23 @@ where
         self.add_widget(ToggleButton::new(text, font, state, Box::new(callback)));
     }
 
-    /// Shorthand construct for [MarginLayout] widget
+    /// Construct a [MarginLayout] widget
     fn margin_layout(&mut self, margin: Margin, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
         let mut builder = MarginLayout {
             margin,
             child: None,
+            style: PrimitiveStyle::default(),
+        };
+        fill(&mut builder);
+        self.add_widget_obj(builder.finish());
+    }
+
+    /// Construct a styled [MarginLayout] widget
+    fn margin_layout_styled(&mut self, margin: Margin, style: PrimitiveStyle<C>, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
+        let mut builder = MarginLayout {
+            margin,
+            child: None,
+            style,
         };
         fill(&mut builder);
         self.add_widget_obj(builder.finish());

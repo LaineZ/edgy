@@ -1,5 +1,5 @@
 use alloc::boxed::Box;
-use embedded_graphics::{prelude::*, primitives::Rectangle};
+use embedded_graphics::{prelude::*, primitives::{PrimitiveStyle, Rectangle}};
 
 use super::{UiBuilder, Widget, WidgetObj};
 
@@ -46,7 +46,6 @@ macro_rules! margin {
     };
 }
 
-
 /// Container with margins
 pub struct MarginLayout<'a, D, C>
 where
@@ -55,6 +54,29 @@ where
 {
     pub(crate) margin: Margin,
     pub(crate) child: Option<WidgetObj<'a, D, C>>,
+    pub(crate) style: PrimitiveStyle<C>,
+}
+
+impl<'a, D, C> MarginLayout<'a, D, C>
+where
+    D: DrawTarget<Color = C> + 'a,
+    C: PixelColor + 'a,
+{
+    pub fn new(margin: Margin) -> Self {
+        Self {
+            child: None,
+            margin,
+            style: PrimitiveStyle::default(),
+        }
+    }
+
+    pub fn new_with_style(margin: Margin, style: PrimitiveStyle<C>) -> Self {
+        Self {
+            child: None,
+            margin,
+            style,
+        }
+    }
 }
 
 impl<'a, D, C> UiBuilder<'a, D, C> for MarginLayout<'a, D, C>
@@ -66,7 +88,7 @@ where
         if self.child.is_none() {
             self.child = Some(widget);
         } else {
-            panic!("MarginContainer must have at least one child!");
+            panic!("MarginContainer already have a child!");
         }
     }
 
@@ -78,35 +100,11 @@ where
         WidgetObj::new(Box::new(MarginLayout {
             margin: self.margin,
             child: self.child,
+            style: self.style
         }))
     }
 }
 
-pub struct MarginLayoutBuilder<'a, D, C>
-where
-    D: DrawTarget<Color = C>,
-    C: PixelColor,
-{
-    pub child: Option<WidgetObj<'a, D, C>>,
-    pub margin: Margin,
-}
-
-impl<'a, D, C> UiBuilder<'a, D, C> for MarginLayoutBuilder<'a, D, C>
-where
-    D: DrawTarget<Color = C> + 'a,
-    C: PixelColor + 'a,
-{
-    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>) {
-        self.child = Some(widget);
-    }
-
-    fn finish(self) -> WidgetObj<'a, D, C> {
-        WidgetObj::new(Box::new(MarginLayout {
-            margin: self.margin,
-            child: self.child,
-        }))
-    }
-}
 impl<'a, D, C> Widget<'a, D, C> for MarginLayout<'a, D, C>
 where
     D: DrawTarget<Color = C> + 'a,
@@ -156,8 +154,9 @@ where
     fn draw(
         &mut self,
         context: &mut crate::UiContext<'a, D, C>,
-        _rect: embedded_graphics::primitives::Rectangle,
+        rect: embedded_graphics::primitives::Rectangle,
     ) {
+        let _ = rect.into_styled(self.style).draw(context.draw_target);
         self.child.as_mut().unwrap().draw(context);
     }
 }

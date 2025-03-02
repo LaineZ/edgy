@@ -154,7 +154,16 @@ where
         let mut computed_size = Size::zero();
 
         for child in &mut self.children {
-            let child_size = child.size(context, hint.saturating_sub(computed_size));
+            // oh dear...
+            let remaining_size = match self.direction {
+                LayoutDirection::Horizontal => 
+                    Size::new(hint.width.saturating_sub(computed_size.width), hint.height),
+                LayoutDirection::Vertical => 
+                    Size::new(hint.width, hint.height.saturating_sub(computed_size.height)),
+            };
+    
+            let child_size = child.size(context, remaining_size);
+
             match self.direction {
                 LayoutDirection::Horizontal => {
                     computed_size.width += child_size.width;

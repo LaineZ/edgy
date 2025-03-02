@@ -81,12 +81,23 @@ dependencies = [
 name = "edgy"
 version = "0.1.0"
 dependencies = [
+ "eg-seven-segment",
  "embedded-graphics",
  "embedded-graphics-simulator",
  "heapless",
  "micromath",
  "rand",
  "tinybmp",
+]
+
+[[package]]
+name = "eg-seven-segment"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e7d2f54ed234b333c71865c641906175a0d58bf366534ba5b8ded74b524b87b"
+dependencies = [
+ "bitflags 2.8.0",
+ "embedded-graphics",
 ]
 
 [[package]]

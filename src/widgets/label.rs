@@ -7,9 +7,64 @@ use embedded_graphics::{
 };
 
 use crate::UiContext;
-
 use super::Widget;
 
+/// Re-export of type [SevenSegmentStyle] from [eg_seven_segment]
+pub use eg_seven_segment::SevenSegmentStyle as SevenSegmentStyle;
+/// Re-export of type [SevenSegmentStyleBuilder] from [eg_seven_segment]
+pub use eg_seven_segment::SevenSegmentStyleBuilder as SevenSegmentStyleBuilder;
+
+/// Seven segment widget basically a widigitized [eg_seven_segment] library
+pub struct SevenSegmentWidget<C: PixelColor> {
+    text: String,
+    style: SevenSegmentStyle<C>,
+}
+
+impl<'a, C> SevenSegmentWidget<C>
+where
+    C: PixelColor + 'a,
+{
+    pub fn new(text: String, style: SevenSegmentStyle<C>) -> Self {
+        Self {
+            text,
+            style,
+        }
+    }
+}
+
+impl<'a, D, C> Widget<'a, D, C> for SevenSegmentWidget<C>
+where
+    D: DrawTarget<Color = C>,
+    C: PixelColor + 'a,
+{
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+        let mut total_width = 0;
+        let mut total_height = 0;
+        let line_spacing = self.style.line_height() / 2;
+    
+        for line in self.text.lines() {
+            let line_rect = self
+                .style
+                .measure_string(line, Point::zero(), embedded_graphics::text::Baseline::Top)
+                .bounding_box;
+    
+            total_width = total_width.max(line_rect.size.width);
+            total_height += line_rect.size.height + line_spacing;
+        }
+    
+        Size::new(total_width, total_height)
+    }
+
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        let mut position = rect.top_left;
+        position.y += self.style.digit_size.height as i32;
+        let text = Text::new(&self.text, position, self.style);
+        let _ = text.draw(context.draw_target);
+    }
+}
+
+
+/// Label widget
 pub struct Label<'a, C: PixelColor> {
     text: String,
     style: MonoTextStyle<'a, C>,

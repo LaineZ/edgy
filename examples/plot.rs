@@ -12,7 +12,6 @@ use embedded_graphics::{
     text::Alignment,
 };
 use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, SimulatorDisplay, Window};
-use rand::Rng;
 
 fn main() -> Result<(), core::convert::Infallible> {
     let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
@@ -28,7 +27,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut points = Vec::new();
     let mut offset = Point::zero();
     let mut scale = 1.0;
-    let mut rng = rand::rng();
+    let mut _rng = rand::rng();
 
     for x in 0..100 {
         let y = (x as f32).sin();

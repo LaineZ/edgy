@@ -5,7 +5,6 @@ use std::mem;
 
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
-use edgy::widgets::label::Label;
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::{margin, SystemEvent, Theme};
 use edgy::{
@@ -15,6 +14,7 @@ use edgy::{
     },
     UiContext,
 };
+use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::mono_font::ascii::FONT_10X20;
 use embedded_graphics::mono_font::iso_8859_5::FONT_5X7;
 use embedded_graphics::text::Alignment;
@@ -97,7 +97,7 @@ fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObj<'a, D, Rgb88
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
-    let style = MonoTextStyle::new(&FONT_5X7, Rgb888::WHITE);
+    let _style = MonoTextStyle::new(&FONT_5X7, Rgb888::WHITE);
     let mut ui = GridLayoutBuilder::default()
         .add_column(100)
         .add_row(90)
@@ -128,6 +128,17 @@ where
             let mut pfd_layout = LinearLayoutBuilder::default()
                 .vertical_alignment(LayoutAlignment::Center)
                 .horizontal_alignment(LayoutAlignment::Center);
+
+            pfd_layout.seven_segment(
+                "20°C\n1",
+                SevenSegmentStyleBuilder::new()
+                    .digit_size(Size::new(8, 10))
+                    .segment_width(1)
+                    .inactive_segment_color(Rgb888::new(10, 10, 10))
+                    .segment_color(Rgb888::WHITE)
+                    .build(),
+            );
+
             pfd_layout.label(
                 "ATT",
                 Alignment::Center,
