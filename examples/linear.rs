@@ -8,7 +8,7 @@ use edgy::{
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_5X8, iso_8859_10::FONT_10X20, MonoTextStyle},
+    mono_font::{ascii::FONT_5X8, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
     primitives::{PrimitiveStyle, PrimitiveStyleBuilder},
@@ -26,10 +26,10 @@ pub fn demo_ui<'a, D>(theme: Theme<Rgb888>) -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
-    let mut ui = LinearLayoutBuilder::default()
-        .horizontal_alignment(LayoutAlignment::Start)
-        .vertical_alignment(LayoutAlignment::Start)
-        .direction(LayoutDirection::Horizontal);
+    let mut layout_main = LinearLayoutBuilder::default()
+        .horizontal_alignment(LayoutAlignment::Stretch)
+        .vertical_alignment(LayoutAlignment::Stretch)
+        .direction(LayoutDirection::Vertical);
 
     // ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
     //     for fault in state.faults.iter() {
@@ -41,104 +41,41 @@ where
     //     }
     // });
 
-    let mut layout_main = LinearLayoutBuilder::default().horizontal_alignment(LayoutAlignment::Start).vertical_alignment(LayoutAlignment::Start).direction(LayoutDirection::Vertical);
+    let seven_segment_style = SevenSegmentStyleBuilder::new()
+        .digit_size(Size::new(16, 24))
+        .segment_width(2)
+        .digit_spacing(4)
+        .segment_color(Rgb888::WHITE)
+        .inactive_segment_color(Rgb888::new(10, 5, 10))
+        .build();
 
-        let _seven_segment_style = SevenSegmentStyleBuilder::new()
-            .digit_size(Size::new(16, 24))
-            .segment_width(2)
-            .digit_spacing(4)
-            .segment_color(Rgb888::WHITE)
-            .inactive_segment_color(Rgb888::new(10, 5, 10))
-            .build();
-
-        layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
-            let mut layout = LinearLayoutBuilder::default()
-                .direction(LayoutDirection::Vertical)
-                .horizontal_alignment(LayoutAlignment::Stretch);
-
-            layout.label(
-                "TEMPERATURE",
+    layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
+        ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
+            ui.label(
+                "TEMPERATURE C",
                 text::Alignment::Left,
                 MonoTextStyle::new(&FONT_5X8, theme.foreground),
             );
-            layout.label(
-                "TEMPERATURE",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_10X20, theme.foreground),
-            );
-            //layout.seven_segment("0.0°C", seven_segment_style);
-
-            ui.add_widget_obj(layout.finish());
+            ui.seven_segment("25.0", seven_segment_style);
         });
+    });
 
-        layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
-            let mut layout = LinearLayoutBuilder::default()
-                .direction(LayoutDirection::Vertical)
-                .horizontal_alignment(LayoutAlignment::Stretch);
-
-            layout.label(
-                "TEMPERATURE",
+    layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
+        ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
+            ui.label(
+                "R. HUMIDITY %",
                 text::Alignment::Left,
                 MonoTextStyle::new(&FONT_5X8, theme.foreground),
             );
-            layout.label(
-                "TEMPERATURE",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_10X20, theme.foreground),
-            );
-            //layout.seven_segment("0.0°C", seven_segment_style);
-
-            ui.add_widget_obj(layout.finish());
+            ui.seven_segment("100", seven_segment_style);
         });
+    });
 
-        layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
-            let mut layout = LinearLayoutBuilder::default()
-                .direction(LayoutDirection::Vertical)
-                .horizontal_alignment(LayoutAlignment::Stretch);
-
-            layout.label(
-                "TEMPERATURE",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_5X8, theme.foreground),
-            );
-            layout.label(
-                "TEMPERATURE",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_10X20, theme.foreground),
-            );
-            //layout.seven_segment("0.0°C", seven_segment_style);
-
-            ui.add_widget_obj(layout.finish());
-        });
-
-        layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
-            let mut layout = LinearLayoutBuilder::default()
-                .direction(LayoutDirection::Vertical)
-                .horizontal_alignment(LayoutAlignment::Stretch);
-
-            layout.label(
-                "TEMPERATURE",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_5X8, theme.foreground),
-            );
-            layout.label(
-                "TEMPERATURE",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_10X20, theme.foreground),
-            );
-            //layout.seven_segment("0.0°C", seven_segment_style);
-
-            ui.add_widget_obj(layout.finish());
-        });
-
-
-    ui.add_widget_obj(layout_main.finish());
-
-    ui.finish()
+    layout_main.finish()
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(160, 100));
+    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(160, 128));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)

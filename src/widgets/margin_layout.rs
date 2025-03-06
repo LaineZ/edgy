@@ -12,9 +12,9 @@ pub struct Margin {
     pub left: i32,
 }
 
-/// Margin definition macro returns [Margin]. Defines in CSS fashion
+/// Macro that returns [Margin]. Defines in CSS fashion
 /// `margin!(top, right, bottom, left)`
-/// `margin!(vertical (top, bottom), horizontal (left, right))
+/// `margin!(vertical, horizontal)`
 /// `margin!(all sides)`
 #[macro_export]
 macro_rules! margin {

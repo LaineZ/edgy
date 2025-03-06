@@ -8,16 +8,21 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 pub use embedded_graphics;
+
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
-    primitives::{PrimitiveStyleBuilder, Rectangle},
+    primitives::PrimitiveStyleBuilder,
     text::Alignment,
 };
 use widgets::{
     linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder}, UiBuilder, WidgetObj
 };
+
+pub use embedded_graphics::primitives::Rectangle as Rectangle;
+pub use embedded_graphics::geometry::Point as Point;
+pub use embedded_graphics::geometry::Size as Size;
 
 pub mod widgets;
 extern crate alloc;
