@@ -1,5 +1,10 @@
 use alloc::boxed::Box;
-use embedded_graphics::{prelude::*, primitives::{PrimitiveStyle, Rectangle}};
+use embedded_graphics::{
+    prelude::*,
+    primitives::{PrimitiveStyle, Rectangle},
+};
+
+use crate::{Event, SystemEvent, UiContext};
 
 use super::{UiBuilder, Widget, WidgetObj};
 
@@ -100,7 +105,7 @@ where
         WidgetObj::new(Box::new(MarginLayout {
             margin: self.margin,
             child: self.child,
-            style: self.style
+            style: self.style,
         }))
     }
 }
@@ -125,6 +130,18 @@ where
             child_size.width + (self.margin.left + self.margin.right) as u32,
             child_size.height + (self.margin.top + self.margin.bottom) as u32,
         )
+    }
+
+    fn handle_event(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        system_event: &SystemEvent,
+        _event: &Event,
+    ) -> crate::EventResult {
+        self.child
+            .as_mut()
+            .unwrap()
+            .handle_event(context, system_event)
     }
 
     fn layout(&mut self, context: &mut crate::UiContext<'a, D, C>, rect: Rectangle) {

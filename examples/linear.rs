@@ -1,10 +1,8 @@
 use edgy::{
-    margin,
-    widgets::{
+    margin, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObj,
-    },
-    Theme, UiContext,
+    }, SystemEvent, Theme, UiContext
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::{
@@ -31,16 +29,6 @@ where
         .vertical_alignment(LayoutAlignment::Stretch)
         .direction(LayoutDirection::Vertical);
 
-    // ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
-    //     for fault in state.faults.iter() {
-    //         ui.label(
-    //             format!("{}", fault),
-    //             text::Alignment::Left,
-    //             MonoTextStyle::new(&FONT_5X8, Rgb565::RED),
-    //         );
-    //     }
-    // });
-
     let seven_segment_style = SevenSegmentStyleBuilder::new()
         .digit_size(Size::new(16, 24))
         .segment_width(2)
@@ -50,15 +38,18 @@ where
         .build();
 
     layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
-        ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
-            ui.label(
-                "TEMPERATURE C",
-                text::Alignment::Left,
-                MonoTextStyle::new(&FONT_5X8, theme.foreground),
-            );
-            ui.seven_segment("25.0", seven_segment_style);
-        });
+        // ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
+        //     ui.label(
+        //         "TEMPERATURE C",
+        //         text::Alignment::Left,
+        //         MonoTextStyle::new(&FONT_5X8, theme.foreground),
+        //     );
+        //     ui.seven_segment("25.0", seven_segment_style);
+        // });
+        ui.button("TEST", &FONT_5X8, || {});
     });
+
+    layout_main.button("TEST", &FONT_5X8, || {});
 
     layout_main.margin_layout_styled(margin!(5), PANEL_STYLE, |ui| {
         ui.vertical_linear_layout(LayoutAlignment::Start, |ui| {
@@ -92,6 +83,13 @@ fn main() -> Result<(), core::convert::Infallible> {
             match event {
                 embedded_graphics_simulator::SimulatorEvent::Quit => {
                     std::process::exit(0);
+                }
+                embedded_graphics_simulator::SimulatorEvent::MouseButtonDown {
+                    mouse_btn: _,
+                    point,
+                } => ui_ctx.push_event(SystemEvent::Active(point)),
+                embedded_graphics_simulator::SimulatorEvent::MouseMove { point } => {
+                    ui_ctx.push_event(SystemEvent::Move(point));
                 }
                 embedded_graphics_simulator::SimulatorEvent::KeyDown {
                     keycode,
