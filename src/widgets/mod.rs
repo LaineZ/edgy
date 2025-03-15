@@ -295,8 +295,8 @@ where
     }
 
     /// Shorthand construct for [Button] widget
-    fn button(&mut self, text: &'a str, font: &'a MonoFont, callback: impl FnMut() + 'a) {
-        self.add_widget(Button::new(text, font, Box::new(callback)));
+    fn button<S: Into<String>>(&mut self, text: S, font: &'a MonoFont, callback: impl FnMut() + 'a) {
+        self.add_widget(Button::new(text.into(), font, Box::new(callback)));
     }
 
     /// Shorthand construct for [Image] widget
@@ -305,14 +305,14 @@ where
     }
 
     /// Shorthand construct for [ToggleButton] widget
-    fn toggle_button(
+    fn toggle_button<S: Into<String>>(
         &mut self,
-        text: &'a str,
+        text: S,
         font: &'a MonoFont,
         state: bool,
         callback: impl FnMut(bool) + 'a,
     ) {
-        self.add_widget(ToggleButton::new(text, font, state, Box::new(callback)));
+        self.add_widget(ToggleButton::new(text.into(), font, state, Box::new(callback)));
     }
 
     /// Construct a [MarginLayout] widget

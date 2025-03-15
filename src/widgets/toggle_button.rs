@@ -2,16 +2,16 @@ use alloc::boxed::Box;
 use embedded_graphics::{
     mono_font::MonoFont,
     prelude::*,
-    primitives::{PrimitiveStyleBuilder, Rectangle},
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
 };
 
 use super::{button::ButtonGeneric, Widget};
 use crate::{Event, EventResult, SystemEvent, UiContext};
 
-
 /// Toggle button (Korry-like switches)
 pub struct ToggleButton<'a, C: PixelColor> {
     base: ButtonGeneric<'a, C>,
+    text: String,
     state: bool,
     callback: Box<dyn FnMut(bool) + 'a>,
 }
@@ -21,13 +21,14 @@ where
     C: PixelColor + 'a,
 {
     pub fn new(
-        text: &'a str,
+        text: String,
         font: &'a MonoFont,
         state: bool,
         callback: Box<dyn FnMut(bool) + 'a>,
     ) -> Self {
         Self {
-            base: ButtonGeneric::new(text, font),
+            base: ButtonGeneric::new(font, PrimitiveStyle::default()),
+            text,
             state,
             callback,
         }
@@ -40,11 +41,15 @@ where
     C: PixelColor + 'a,
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        self.base.size(context.theme)
-    }
+        if self.base.style == PrimitiveStyle::default() {
+            self.base.style = PrimitiveStyleBuilder::new()
+                .fill_color(context.theme.background)
+                .stroke_color(context.theme.background2)
+                .stroke_width(1)
+                .build();
+        }
 
-    fn layout(&mut self, _context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.base.rect = rect;
+        self.base.size(context.theme, &self.text)
     }
 
     fn is_interactive(&mut self) -> bool {
@@ -72,15 +77,15 @@ where
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.base.draw(context, rect);
+        self.base.draw(context, rect, &self.text);
         let style = if self.state {
             PrimitiveStyleBuilder::new()
                 .fill_color(context.theme.success)
                 .build()
         } else {
             PrimitiveStyleBuilder::new()
-            .fill_color(context.theme.background3)
-            .build()
+                .fill_color(context.theme.background3)
+                .build()
         };
 
         let light_size = (rect.size.height / 8).clamp(1, 4);

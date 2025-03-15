@@ -11,41 +11,32 @@ use crate::{Event, EventResult, SystemEvent, Theme, UiContext};
 use super::Widget;
 
 /// Generic button style and drawing implementation
+#[derive(Clone, Copy)]
 pub struct ButtonGeneric<'a, C: PixelColor> {
-    pub text: &'a str,
     pub text_style: Option<MonoTextStyle<'a, C>>,
     pub font: &'a MonoFont<'a>,
     pub style: PrimitiveStyle<C>,
-    pub rect: Rectangle,
 }
 
 impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(text: &'a str, font: &'a MonoFont) -> Self {
+    pub fn new(font: &'a MonoFont, style: PrimitiveStyle<C>) -> Self {
         Self {
-            text,
             font,
             text_style: None,
-            style: PrimitiveStyleBuilder::new().build(),
-            rect: Rectangle::default(),
+            style,
         }
     }
 
-    pub fn size(&mut self, theme: Theme<C>) -> Size {
+    pub fn size(&mut self, theme: Theme<C>, text: &str) -> Size {
         self.text_style = Some(MonoTextStyle::new(self.font, theme.foreground));
-        self.style = PrimitiveStyleBuilder::new()
-            .fill_color(theme.background)
-            .stroke_color(theme.background2)
-            .stroke_width(1)
-            .build();
-
         let text_size = self
             .text_style
             .unwrap()
             .measure_string(
-                self.text,
+                text,
                 Point::zero(),
                 embedded_graphics::text::Baseline::Bottom,
             )
@@ -63,12 +54,13 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
+        text: &str,
     ) {
         let styled_rect = rect.into_styled(self.style);
         let _ = styled_rect.draw(context.draw_target);
 
         if let Some(style) = self.text_style {
-            let text = Text::with_alignment(self.text, rect.center(), style, Alignment::Center);
+            let text = Text::with_alignment(text, rect.center(), style, Alignment::Center);
             let _ = text.draw(context.draw_target);
         }
     }
@@ -77,6 +69,7 @@ where
 /// Button widget
 pub struct Button<'a, C: PixelColor> {
     base: ButtonGeneric<'a, C>,
+    text: String,
     callback: Box<dyn FnMut() + 'a>,
 }
 
@@ -84,9 +77,10 @@ impl<'a, C> Button<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(text: &'a str, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
+    pub fn new(text: String, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
-            base: ButtonGeneric::new(text, font),
+            base: ButtonGeneric::new(font, PrimitiveStyle::default()),
+            text,
             callback,
         }
     }
@@ -98,11 +92,14 @@ where
     C: PixelColor + 'a,
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        self.base.size(context.theme)
-    }
-
-    fn layout(&mut self, _context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.base.rect = rect;
+        if self.base.style == PrimitiveStyle::default() {
+            self.base.style = PrimitiveStyleBuilder::new()
+                .fill_color(context.theme.background)
+                .stroke_color(context.theme.background2)
+                .stroke_width(1)
+                .build();
+        }
+        self.base.size(context.theme, &self.text)
     }
 
     fn is_interactive(&mut self) -> bool {
@@ -130,6 +127,6 @@ where
     }
 
     fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.base.draw(context, rect);
+        self.base.draw(context, rect, &self.text);
     }
 }
