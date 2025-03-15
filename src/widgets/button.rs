@@ -16,17 +16,26 @@ pub struct ButtonGeneric<'a, C: PixelColor> {
     pub text_style: Option<MonoTextStyle<'a, C>>,
     pub font: &'a MonoFont<'a>,
     pub style: PrimitiveStyle<C>,
+    pub hover_style: PrimitiveStyle<C>,
+    pub active_style: PrimitiveStyle<C>,
 }
 
 impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(font: &'a MonoFont, style: PrimitiveStyle<C>) -> Self {
+    pub fn new(
+        font: &'a MonoFont,
+        style: PrimitiveStyle<C>,
+        hover_style: PrimitiveStyle<C>,
+        active_style: PrimitiveStyle<C>,
+    ) -> Self {
         Self {
             font,
             text_style: None,
             style,
+            hover_style,
+            active_style,
         }
     }
 
@@ -77,9 +86,26 @@ impl<'a, C> Button<'a, C>
 where
     C: PixelColor + 'a,
 {
+    pub fn new_styled(
+        text: String,
+        style: ButtonGeneric<'a, C>,
+        callback: Box<dyn FnMut() + 'a>,
+    ) -> Self {
+        Self {
+            base: style,
+            text,
+            callback,
+        }
+    }
+
     pub fn new(text: String, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
-            base: ButtonGeneric::new(font, PrimitiveStyle::default()),
+            base: ButtonGeneric::new(
+                font,
+                PrimitiveStyle::default(),
+                PrimitiveStyle::default(),
+                PrimitiveStyle::default(),
+            ),
             text,
             callback,
         }
@@ -92,6 +118,7 @@ where
     C: PixelColor + 'a,
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+        // TODO: Refactor, maybe some styling system?
         if self.base.style == PrimitiveStyle::default() {
             self.base.style = PrimitiveStyleBuilder::new()
                 .fill_color(context.theme.background)
@@ -99,6 +126,23 @@ where
                 .stroke_width(1)
                 .build();
         }
+
+        if self.base.hover_style == PrimitiveStyle::default() {
+            self.base.hover_style = PrimitiveStyleBuilder::new()
+                .fill_color(context.theme.background2)
+                .stroke_color(context.theme.background2)
+                .stroke_width(1)
+                .build();
+        }
+
+        if self.base.active_style == PrimitiveStyle::default() {
+            self.base.active_style = PrimitiveStyleBuilder::new()
+                .fill_color(context.theme.background3)
+                .stroke_color(context.theme.background2)
+                .stroke_width(1)
+                .build();
+        }
+
         self.base.size(context.theme, &self.text)
     }
 

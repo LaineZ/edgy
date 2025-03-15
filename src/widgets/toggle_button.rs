@@ -20,6 +20,20 @@ impl<'a, C> ToggleButton<'a, C>
 where
     C: PixelColor + 'a,
 {
+    pub fn new_styled(
+        text: String,
+        style: ButtonGeneric<'a, C>,
+        state: bool,
+        callback: Box<dyn FnMut(bool) + 'a>,
+    ) -> Self {
+        Self {
+            base: style,
+            text,
+            state,
+            callback,
+        }
+    }
+
     pub fn new(
         text: String,
         font: &'a MonoFont,
@@ -27,7 +41,7 @@ where
         callback: Box<dyn FnMut(bool) + 'a>,
     ) -> Self {
         Self {
-            base: ButtonGeneric::new(font, PrimitiveStyle::default()),
+            base: ButtonGeneric::new(font, PrimitiveStyle::default(), PrimitiveStyle::default(), PrimitiveStyle::default()),
             text,
             state,
             callback,
