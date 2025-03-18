@@ -1,4 +1,4 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
@@ -39,7 +39,7 @@ where
         }
     }
 
-    pub fn size(&mut self, theme: Theme<C>, text: &str) -> Size {
+    pub fn size(&mut self, theme: &Theme<C>, text: &str) -> Size {
         self.text_style = Some(MonoTextStyle::new(self.font, theme.foreground));
         let text_size = self
             .text_style
@@ -143,7 +143,7 @@ where
                 .build();
         }
 
-        self.base.size(context.theme, &self.text)
+        self.base.size(&context.theme, &self.text)
     }
 
     fn is_interactive(&mut self) -> bool {

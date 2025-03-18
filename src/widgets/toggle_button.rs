@@ -1,4 +1,4 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::MonoFont,
     prelude::*,
@@ -63,7 +63,7 @@ where
                 .build();
         }
 
-        self.base.size(context.theme, &self.text)
+        self.base.size(&context.theme, &self.text)
     }
 
     fn is_interactive(&mut self) -> bool {

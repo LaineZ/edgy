@@ -2,7 +2,7 @@ use edgy::{
     margin, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObj,
-    }, SystemEvent, Theme, UiContext
+    }, SystemEvent, theme::Theme, UiContext
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::{
@@ -20,7 +20,7 @@ const PANEL_STYLE: PrimitiveStyle<Rgb888> = PrimitiveStyleBuilder::new()
     .stroke_width(1)
     .build();
 
-pub fn demo_ui<'a, D>(theme: Theme<Rgb888>) -> WidgetObj<'a, D, Rgb888>
+pub fn demo_ui<'a, D>(theme: &Theme<Rgb888>) -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
@@ -105,6 +105,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.update(&mut demo_ui(ui_ctx.theme));
+        ui_ctx.update(&mut demo_ui(&ui_ctx.theme));
     }
 }

@@ -3,7 +3,7 @@ use edgy::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObj,
     },
-    Theme, UiContext,
+    theme::Theme, UiContext,
 };
 use embedded_graphics::{
     mono_font::{iso_8859_10::FONT_10X20, MonoTextStyle},

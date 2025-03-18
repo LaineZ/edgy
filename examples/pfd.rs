@@ -6,7 +6,7 @@ use std::mem;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
-use edgy::{margin, SystemEvent, Theme};
+use edgy::{margin, SystemEvent, theme::Theme};
 use edgy::{
     widgets::{
         linear_layout::{LayoutDirection, LinearLayoutBuilder},

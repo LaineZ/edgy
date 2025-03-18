@@ -8,10 +8,7 @@ use alloc::{boxed::Box, format, string::String, vec::Vec};
 use button::Button;
 use eg_seven_segment::SevenSegmentStyle;
 use embedded_graphics::{
-    mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
-    prelude::*,
-    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
-    text::{Alignment, Text},
+    mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle}, pixelcolor::Rgb565, prelude::*, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle}, text::{Alignment, Text}
 };
 use filler::{FillStrategy, Filler};
 use gauge::{Gauge, GaugeStyle};
@@ -38,6 +35,77 @@ pub mod plot;
 pub mod primitive;
 pub mod toggle_button;
 pub mod warning_triangle;
+
+
+/// Base style for any widget, basically any widget can have this style
+#[derive(Clone, Copy)]
+pub struct WidgetStyle<C: PixelColor> {
+    /// Accent (active) color of widget
+    pub accent_color: Option<C>,
+    /// Foreground color for widget elements
+    pub foreground_color: Option<C>,
+    /// Background color for widget
+    pub background_color: Option<C>,
+    /// Border color
+    pub stroke_color: Option<C>,
+    /// Border width
+    pub stroke_width: Option<u32>,
+}
+
+impl<C: PixelColor> Default for WidgetStyle<C> {
+    fn default() -> Self {
+        Self {
+            accent_color: Default::default(),
+            foreground_color: Default::default(),
+            background_color: Default::default(),
+            stroke_color: Default::default(),
+            stroke_width: Default::default(),
+        }
+    }
+}
+
+impl<C: PixelColor> WidgetStyle<C> {
+    pub fn foreground_color(mut self, color: C) -> Self {
+        self.foreground_color = Some(color);
+        self
+    }
+
+    pub fn accent_color(mut self, color: C) -> Self {
+        self.accent_color = Some(color);
+        self
+    }
+
+    pub fn background_color(mut self, color: C) -> Self {
+        self.background_color = Some(color);
+        self
+    }
+
+    pub fn storke(mut self, width: u32, color: C) -> Self {
+        self.stroke_color = Some(color);
+        self.stroke_width = Some(width);
+        self
+    }
+}
+
+impl <C: PixelColor> Into<PrimitiveStyle<C>> for WidgetStyle<C> {
+    fn into(self) -> PrimitiveStyle<C> {
+        let mut style = PrimitiveStyle::<C>::default();
+        style.fill_color = self.background_color;
+        style.stroke_color = self.stroke_color;
+        style.stroke_width = self.stroke_width.unwrap_or_default();
+
+        style
+    }
+}
+
+/// Base primitive style for widget
+pub trait Style<C>:
+where
+    C: PixelColor,
+{
+    /// Specifies style that depends on [Event]
+    fn style(&self, event: &Event) -> WidgetStyle<C>;
+}
 
 /// Trait for any widgets including containers
 /// Can also used as object
@@ -295,7 +363,12 @@ where
     }
 
     /// Shorthand construct for [Button] widget
-    fn button<S: Into<String>>(&mut self, text: S, font: &'a MonoFont, callback: impl FnMut() + 'a) {
+    fn button<S: Into<String>>(
+        &mut self,
+        text: S,
+        font: &'a MonoFont,
+        callback: impl FnMut() + 'a,
+    ) {
         self.add_widget(Button::new(text.into(), font, Box::new(callback)));
     }
 
@@ -312,7 +385,12 @@ where
         state: bool,
         callback: impl FnMut(bool) + 'a,
     ) {
-        self.add_widget(ToggleButton::new(text.into(), font, state, Box::new(callback)));
+        self.add_widget(ToggleButton::new(
+            text.into(),
+            font,
+            state,
+            Box::new(callback),
+        ));
     }
 
     /// Construct a [MarginLayout] widget
@@ -327,7 +405,12 @@ where
     }
 
     /// Construct a styled [MarginLayout] widget
-    fn margin_layout_styled(&mut self, margin: Margin, style: PrimitiveStyle<C>, fill: impl FnOnce(&mut MarginLayout<'a, D, C>)) {
+    fn margin_layout_styled(
+        &mut self,
+        margin: Margin,
+        style: PrimitiveStyle<C>,
+        fill: impl FnOnce(&mut MarginLayout<'a, D, C>),
+    ) {
         let mut builder = MarginLayout {
             margin,
             child: None,

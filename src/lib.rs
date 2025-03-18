@@ -1,8 +1,9 @@
-//#![no_std]
+#![no_std]
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
 use alloc::{rc::Rc, string::String};
+use themes::Theme;
 use core::{
     cell::Cell,
     sync::atomic::{AtomicUsize, Ordering},
@@ -25,6 +26,7 @@ use widgets::{
 // pub use embedded_graphics::geometry::Size as Size;
 
 pub mod widgets;
+pub mod themes;
 extern crate alloc;
 
 pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
@@ -72,54 +74,6 @@ pub enum Event {
     Focus,
     // Active press at surface. E.g touch or mouse click
     Active,
-}
-
-/// Theme struct. You can freely create own themes
-#[derive(Clone, Copy)]
-pub struct Theme<C: PixelColor> {
-    /// Primary background
-    pub background: C,
-    pub background2: C,
-    pub background3: C,
-    /// Primary foreground
-    pub foreground: C,
-    pub foreground2: C,
-    pub foreground3: C,
-    pub debug_rect: C,
-    pub success: C,
-    pub warning: C,
-}
-
-impl<C: PixelColor + From<Rgb888>> Theme<C> {
-    /// Hope diamond theme - recommended for color screens
-    pub fn hope_diamond() -> Self {
-        Self {
-            background: Rgb888::new(21, 14, 16).into(),
-            background2: Rgb888::new(39, 39, 57).into(),
-            background3: Rgb888::new(57, 56, 73).into(),
-            foreground: Rgb888::new(119, 136, 140).into(),
-            foreground2: Rgb888::new(79, 90, 100).into(),
-            foreground3: Rgb888::new(59, 65, 82).into(),
-            success: Rgb888::new(79, 113, 75).into(),
-            warning: Rgb888::new(128, 126, 83).into(),
-            debug_rect: Rgb888::RED.into(),
-        }
-    }
-
-    /// Binary color theme - recommended for 1-bit displays, like OLED SSD1306
-    pub fn binary() -> Self {
-        Self {
-            background: Rgb888::BLACK.into(),
-            background2: Rgb888::BLACK.into(),
-            background3: Rgb888::BLACK.into(),
-            foreground: Rgb888::WHITE.into(),
-            foreground2: Rgb888::WHITE.into(),
-            foreground3: Rgb888::WHITE.into(),
-            success: Rgb888::WHITE.into(),
-            warning: Rgb888::WHITE.into(),
-            debug_rect: Rgb888::WHITE.into(),
-        }
-    }
 }
 
 /// Primary UI Context
