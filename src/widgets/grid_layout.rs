@@ -1,5 +1,5 @@
-use super::{UiBuilder, Widget, WidgetObj};
-use crate::{Event, EventResult, SystemEvent, UiContext};
+use super::{UiBuilder, Widget, WidgetEvent, WidgetObj};
+use crate::{EventResult, SystemEvent, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
@@ -86,19 +86,6 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn handle_event(&mut self, context: &mut UiContext<'a, D, C>, system_event: &SystemEvent, _event: &Event) -> EventResult {
-        let mut result = EventResult::Pass;
-
-        for child in &mut self.children {
-            result = child.handle_event(context, system_event);
-            if result == EventResult::Stop {
-                break;
-            }
-        }
-
-        result
-    }
-
     fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         let cols = self.col_fracs.len();
         let rows = self.row_fracs.len();
@@ -158,9 +145,17 @@ where
         }
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, _rect: Rectangle) {
+    fn draw(&mut self, context: &mut UiContext<'a, D, C>, _rect: Rectangle, event_args: WidgetEvent) -> EventResult {
+        let mut event_result = EventResult::Pass;
+
         for child in self.children.iter_mut() {
-            child.draw(context);
+            if event_result == EventResult::Stop {
+                event_result = child.draw(context, &SystemEvent::Idle);
+            } else {
+                event_result = child.draw(context, event_args.system_event);
+            }
         }
+
+        event_result
     }
 }

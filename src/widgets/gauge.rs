@@ -1,10 +1,10 @@
 #![allow(unused_imports)]
 
-use core::f32::consts::PI;
+use core::{f32::consts::PI, u32};
 use micromath::F32Ext;
 
-use super::Widget;
-use crate::UiContext;
+use super::{Widget, WidgetEvent};
+use crate::{EventResult, UiContext};
 use alloc::vec::Vec;
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -14,8 +14,6 @@ use embedded_graphics::{
     },
     text::{Alignment, Text},
 };
-
-const GAUGE_STROKE_WIDTH: u32 = 2;
 
 #[derive(Copy, Clone)]
 pub struct GaugeDetent<C: PixelColor> {
@@ -95,18 +93,26 @@ where
         Size::new(hint.height, hint.height)
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+       fn draw(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        rect: Rectangle,
+        _event_args: WidgetEvent,
+    ) -> EventResult {
+        let style = context.theme.gauge_style;
+        let foreground_color = style
+            .foreground_color
+            .expect("Gauge must have a foreground color to draw");
+        let stroke_color = style.stroke_color.unwrap_or(foreground_color);
+        let accent_color = style.accent_color.unwrap_or(foreground_color);
+
+        let gauge_stroke_width = style.stroke_width.clamp(2, u32::MAX);
+
         let circle = Circle::with_center(
             Point::new(rect.center().x, rect.center().y),
-            rect.size.width - GAUGE_STROKE_WIDTH,
+            rect.size.width - gauge_stroke_width,
         )
-        .into_styled(
-            PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.background)
-                .stroke_color(context.theme.foreground)
-                .stroke_width(GAUGE_STROKE_WIDTH)
-                .build(),
-        );
+        .into_styled(style.into());
 
         let circle_size = circle.primitive.diameter;
         let center = circle.primitive.center();
@@ -126,7 +132,7 @@ where
             )
             .into_styled(PrimitiveStyle::with_stroke(
                 detent.color,
-                GAUGE_STROKE_WIDTH / 2,
+                gauge_stroke_width / 2,
             ));
 
             let _ = arc.draw(context.draw_target);
@@ -137,7 +143,7 @@ where
         let angle_step = total_angle / (self.gauge_style.divisions - 1) as f32;
 
         let tick_length = circle_size as f32 * 0.1;
-        let line_width = GAUGE_STROKE_WIDTH as f32 / 2.0;
+        let line_width = gauge_stroke_width as f32 / 2.0;
 
         for i in 0..self.gauge_style.divisions {
             let angle = (self.gauge_style.min_angle + i as f32 * angle_step) + 90.0;
@@ -158,7 +164,7 @@ where
                 Point::new((end_x + 0.5) as i32, (end_y + 0.5) as i32),
             )
             .draw_styled(
-                &PrimitiveStyle::with_stroke(context.theme.foreground, GAUGE_STROKE_WIDTH / 2),
+                &PrimitiveStyle::with_stroke(stroke_color, gauge_stroke_width / 2),
                 context.draw_target,
             );
         }
@@ -168,7 +174,7 @@ where
             circle.primitive.center(),
             (circle.primitive.diameter / 10).clamp(2, 4),
         )
-        .into_styled(PrimitiveStyle::with_fill(context.theme.foreground))
+        .into_styled(PrimitiveStyle::with_fill(foreground_color))
         .draw(context.draw_target);
 
         // needle
@@ -187,7 +193,7 @@ where
 
         let _ = Line::new(center, Point::new(end_x as i32, end_y as i32))
             .into_styled(PrimitiveStyle::with_stroke(
-                context.theme.foreground2,
+                accent_color,
                 needle_width as u32,
             ))
             .draw(context.draw_target);
@@ -195,9 +201,11 @@ where
         let _ = Text::with_alignment(
             self.text,
             Point::new(center.x, center.y + 10),
-            MonoTextStyle::new(&FONT_4X6, context.theme.foreground),
+            MonoTextStyle::new(&FONT_4X6, accent_color),
             Alignment::Center,
         )
         .draw(context.draw_target);
+
+        EventResult::Pass
     }
 }

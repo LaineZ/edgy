@@ -1,6 +1,6 @@
-use crate::UiContext;
+use crate::{EventResult, UiContext};
 
-use super::Widget;
+use super::{Widget, WidgetEvent};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// Widget which wraps any [Drawable].
@@ -32,8 +32,9 @@ where
         self.primitive.bounding_box().size
     }
 
-    fn draw(&mut self, context: &mut crate::UiContext<'a, D, C>, _rect: Rectangle) {
+    fn draw(&mut self, context: &mut crate::UiContext<'a, D, C>, _rect: Rectangle, _event_args: WidgetEvent) -> EventResult {
         self.primitive.translate_mut(_rect.top_left);
         let _ = self.primitive.draw(context.draw_target);
+        EventResult::Pass
     }
 }

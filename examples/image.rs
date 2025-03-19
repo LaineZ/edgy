@@ -1,9 +1,8 @@
 use edgy::{
-    widgets::{
+    themes::{self}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObj,
-    },
-    theme::Theme, UiContext,
+    }, UiContext
 };
 use embedded_graphics::{
     mono_font::{iso_8859_10::FONT_10X20, MonoTextStyle},
@@ -42,7 +41,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(&mut display, Theme::hope_diamond());
+    let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
 
     let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("bee.bmp")).unwrap();
     println!(

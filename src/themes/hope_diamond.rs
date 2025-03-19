@@ -4,12 +4,9 @@ use embedded_graphics::{
     prelude::{PixelColor, RgbColor},
 };
 
-use crate::{
-    widgets::{self, Style, WidgetStyle},
-    Event,
-};
+use crate::Event;
 
-use super::{ColorTheme, Theme};
+use super::{ColorTheme, Style, Theme, WidgetStyle};
 
 const HOPE_DIAMOND_COLORS: ColorTheme = ColorTheme {
     background: Rgb888::new(21, 14, 16),
@@ -24,13 +21,13 @@ const HOPE_DIAMOND_COLORS: ColorTheme = ColorTheme {
 };
 
 struct DefaultButtonStyle;
-impl<C: PixelColor + From<Rgb888>> Style<C>
-    for DefaultButtonStyle
-{
-    fn style(&self, event: &Event) -> widgets::WidgetStyle<C> {
+impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultButtonStyle {
+    fn style(&self, event: &Event) -> WidgetStyle<C> {
         let style = WidgetStyle::default()
             .background_color(HOPE_DIAMOND_COLORS.background.into())
-            .foreground_color(HOPE_DIAMOND_COLORS.foreground.into());
+            .foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
+            .storke(2, HOPE_DIAMOND_COLORS.background2.into())
+            .accent_color(HOPE_DIAMOND_COLORS.success.into());
 
         match event {
             Event::Focus => style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
@@ -42,16 +39,29 @@ impl<C: PixelColor + From<Rgb888>> Style<C>
 
 struct DefaultStyle;
 impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultStyle {
-    fn style(&self, _event: &Event) -> widgets::WidgetStyle<C> {
+    fn style(&self, _event: &Event) -> WidgetStyle<C> {
         WidgetStyle::default().foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
     }
 }
 
-pub fn hope_diamond<C: PixelColor + From<Rgb888>>() -> Theme<C> {
+pub fn apply<C: PixelColor + From<Rgb888>>() -> Theme<C> {
     Theme {
         button_style: Rc::new(DefaultButtonStyle),
         layout_style: Rc::new(DefaultStyle),
         label_style: Rc::new(DefaultStyle),
         debug_rect: Rgb888::RED.into(),
+        gauge_style: WidgetStyle::default()
+            .background_color(HOPE_DIAMOND_COLORS.background.into())
+            .foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
+            .storke(2, HOPE_DIAMOND_COLORS.foreground.into()),
+        modal_style: WidgetStyle::default()
+            .background_color(HOPE_DIAMOND_COLORS.background.into())
+            .foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
+            .storke(2, HOPE_DIAMOND_COLORS.background2.into()),
+        plot_style: WidgetStyle::default()
+            .background_color(HOPE_DIAMOND_COLORS.background.into())
+            .foreground_color(HOPE_DIAMOND_COLORS.background2.into())
+            .accent_color(HOPE_DIAMOND_COLORS.foreground.into())
+            .storke(2, HOPE_DIAMOND_COLORS.foreground.into()),
     }
 }

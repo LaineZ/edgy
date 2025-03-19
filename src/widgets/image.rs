@@ -1,5 +1,5 @@
-use super::Widget;
-use crate::UiContext;
+use super::{Widget, WidgetEvent};
+use crate::{EventResult, UiContext};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// Image widget, uses [ImageDrawable] trait for data (raw) you can use any supported image parser for this. Or even, generate image from pixel data! So check the [ImageDrawable] documentation for more info
@@ -30,9 +30,16 @@ where
         self.image.bounding_box().size
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+       fn draw(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        rect: Rectangle,
+        _event_args: WidgetEvent,
+    ) -> EventResult {
         let _ = self
             .image
             .draw(&mut context.draw_target.translated(rect.top_left));
+
+        EventResult::Pass
     }
 }

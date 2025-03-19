@@ -2,11 +2,11 @@ use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::MonoFont,
     prelude::*,
-    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
+    primitives::{PrimitiveStyle, Rectangle},
 };
 
-use super::{button::ButtonGeneric, Widget};
-use crate::{Event, EventResult, SystemEvent, UiContext};
+use super::{button::ButtonGeneric, Widget, WidgetEvent};
+use crate::{themes::NoneStyle, Event, EventResult, UiContext};
 
 /// Toggle button (Korry-like switches)
 pub struct ToggleButton<'a, C: PixelColor> {
@@ -41,7 +41,7 @@ where
         callback: Box<dyn FnMut(bool) + 'a>,
     ) -> Self {
         Self {
-            base: ButtonGeneric::new(font, PrimitiveStyle::default(), PrimitiveStyle::default(), PrimitiveStyle::default()),
+            base: ButtonGeneric::new(font, NoneStyle::new_rc()),
             text,
             state,
             callback,
@@ -55,63 +55,54 @@ where
     C: PixelColor + 'a,
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        if self.base.style == PrimitiveStyle::default() {
-            self.base.style = PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.background)
-                .stroke_color(context.theme.background2)
-                .stroke_width(1)
-                .build();
+        let style = self.base.style.style(&Event::Idle);
+        if style.foreground_color.is_none() && style.background_color.is_none() {
+            self.base.style = context.theme.button_style.clone();
         }
 
-        self.base.size(&context.theme, &self.text)
+        self.base.size(&self.text)
     }
 
     fn is_interactive(&mut self) -> bool {
         true
     }
 
-    fn handle_event(
+    fn draw(
         &mut self,
         context: &mut UiContext<'a, D, C>,
-        _system_event: &SystemEvent,
-        event: &Event,
-    ) -> crate::EventResult {
-        match event {
-            Event::Focus => {
-                self.base.style.fill_color = Some(context.theme.background2);
-                EventResult::Stop
-            }
+        rect: Rectangle,
+        event_args: WidgetEvent,
+    ) -> EventResult {
+        let style = self.base.style.style(event_args.event);
+
+        let event_result = match event_args.event {
+            Event::Focus => EventResult::Stop,
             Event::Active => {
-                self.base.style.fill_color = Some(context.theme.background3);
                 (self.callback)(!self.state);
                 EventResult::Stop
             }
             _ => EventResult::Pass,
-        }
-    }
-
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.base.draw(context, rect, &self.text);
-        let style = if self.state {
-            PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.success)
-                .build()
-        } else {
-            PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.background3)
-                .build()
         };
 
+        self.base.draw(context, rect, event_args.event, &self.text);
         let light_size = (rect.size.height / 8).clamp(1, 4);
 
-        _ = Rectangle::new(
-            Point::new(
-                rect.top_left.x + 1,
-                (rect.top_left.y + rect.size.height as i32) - light_size as i32,
-            ),
-            Size::new(rect.size.width - 2, light_size),
-        )
-        .into_styled(style)
-        .draw(context.draw_target);
+        if self.state {
+            _ = Rectangle::new(
+                Point::new(
+                    rect.top_left.x + 1,
+                    (rect.top_left.y + rect.size.height as i32) - light_size as i32,
+                ),
+                Size::new(rect.size.width - 2, light_size),
+            )
+            .into_styled(PrimitiveStyle::with_fill(
+                style
+                    .accent_color
+                    .expect("Toggle button must have a accent color for drawing"),
+            ))
+            .draw(context.draw_target);
+        }
+
+        event_result
     }
 }

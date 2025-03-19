@@ -3,30 +3,30 @@
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
 use alloc::{rc::Rc, string::String};
-use themes::Theme;
 use core::{
     cell::Cell,
     sync::atomic::{AtomicUsize, Ordering},
 };
 pub use embedded_graphics;
+use themes::Theme;
 
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
-    pixelcolor::Rgb888,
     prelude::*,
-    primitives::{PrimitiveStyleBuilder, Rectangle},
+    primitives::Rectangle,
     text::Alignment,
 };
 use widgets::{
-    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder}, UiBuilder, WidgetObj
+    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
+    UiBuilder, WidgetObj,
 };
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
 // pub use embedded_graphics::geometry::Point as Point;
 // pub use embedded_graphics::geometry::Size as Size;
 
-pub mod widgets;
 pub mod themes;
+pub mod widgets;
 extern crate alloc;
 
 pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
@@ -87,7 +87,7 @@ where
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
     /// Event to pass in the library
-    event_queue: heapless::Vec<SystemEvent, 2>,
+    event_queue: heapless::Vec<SystemEvent, 5>,
     /// Enable/disable debug mode - displays red rectangles around widget bounds
     pub debug_mode: bool,
     alert_shown: Rc<Cell<bool>>,
@@ -120,9 +120,14 @@ where
             self.event_queue.clear();
         }
 
+        if let Some(last_event) = self.event_queue.last() {
+            if last_event == &event {
+                return;
+            }
+        }
+    
         self.event_queue.push(event).unwrap();
     }
-
     pub fn consume_event(&mut self, event: &SystemEvent) {
         self.event_queue.retain(|f| f != event);
     }
@@ -153,12 +158,18 @@ where
     }
 
     pub fn dim_screen(&mut self) {
+        let modal_style = self.theme.modal_style;
+
+        let modal_background = modal_style
+            .background_color
+            .expect("Modal must have a background color for drawing");
+
         let bounds = self.draw_target.bounding_box();
         let size = bounds.size;
         for x in 0..size.width {
             for y in 0..size.height {
                 if (x + y) % 2 == 0 {
-                    let _ = Pixel(Point::new(x as i32, y as i32), self.theme.background)
+                    let _ = Pixel(Point::new(x as i32, y as i32), modal_background)
                         .draw(self.draw_target);
                 }
             }
@@ -182,16 +193,9 @@ where
         root.size(self, bounds.size);
         root.layout(self, bounds);
 
-        if !self.event_queue.is_empty() && !self.alert_shown.get() {
-            let event = self.event_queue[self.event_queue.len() - 1];
 
-            if root.handle_event(self, &event) == EventResult::Stop && !event.is_motion_event() {
-                self.consume_event(&event);
-            }
-        }
-
-        root.draw(self);
-
+        // TODO: Handle events properly
+        root.draw(self, &SystemEvent::Idle);
 
         // alerts
         if self.alert_shown.get() {
@@ -201,13 +205,7 @@ where
                 .direction(LayoutDirection::Vertical)
                 .vertical_alignment(LayoutAlignment::Stretch)
                 .horizontal_alignment(LayoutAlignment::Stretch)
-                .style(
-                    PrimitiveStyleBuilder::new()
-                        .fill_color(self.theme.background)
-                        .stroke_color(self.theme.background2)
-                        .stroke_width(2)
-                        .build(),
-                );
+                .style(self.theme.modal_style);
 
             let alert_shown = self.alert_shown.clone();
 
@@ -228,7 +226,13 @@ where
                 ui.label(
                     &self.alert_text,
                     Alignment::Left,
-                    MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
+                    MonoTextStyle::new(
+                        &FONT_4X6,
+                        self.theme
+                            .modal_style
+                            .foreground_color
+                            .expect("Modal style must have a foreground color for drawing"),
+                    ),
                 );
             });
 
@@ -238,22 +242,22 @@ where
 
             let mut obj = layout.finish();
 
-            let size= obj.size(self, bounds.size);
+            let size = obj.size(self, bounds.size);
             let modal_size = Size::new(
                 size.width.min(bounds.size.width),
                 size.height.min(bounds.size.height),
             );
 
-            obj.layout(self, Rectangle::new(bounds.center() - Rectangle::new(Point::zero(), modal_size).center(), modal_size));
+            obj.layout(
+                self,
+                Rectangle::new(
+                    bounds.center() - Rectangle::new(Point::zero(), modal_size).center(),
+                    modal_size,
+                ),
+            );
 
-            if !self.event_queue.is_empty() {
-                let event = self.event_queue[self.event_queue.len() - 1];
-                if obj.handle_event(self, &event) == EventResult::Stop && !event.is_motion_event() {
-                    self.consume_event(&event);
-                }
-            }
-
-            obj.draw(self);
+            // TODO: Event handling for alert
+            obj.draw(self, &SystemEvent::Idle);
         }
     }
 }

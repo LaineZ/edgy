@@ -1,6 +1,6 @@
-use crate::UiContext;
+use crate::{EventResult, UiContext};
 
-use super::Widget;
+use super::{Widget, WidgetEvent};
 use alloc::vec::Vec;
 use embedded_graphics::{
     prelude::*,
@@ -62,12 +62,28 @@ where
         hint
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+       fn draw(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        rect: Rectangle,
+        _event_args: WidgetEvent,
+    ) -> EventResult {
         if self.points.is_empty() {
-            return;
+            return EventResult::Pass
         }
-        let grid_style = PrimitiveStyle::with_stroke(context.theme.background, 1);
-        let axis_style = PrimitiveStyle::with_stroke(context.theme.background2, 2);
+        let style = context.theme.plot_style;
+        let grid_style = PrimitiveStyle::with_stroke(
+            style
+                .background_color
+                .expect("Plot widghet must have a background color for a drawing"),
+            1,
+        );
+        let axis_style = PrimitiveStyle::with_stroke(
+            style
+                .foreground_color
+                .expect("Plot widghet must have a foreground color for a drawing"),
+            2,
+        );
 
         // draw lines
         let bottom_right = rect.bottom_right().unwrap_or_default();
@@ -124,8 +140,15 @@ where
         }
 
         let _ = Polyline::new(&self.points)
-            .into_styled(PrimitiveStyle::with_stroke(context.theme.foreground, 1))
+            .into_styled(PrimitiveStyle::with_stroke(
+                style
+                    .accent_color
+                    .expect("Plot widghet must have a accent color for a drawing"),
+                1,
+            ))
             .translate(self.offset)
             .draw(context.draw_target);
+
+        EventResult::Pass
     }
 }

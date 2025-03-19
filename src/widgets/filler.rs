@@ -1,7 +1,7 @@
 use crate::UiContext;
 
 use super::Widget;
-use embedded_graphics::{prelude::*, primitives::Rectangle};
+use embedded_graphics::{prelude::*};
 
 pub enum FillStrategy {
     Vertical,
@@ -31,9 +31,5 @@ where
             FillStrategy::Horizontal => Size::new(hint.width, 0),
             FillStrategy::Both => hint,
         }
-    }
-
-    fn draw(&mut self, _context: &mut crate::UiContext<'a, D, C>, _rect: Rectangle) {
-        // do nothing...
     }
 }

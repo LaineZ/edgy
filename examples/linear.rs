@@ -1,8 +1,8 @@
 use edgy::{
-    margin, widgets::{
+    margin, themes::{self}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObj,
-    }, SystemEvent, theme::Theme, UiContext
+    }, SystemEvent, UiContext
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::{
@@ -20,7 +20,7 @@ const PANEL_STYLE: PrimitiveStyle<Rgb888> = PrimitiveStyleBuilder::new()
     .stroke_width(1)
     .build();
 
-pub fn demo_ui<'a, D>(theme: &Theme<Rgb888>) -> WidgetObj<'a, D, Rgb888>
+pub fn demo_ui<'a, D>() -> WidgetObj<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
@@ -56,7 +56,7 @@ where
             ui.label(
                 "R. HUMIDITY %",
                 text::Alignment::Left,
-                MonoTextStyle::new(&FONT_5X8, theme.foreground),
+                MonoTextStyle::new(&FONT_5X8, Rgb888::WHITE),
             );
             ui.seven_segment("100", seven_segment_style);
         });
@@ -74,7 +74,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(&mut display, Theme::hope_diamond());
+    let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
 
     loop {
         window.update(&ui_ctx.draw_target);
@@ -105,6 +105,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.update(&mut demo_ui(&ui_ctx.theme));
+        ui_ctx.update(&mut demo_ui());
     }
 }

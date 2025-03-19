@@ -4,9 +4,9 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
 };
 
-use crate::{Event, SystemEvent, UiContext};
+use crate::{EventResult, UiContext};
 
-use super::{UiBuilder, Widget, WidgetObj};
+use super::{UiBuilder, Widget, WidgetEvent, WidgetObj};
 
 /// Margin struct
 #[derive(Default, Debug, Copy, Clone)]
@@ -132,18 +132,6 @@ where
         )
     }
 
-    fn handle_event(
-        &mut self,
-        context: &mut UiContext<'a, D, C>,
-        system_event: &SystemEvent,
-        _event: &Event,
-    ) -> crate::EventResult {
-        self.child
-            .as_mut()
-            .unwrap()
-            .handle_event(context, system_event)
-    }
-
     fn layout(&mut self, context: &mut crate::UiContext<'a, D, C>, rect: Rectangle) {
         let available_width = rect
             .size
@@ -170,10 +158,14 @@ where
 
     fn draw(
         &mut self,
-        context: &mut crate::UiContext<'a, D, C>,
-        rect: embedded_graphics::primitives::Rectangle,
-    ) {
+        context: &mut UiContext<'a, D, C>,
+        rect: Rectangle,
+        event_args: WidgetEvent,
+    ) -> EventResult {
         let _ = rect.into_styled(self.style).draw(context.draw_target);
-        self.child.as_mut().unwrap().draw(context);
+        self.child
+            .as_mut()
+            .unwrap()
+            .draw(context, event_args.system_event)
     }
 }

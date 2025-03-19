@@ -1,46 +1,50 @@
-use alloc::{boxed::Box, string::String};
+use core::any::{Any, TypeId};
+
+use alloc::{boxed::Box, rc::Rc, string::String};
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
-    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
+    primitives::Rectangle,
     text::{renderer::TextRenderer, Alignment, Text},
 };
 
-use crate::{Event, EventResult, SystemEvent, Theme, UiContext};
+use crate::{
+    themes::{NoneStyle, Style},
+    Event, EventResult, UiContext,
+};
 
-use super::Widget;
+use super::{Widget, WidgetEvent};
 
 /// Generic button style and drawing implementation
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct ButtonGeneric<'a, C: PixelColor> {
-    pub text_style: Option<MonoTextStyle<'a, C>>,
-    pub font: &'a MonoFont<'a>,
-    pub style: PrimitiveStyle<C>,
-    pub hover_style: PrimitiveStyle<C>,
-    pub active_style: PrimitiveStyle<C>,
+    text_style: Option<MonoTextStyle<'a, C>>,
+    font: &'a MonoFont<'a>,
+    pub style: Rc<dyn Style<C>>,
 }
 
 impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(
-        font: &'a MonoFont,
-        style: PrimitiveStyle<C>,
-        hover_style: PrimitiveStyle<C>,
-        active_style: PrimitiveStyle<C>,
-    ) -> Self {
+    pub fn new(font: &'a MonoFont, style: Rc<dyn Style<C>>) -> Self {
         Self {
             font,
-            text_style: None,
             style,
-            hover_style,
-            active_style,
+            text_style: None,
         }
     }
 
-    pub fn size(&mut self, theme: &Theme<C>, text: &str) -> Size {
-        self.text_style = Some(MonoTextStyle::new(self.font, theme.foreground));
+    pub fn size(&mut self, text: &str) -> Size {
+        let base_style = self.style.style(&Event::Idle);
+
+        self.text_style = Some(MonoTextStyle::new(
+            self.font,
+            base_style
+                .foreground_color
+                .expect("Button must have a foreground color for drawing"),
+        ));
+
         let text_size = self
             .text_style
             .unwrap()
@@ -63,9 +67,10 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
+        event: &Event,
         text: &str,
     ) {
-        let styled_rect = rect.into_styled(self.style);
+        let styled_rect = rect.into_styled(self.style.style(event).into());
         let _ = styled_rect.draw(context.draw_target);
 
         if let Some(style) = self.text_style {
@@ -100,12 +105,7 @@ where
 
     pub fn new(text: String, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
-            base: ButtonGeneric::new(
-                font,
-                PrimitiveStyle::default(),
-                PrimitiveStyle::default(),
-                PrimitiveStyle::default(),
-            ),
+            base: ButtonGeneric::new(font, NoneStyle::new_rc()),
             text,
             callback,
         }
@@ -115,62 +115,37 @@ where
 impl<'a, D, C> Widget<'a, D, C> for Button<'a, C>
 where
     D: DrawTarget<Color = C>,
-    C: PixelColor + 'a,
+    C: PixelColor + 'a
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        // TODO: Refactor, maybe some styling system?
-        if self.base.style == PrimitiveStyle::default() {
-            self.base.style = PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.background)
-                .stroke_color(context.theme.background2)
-                .stroke_width(1)
-                .build();
+        let style = self.base.style.style(&Event::Idle);
+        if style.foreground_color.is_none() && style.background_color.is_none() {
+            self.base.style = context.theme.button_style.clone();
         }
 
-        if self.base.hover_style == PrimitiveStyle::default() {
-            self.base.hover_style = PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.background2)
-                .stroke_color(context.theme.background2)
-                .stroke_width(1)
-                .build();
-        }
-
-        if self.base.active_style == PrimitiveStyle::default() {
-            self.base.active_style = PrimitiveStyleBuilder::new()
-                .fill_color(context.theme.background3)
-                .stroke_color(context.theme.background2)
-                .stroke_width(1)
-                .build();
-        }
-
-        self.base.size(&context.theme, &self.text)
+        self.base.size(&self.text)
     }
 
     fn is_interactive(&mut self) -> bool {
         true
     }
 
-    fn handle_event(
+    fn draw(
         &mut self,
         context: &mut UiContext<'a, D, C>,
-        _system_event: &SystemEvent,
-        event: &Event,
-    ) -> crate::EventResult {
-        match event {
-            Event::Focus => {
-                self.base.style.fill_color = Some(context.theme.background2);
-                EventResult::Stop
-            }
+        rect: Rectangle,
+        event_args: WidgetEvent,
+    ) -> EventResult {
+        let event_result = match event_args.event {
+            Event::Focus => EventResult::Stop,
             Event::Active => {
-                self.base.style.fill_color = Some(context.theme.background3);
                 (self.callback)();
                 EventResult::Stop
             }
             _ => EventResult::Pass,
-        }
-    }
+        };
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.base.draw(context, rect, &self.text);
+        self.base.draw(context, rect, event_args.event, &self.text);
+        event_result
     }
 }

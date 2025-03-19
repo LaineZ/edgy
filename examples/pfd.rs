@@ -6,7 +6,7 @@ use std::mem;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
-use edgy::{margin, SystemEvent, theme::Theme};
+use edgy::{margin, themes, SystemEvent};
 use edgy::{
     widgets::{
         linear_layout::{LayoutDirection, LinearLayoutBuilder},
@@ -238,11 +238,11 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let debug_text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::BLUE);
 
-    let mut ui_ctx = UiContext::new(&mut display, Theme::hope_diamond());
+    let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
     let mut default_state = UiState::default();
     let state = &RefCell::new(&mut default_state);
 
-    ui_ctx.alert("WELCOME TO EDGY!\nThis is testbed rather than example...\nSo, go ahead and test how it works (or not :P)");
+    //ui_ctx.alert("WELCOME TO EDGY!\nThis is testbed rather than example...\nSo, go ahead and test how it works (or not :P)");
 
     loop {
         let frame_render = std::time::Instant::now();
@@ -254,7 +254,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                 embedded_graphics_simulator::SimulatorEvent::Quit => {
                     std::process::exit(0);
                 }
-                embedded_graphics_simulator::SimulatorEvent::MouseButtonDown {
+                embedded_graphics_simulator::SimulatorEvent::MouseButtonUp {
                     mouse_btn: _,
                     point,
                 } => ui_ctx.push_event(SystemEvent::Active(point)),

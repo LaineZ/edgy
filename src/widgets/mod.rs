@@ -3,12 +3,14 @@
 //! `Widget` - Any UI-object both interactive and static, including `Layout`
 //!
 //! `Layout` - A container(-like) widget that holds another widgets
-
 use alloc::{boxed::Box, format, string::String, vec::Vec};
 use button::Button;
 use eg_seven_segment::SevenSegmentStyle;
 use embedded_graphics::{
-    mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle}, pixelcolor::Rgb565, prelude::*, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle}, text::{Alignment, Text}
+    mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
+    prelude::*,
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
+    text::{Alignment, Text},
 };
 use filler::{FillStrategy, Filler};
 use gauge::{Gauge, GaugeStyle};
@@ -34,81 +36,16 @@ pub mod margin_layout;
 pub mod plot;
 pub mod primitive;
 pub mod toggle_button;
-pub mod warning_triangle;
 
-
-/// Base style for any widget, basically any widget can have this style
 #[derive(Clone, Copy)]
-pub struct WidgetStyle<C: PixelColor> {
-    /// Accent (active) color of widget
-    pub accent_color: Option<C>,
-    /// Foreground color for widget elements
-    pub foreground_color: Option<C>,
-    /// Background color for widget
-    pub background_color: Option<C>,
-    /// Border color
-    pub stroke_color: Option<C>,
-    /// Border width
-    pub stroke_width: Option<u32>,
-}
-
-impl<C: PixelColor> Default for WidgetStyle<C> {
-    fn default() -> Self {
-        Self {
-            accent_color: Default::default(),
-            foreground_color: Default::default(),
-            background_color: Default::default(),
-            stroke_color: Default::default(),
-            stroke_width: Default::default(),
-        }
-    }
-}
-
-impl<C: PixelColor> WidgetStyle<C> {
-    pub fn foreground_color(mut self, color: C) -> Self {
-        self.foreground_color = Some(color);
-        self
-    }
-
-    pub fn accent_color(mut self, color: C) -> Self {
-        self.accent_color = Some(color);
-        self
-    }
-
-    pub fn background_color(mut self, color: C) -> Self {
-        self.background_color = Some(color);
-        self
-    }
-
-    pub fn storke(mut self, width: u32, color: C) -> Self {
-        self.stroke_color = Some(color);
-        self.stroke_width = Some(width);
-        self
-    }
-}
-
-impl <C: PixelColor> Into<PrimitiveStyle<C>> for WidgetStyle<C> {
-    fn into(self) -> PrimitiveStyle<C> {
-        let mut style = PrimitiveStyle::<C>::default();
-        style.fill_color = self.background_color;
-        style.stroke_color = self.stroke_color;
-        style.stroke_width = self.stroke_width.unwrap_or_default();
-
-        style
-    }
-}
-
-/// Base primitive style for widget
-pub trait Style<C>:
-where
-    C: PixelColor,
-{
-    /// Specifies style that depends on [Event]
-    fn style(&self, event: &Event) -> WidgetStyle<C>;
+pub struct WidgetEvent<'a> {
+    pub system_event: &'a SystemEvent,
+    pub event: &'a Event,
 }
 
 /// Trait for any widgets including containers
 /// Can also used as object
+#[allow(unused_variables)]
 pub trait Widget<'a, D, C>: 'a
 where
     D: DrawTarget<Color = C>,
@@ -137,19 +74,15 @@ where
         Size::new(u32::MAX, u32::MAX)
     }
 
-    /// Event processing in widget
-    fn handle_event(
+    /// Widget drawing logic
+    fn draw(
         &mut self,
-        _context: &mut UiContext<'a, D, C>,
-        _system_event: &SystemEvent,
-        event: &Event,
+        context: &mut UiContext<'a, D, C>,
+        rect: Rectangle,
+        event_args: WidgetEvent,
     ) -> EventResult {
-        let _ = event;
         EventResult::Pass
     }
-
-    /// Widget drawing logic
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle);
 }
 
 /// Any-widget struct
@@ -232,62 +165,54 @@ where
         )
     }
 
-    /// Event processing in widget. You can also use like update callback
-    pub fn handle_event(
-        &mut self,
-        context: &mut UiContext<'a, D, C>,
-        system_event: &SystemEvent,
-    ) -> EventResult {
+    fn handle_event(&mut self, system_event: &SystemEvent) -> Event {
         // TODO: Reconsider a better solution
         match *system_event {
             SystemEvent::FocusTo(id) => {
                 if self.id == id {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Focus)
-                } else {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Idle)
+                    return Event::Focus;
                 }
             }
             SystemEvent::ActiveTo(id) => {
                 if self.id == id {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Active)
-                } else {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Idle)
+                    return Event::Active;
                 }
             }
             SystemEvent::Active(point) => {
                 if self.computed_rect.contains(point) {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Active)
-                } else {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Idle)
+                    return Event::Active;
                 }
             }
             SystemEvent::Move(point) => {
                 if self.computed_rect.contains(point) {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Focus)
-                } else {
-                    self.widget
-                        .handle_event(context, system_event, &Event::Idle)
+                    return Event::Focus;
                 }
             }
-            _ => self
-                .widget
-                .handle_event(context, system_event, &Event::Idle),
+            _ => return Event::Idle,
         }
+
+        return Event::Idle;
     }
 
-    /// Actual draw function for widget.
-    pub fn draw(&mut self, context: &mut UiContext<'a, D, C>) {
-        self.widget.draw(context, self.rect());
+    /// Actual draw and event handling function for widget.
+    pub fn draw(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        system_event: &SystemEvent,
+    ) -> EventResult {
+        let event = self.handle_event(system_event);
+
+        let event_result = self.widget.draw(
+            context,
+            self.rect(),
+            WidgetEvent {
+                system_event,
+                event: &event,
+            },
+        );
 
         if context.debug_mode {
-            let text = MonoTextStyle::new(&FONT_4X6, context.theme.foreground2);
+            let text = MonoTextStyle::new(&FONT_4X6, context.theme.debug_rect);
             if self.id > 0 {
                 let _ = Text::new(
                     &format!("id: {}", self.id),
@@ -321,6 +246,8 @@ where
             )
             .draw(context.draw_target);
         }
+
+        event_result
     }
 }
 

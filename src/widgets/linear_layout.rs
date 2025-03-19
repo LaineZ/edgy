@@ -1,9 +1,15 @@
 use alloc::{boxed::Box, vec::Vec};
-use embedded_graphics::{prelude::*, primitives::{PrimitiveStyle, Rectangle}};
+use embedded_graphics::{
+    prelude::*,
+    primitives::Rectangle,
+};
 
-use crate::{Event, EventResult, SystemEvent, UiContext};
+use crate::{
+    themes::WidgetStyle,
+    EventResult, SystemEvent, UiContext,
+};
 
-use super::{UiBuilder, Widget, WidgetObj};
+use super::{UiBuilder, Widget, WidgetEvent, WidgetObj};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum LayoutDirection {
@@ -29,7 +35,7 @@ where
     pub horizontal_alignment: LayoutAlignment,
     pub vertical_alignment: LayoutAlignment,
     pub direction: LayoutDirection,
-    pub style: PrimitiveStyle<C>,
+    pub style: WidgetStyle<C>,
     pub min_size: Size,
     pub max_size: Size,
 }
@@ -53,28 +59,28 @@ where
         self.horizontal_alignment = alignment;
         self
     }
-    
+
     pub fn alignment(mut self, alignment: LayoutAlignment) -> Self {
         if alignment == LayoutAlignment::Stretch {
             self.horizontal_alignment = LayoutAlignment::Stretch;
             self.vertical_alignment = LayoutAlignment::Stretch;
-            return self
+            return self;
         }
 
         match self.direction {
             LayoutDirection::Horizontal => {
                 self.horizontal_alignment = alignment;
                 self.vertical_alignment = LayoutAlignment::Start;
-            },
+            }
             LayoutDirection::Vertical => {
                 self.vertical_alignment = alignment;
                 self.horizontal_alignment = LayoutAlignment::Start;
-            },
+            }
         }
         self
     }
 
-    pub fn style(mut self, style: PrimitiveStyle<C>) -> Self {
+    pub fn style(mut self, style: WidgetStyle<C>) -> Self {
         self.style = style;
         self
     }
@@ -100,7 +106,7 @@ where
             children: Vec::new(),
             horizontal_alignment: LayoutAlignment::Start,
             vertical_alignment: LayoutAlignment::Start,
-            style: PrimitiveStyle::default(),
+            style: WidgetStyle::default(),
             direction: LayoutDirection::Vertical,
             min_size: Size::zero(),
             max_size: Size::new(u32::MAX, u32::MAX),
@@ -140,7 +146,7 @@ where
     direction: LayoutDirection,
     horizontal_alignment: LayoutAlignment,
     vertical_alignment: LayoutAlignment,
-    style: PrimitiveStyle<C>,
+    style: WidgetStyle<C>,
     min_size: Size,
     max_size: Size,
 }
@@ -156,12 +162,14 @@ where
         for child in &mut self.children {
             // oh dear...
             let remaining_size = match self.direction {
-                LayoutDirection::Horizontal => 
-                    Size::new(hint.width.saturating_sub(computed_size.width), hint.height),
-                LayoutDirection::Vertical => 
-                    Size::new(hint.width, hint.height.saturating_sub(computed_size.height)),
+                LayoutDirection::Horizontal => {
+                    Size::new(hint.width.saturating_sub(computed_size.width), hint.height)
+                }
+                LayoutDirection::Vertical => {
+                    Size::new(hint.width, hint.height.saturating_sub(computed_size.height))
+                }
             };
-    
+
             let child_size = child.size(context, remaining_size);
 
             match self.direction {
@@ -189,24 +197,6 @@ where
 
     fn min_size(&mut self) -> Size {
         self.min_size
-    }
-
-    fn handle_event(
-        &mut self,
-        context: &mut UiContext<'a, D, C>,
-        system_event: &SystemEvent,
-        _event: &Event,
-    ) -> EventResult {
-        let mut result = EventResult::Pass;
-
-        for child in &mut self.children {
-            result = child.handle_event(context, system_event);
-            if result == EventResult::Stop {
-                break;
-            }
-        }
-
-        result
     }
 
     fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
@@ -312,11 +302,17 @@ where
 
             let child_rect = match self.direction {
                 LayoutDirection::Horizontal => Rectangle::new(
-                    Point::new(rect.top_left.x + main_offset, rect.top_left.y + cross_offset),
+                    Point::new(
+                        rect.top_left.x + main_offset,
+                        rect.top_left.y + cross_offset,
+                    ),
                     child_size,
                 ),
                 LayoutDirection::Vertical => Rectangle::new(
-                    Point::new(rect.top_left.x + cross_offset, rect.top_left.y + main_offset),
+                    Point::new(
+                        rect.top_left.x + cross_offset,
+                        rect.top_left.y + main_offset,
+                    ),
                     child_size,
                 ),
             };
@@ -331,10 +327,26 @@ where
         }
     }
 
-    fn draw(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        let _ = rect.into_styled(self.style).draw(context.draw_target);
-        for child in &mut self.children {
-            child.draw(context);
+    fn draw(
+        &mut self,
+        context: &mut UiContext<'a, D, C>,
+        rect: Rectangle,
+        event_args: WidgetEvent,
+    ) -> EventResult {
+        let _ = rect
+            .into_styled(self.style.into())
+            .draw(context.draw_target);
+
+        let mut event_result = EventResult::Pass;
+
+        for child in self.children.iter_mut() {
+            if event_result == EventResult::Stop {
+                event_result = child.draw(context, &SystemEvent::Idle);
+            } else {
+                event_result = child.draw(context, event_args.system_event);
+            }
         }
+
+        event_result
     }
 }
