@@ -129,16 +129,6 @@ where
                 .vertical_alignment(LayoutAlignment::Center)
                 .horizontal_alignment(LayoutAlignment::Center);
 
-            pfd_layout.seven_segment(
-                "20°C\n1",
-                SevenSegmentStyleBuilder::new()
-                    .digit_size(Size::new(8, 10))
-                    .segment_width(1)
-                    .inactive_segment_color(Rgb888::new(10, 10, 10))
-                    .segment_color(Rgb888::WHITE)
-                    .build(),
-            );
-
             pfd_layout.label(
                 "ATT",
                 Alignment::Center,
@@ -242,7 +232,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut default_state = UiState::default();
     let state = &RefCell::new(&mut default_state);
 
-    //ui_ctx.alert("WELCOME TO EDGY!\nThis is testbed rather than example...\nSo, go ahead and test how it works (or not :P)");
+    ui_ctx.alert("WELCOME TO EDGY!\nThis is testbed rather than example...\nSo, go ahead and test how it works (or not :P)");
 
     loop {
         let frame_render = std::time::Instant::now();

@@ -86,19 +86,25 @@ where
 
         self.base.draw(context, rect, event_args.event, &self.text);
         let light_size = (rect.size.height / 8).clamp(1, 4);
-
+        let rect_light = Rectangle::new(
+            Point::new(
+                rect.top_left.x + 1,
+                (rect.top_left.y + rect.size.height as i32) - light_size as i32,
+            ),
+            Size::new(rect.size.width - 2, light_size),
+        );
         if self.state {
-            _ = Rectangle::new(
-                Point::new(
-                    rect.top_left.x + 1,
-                    (rect.top_left.y + rect.size.height as i32) - light_size as i32,
-                ),
-                Size::new(rect.size.width - 2, light_size),
-            )
-            .into_styled(PrimitiveStyle::with_fill(
+            let _ = rect_light.into_styled(PrimitiveStyle::with_fill(
                 style
                     .accent_color
                     .expect("Toggle button must have a accent color for drawing"),
+            ))
+            .draw(context.draw_target);
+        } else {
+            let _ = rect_light.into_styled(PrimitiveStyle::with_fill(
+                style
+                    .foreground_color
+                    .expect("Toggle button must have a storke color for drawing"),
             ))
             .draw(context.draw_target);
         }

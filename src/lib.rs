@@ -116,7 +116,7 @@ where
     }
 
     pub fn push_event(&mut self, event: SystemEvent) {
-        if self.event_queue.is_full() || event.is_motion_event() {
+        if self.event_queue.is_full() || !event.is_motion_event() {
             self.event_queue.clear();
         }
 
@@ -125,7 +125,7 @@ where
                 return;
             }
         }
-    
+
         self.event_queue.push(event).unwrap();
     }
     pub fn consume_event(&mut self, event: &SystemEvent) {
@@ -193,9 +193,15 @@ where
         root.size(self, bounds.size);
         root.layout(self, bounds);
 
-
-        // TODO: Handle events properly
-        root.draw(self, &SystemEvent::Idle);
+        if !self.alert_shown.get() {
+            let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
+            root.draw(self, &event);
+            if !event.is_motion_event() {
+                self.consume_event(&event);
+            }
+        } else {
+            root.draw(self, &SystemEvent::Idle);
+        }
 
         // alerts
         if self.alert_shown.get() {
@@ -257,7 +263,11 @@ where
             );
 
             // TODO: Event handling for alert
-            obj.draw(self, &SystemEvent::Idle);
+            let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
+            obj.draw(self, &event);
+            if !event.is_motion_event() {
+                self.consume_event(&event);
+            }
         }
     }
 }
