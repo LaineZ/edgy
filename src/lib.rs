@@ -54,6 +54,10 @@ pub enum SystemEvent {
     Active(Point),
     /// Movement at surface event (e.g mouse moved to element)
     Move(Point),
+    /// Draggin at surface event (e.g mouse press and move)
+    Drag(Point),
+    Increase(usize, f32),
+    Decrease(usize, f32),
 }
 
 impl SystemEvent {
@@ -74,7 +78,10 @@ pub enum Event {
     /// Focus event. E.g hover from mouse or widget cycler (tab)
     Focus,
     // Active press at surface. E.g touch or mouse click
-    Active,
+    Active(Option<Point>),
+    Drag(Point),
+    Increase(f32),
+    Decrease(f32),
 }
 
 /// Primary UI Context
@@ -129,6 +136,11 @@ where
 
         self.event_queue.push(event).unwrap();
     }
+
+    pub fn get_focused_widget_id(&self) -> usize {
+        self.focused_element
+    }
+
     pub fn consume_event(&mut self, event: &SystemEvent) {
         self.event_queue.retain(|f| f != event);
     }
@@ -196,6 +208,7 @@ where
 
         if !self.alert_shown.get() {
             let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
+
             root.draw(self, &event);
             if !event.is_motion_event() {
                 self.consume_event(&event);

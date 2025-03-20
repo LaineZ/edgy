@@ -20,7 +20,7 @@ const HOPE_DIAMOND_COLORS: ColorTheme = ColorTheme {
     debug_rect: Rgb888::RED,
 };
 
-struct DefaultButtonStyle;
+pub struct DefaultButtonStyle;
 impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultButtonStyle {
     fn style(&self, event: &Event) -> WidgetStyle<C> {
         let style = WidgetStyle::default()
@@ -31,13 +31,13 @@ impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultButtonStyle {
 
         match event {
             Event::Focus => style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
-            Event::Active => style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
+            Event::Active(_) => style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
             _ => style,
         }
     }
 }
 
-struct DefaultStyle;
+pub struct DefaultStyle;
 impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultStyle {
     fn style(&self, _event: &Event) -> WidgetStyle<C> {
         WidgetStyle::default().foreground_color(HOPE_DIAMOND_COLORS.foreground.into())

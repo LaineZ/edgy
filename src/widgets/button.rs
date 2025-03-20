@@ -150,7 +150,7 @@ where
     ) -> EventResult {
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
-            Event::Active => {
+            Event::Active(_) => {
                 (self.callback)();
                 EventResult::Stop
             }

@@ -4,7 +4,7 @@ use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// Grid layout
-/// ```
+/// ```ignore
 /// +-----|-----+         
 /// |     |     |         
 /// |     |     |         

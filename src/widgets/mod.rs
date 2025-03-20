@@ -21,9 +21,10 @@ use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin_layout::{Margin, MarginLayout};
 use plot::Plot;
 use primitive::Primitive;
+use slider::{Slider, SliderStyle};
 use toggle_button::ToggleButton;
 
-use crate::{Event, EventResult, SystemEvent, UiContext};
+use crate::{themes::Style, Event, EventResult, SystemEvent, UiContext};
 
 pub mod button;
 pub mod filler;
@@ -35,11 +36,13 @@ pub mod linear_layout;
 pub mod margin_layout;
 pub mod plot;
 pub mod primitive;
+pub mod slider;
 pub mod toggle_button;
 
 #[derive(Clone, Copy)]
 pub struct WidgetEvent<'a> {
     pub system_event: &'a SystemEvent,
+    pub focused_element: usize,
     pub event: &'a Event,
 }
 
@@ -167,6 +170,7 @@ where
 
     fn handle_event(&mut self, system_event: &SystemEvent) -> Event {
         // TODO: Reconsider a better solution
+
         match *system_event {
             SystemEvent::FocusTo(id) => {
                 if self.id == id {
@@ -175,12 +179,15 @@ where
             }
             SystemEvent::ActiveTo(id) => {
                 if self.id == id {
-                    return Event::Active;
+                    return Event::Active(None);
                 }
             }
             SystemEvent::Active(point) => {
                 if self.computed_rect.contains(point) {
-                    return Event::Active;
+                    // compute local coords
+                    let x = point.x - self.computed_rect.top_left.x;
+                    let y = point.y - self.computed_rect.top_left.y;
+                    return Event::Active(Some(Point::new(x, y)));
                 }
             }
             SystemEvent::Move(point) => {
@@ -188,7 +195,27 @@ where
                     return Event::Focus;
                 }
             }
-            _ => return Event::Idle,
+            SystemEvent::Idle => {
+                return Event::Idle;
+            }
+            SystemEvent::Drag(point) => {
+                if self.computed_rect.contains(point) {
+                    // compute local coords
+                    let x = point.x - self.computed_rect.top_left.x;
+                    let y = point.y - self.computed_rect.top_left.y;
+                    return Event::Drag(Point::new(x, y));
+                }
+            }
+            SystemEvent::Increase(id, step) => {
+                if self.id == id {
+                    return Event::Increase(step);
+                }
+            },
+            SystemEvent::Decrease(id, step) => {
+                if self.id == id {
+                    return Event::Decrease(step);
+                }
+            },
         }
 
         return Event::Idle;
@@ -207,6 +234,7 @@ where
             self.rect(),
             WidgetEvent {
                 system_event,
+                focused_element: context.focused_element,
                 event: &event,
             },
         );
@@ -408,6 +436,15 @@ where
     /// Any embedded-graphics drawable (primitive)
     fn primitive<P: Drawable<Color = C> + Dimensions + Transform + 'a>(&mut self, primitive: P) {
         self.add_widget(Primitive::new(primitive));
+    }
+
+    fn slider<TrackStyle: Style<C> + 'a, HandleStyle: Style<C> + 'a>(
+        &mut self,
+        value: f32,
+        callback: impl FnMut(f32) + 'a,
+        style: SliderStyle<C, TrackStyle, HandleStyle>,
+    ) {
+        self.add_widget(Slider::new(value, Box::new(callback), style));
     }
 
     fn finish(self) -> WidgetObj<'a, D, C>;

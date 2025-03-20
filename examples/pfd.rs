@@ -3,9 +3,11 @@
 use std::cell::RefCell;
 use std::mem;
 
+use edgy::themes::hope_diamond::{self, DefaultButtonStyle};
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
+use edgy::widgets::slider::SliderStyle;
 use edgy::{margin, themes, SystemEvent};
 use edgy::{
     widgets::{
@@ -24,7 +26,7 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_graphics_simulator::sdl2::Keycode;
-use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, Window};
+use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Pages {
@@ -159,6 +161,18 @@ where
                 });
 
                 ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
+                    ui.slider(
+                        state.borrow().rpm,
+                        |value| {
+                            state.borrow_mut().rpm = value;
+                        },
+                        SliderStyle::new(
+                            DefaultButtonStyle,
+                            DefaultButtonStyle,
+                            1,
+                            Size::new(1, 5),
+                        ),
+                    );
                     ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
                         ui.toggle_button(
                             "BAT 1",
@@ -233,24 +247,47 @@ fn main() -> Result<(), core::convert::Infallible> {
 
     ui_ctx.alert("WELCOME TO EDGY!\nThis is testbed rather than example...\nSo, go ahead and test how it works (or not :P)");
 
+    let mut is_mouse_down = false;
+
     loop {
         let frame_render = std::time::Instant::now();
         window.update(&ui_ctx.draw_target);
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-
         for event in window.events() {
             match event {
-                embedded_graphics_simulator::SimulatorEvent::Quit => {
+                SimulatorEvent::Quit => {
                     std::process::exit(0);
                 }
-                embedded_graphics_simulator::SimulatorEvent::MouseButtonUp {
+
+                SimulatorEvent::MouseButtonDown {
                     mouse_btn: _,
                     point,
-                } => ui_ctx.push_event(SystemEvent::Active(point)),
-                embedded_graphics_simulator::SimulatorEvent::MouseMove { point } => {
-                    ui_ctx.push_event(SystemEvent::Move(point));
+                } => {
+                    is_mouse_down = true;
                 }
-                embedded_graphics_simulator::SimulatorEvent::KeyDown {
+
+                SimulatorEvent::MouseWheel { scroll_delta, direction } => {
+                    if scroll_delta.y > 0 {
+                        ui_ctx.push_event(SystemEvent::Increase(ui_ctx.get_focused_widget_id(), 0.1));
+                    } else {
+                        ui_ctx.push_event(SystemEvent::Decrease(ui_ctx.get_focused_widget_id(), 0.1));
+                    }
+                }
+                SimulatorEvent::MouseButtonUp {
+                    mouse_btn: _,
+                    point,
+                } => {
+                    ui_ctx.push_event(SystemEvent::Active(point));
+                    is_mouse_down = false;
+                }
+                SimulatorEvent::MouseMove { point } => {
+                    if is_mouse_down {
+                        ui_ctx.push_event(SystemEvent::Drag(point));
+                    } else {
+                        ui_ctx.push_event(SystemEvent::Move(point));
+                    }
+                }
+                SimulatorEvent::KeyDown {
                     keycode,
                     keymod: _,
                     repeat: _,
