@@ -1,4 +1,4 @@
-use alloc::rc::Rc;
+use alloc::sync::Arc;
 use embedded_graphics::{
     pixelcolor::Rgb888,
     prelude::{PixelColor, RgbColor},
@@ -44,11 +44,10 @@ impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultStyle {
     }
 }
 
-pub fn apply<C: PixelColor + From<Rgb888>>() -> Theme<C> {
+pub fn apply<'a, C: PixelColor + From<Rgb888>>() -> Theme<C> {
     Theme {
-        button_style: Rc::new(DefaultButtonStyle),
-        layout_style: Rc::new(DefaultStyle),
-        label_style: Rc::new(DefaultStyle),
+        button_style: Arc::new(DefaultButtonStyle),
+        layout_style: Arc::new(DefaultStyle),
         debug_rect: Rgb888::RED.into(),
         gauge_style: WidgetStyle::default()
             .background_color(HOPE_DIAMOND_COLORS.background.into())

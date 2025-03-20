@@ -2,7 +2,7 @@ use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::MonoFont,
     prelude::*,
-    primitives::{PrimitiveStyle, Rectangle},
+    primitives::{PrimitiveStyle, Rectangle}, text::Alignment,
 };
 
 use super::{button::ButtonGeneric, Widget, WidgetEvent};
@@ -41,7 +41,7 @@ where
         callback: Box<dyn FnMut(bool) + 'a>,
     ) -> Self {
         Self {
-            base: ButtonGeneric::new(font, NoneStyle::new_rc()),
+            base: ButtonGeneric::new(font, Alignment::Center, NoneStyle::new_arc()),
             text,
             state,
             callback,

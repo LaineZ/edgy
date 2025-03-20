@@ -1,6 +1,4 @@
-use core::any::{Any, TypeId};
-
-use alloc::{boxed::Box, rc::Rc, string::String};
+use alloc::{boxed::Box, string::String, sync::Arc};
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
@@ -15,22 +13,27 @@ use crate::{
 
 use super::{Widget, WidgetEvent};
 
+// TODO: make as field
+const PADDING: u32 = 6;
+
 /// Generic button style and drawing implementation
 #[derive(Clone)]
 pub struct ButtonGeneric<'a, C: PixelColor> {
     text_style: Option<MonoTextStyle<'a, C>>,
     font: &'a MonoFont<'a>,
-    pub style: Rc<dyn Style<C>>,
+    text_alignment: Alignment,
+    pub style: Arc<dyn Style<C>>,
 }
 
 impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(font: &'a MonoFont, style: Rc<dyn Style<C>>) -> Self {
+    pub fn new(font: &'a MonoFont, text_alignment: Alignment, style: Arc<dyn Style<C>>) -> Self {
         Self {
             font,
             style,
+            text_alignment,
             text_style: None,
         }
     }
@@ -56,10 +59,9 @@ where
             .bounding_box
             .size;
 
-        let padding = 6;
         Size::new(
-            text_size.width + 2 * padding,
-            text_size.height + 2 * padding,
+            text_size.width + 2 * PADDING,
+            text_size.height + 2 * PADDING,
         )
     }
 
@@ -74,7 +76,17 @@ where
         let _ = styled_rect.draw(context.draw_target);
 
         if let Some(style) = self.text_style {
-            let text = Text::with_alignment(text, rect.center(), style, Alignment::Center);
+
+            let text = match self.text_alignment {
+                Alignment::Left => {
+                    Text::new(text, Point::new(rect.top_left.x + PADDING as i32, rect.center().y), style)
+                },
+                Alignment::Center => {
+                    Text::with_alignment(text, rect.center(), style, Alignment::Center)
+                },
+                Alignment::Right => todo!(),
+            };
+
             let _ = text.draw(context.draw_target);
         }
     }
@@ -105,7 +117,7 @@ where
 
     pub fn new(text: String, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
-            base: ButtonGeneric::new(font, NoneStyle::new_rc()),
+            base: ButtonGeneric::new(font, Alignment::Center, NoneStyle::new_arc()),
             text,
             callback,
         }

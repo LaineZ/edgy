@@ -1,5 +1,5 @@
-use alloc::rc::Rc;
-use embedded_graphics::{pixelcolor::Rgb888, prelude::PixelColor, primitives::PrimitiveStyle};
+use alloc::sync::Arc;
+use embedded_graphics::{mono_font::{MonoFont, MonoTextStyle}, pixelcolor::Rgb888, prelude::PixelColor, primitives::PrimitiveStyle, text::TextStyle};
 
 use crate::Event;
 
@@ -21,12 +21,13 @@ pub(crate) struct ColorTheme {
 }
 
 
+
 /// Theme struct. You can freely create own themes
 #[derive(Clone)]
 pub struct Theme<C: PixelColor> {
-    pub button_style: Rc<dyn Style<C>>,
-    pub layout_style: Rc<dyn Style<C>>,
-    pub label_style: Rc<dyn Style<C>>,
+    // using arc due to thread safety, since rust ALWAYS assume static code as multi threaded
+    pub button_style: Arc<dyn Style<C>>,
+    pub layout_style: Arc<dyn Style<C>>,
     pub plot_style: WidgetStyle<C>,
     pub gauge_style: WidgetStyle<C>,
     pub modal_style: WidgetStyle<C>,
@@ -114,8 +115,8 @@ impl<C: PixelColor> Style<C> for NoneStyle {
 }
 
 impl NoneStyle {
-    pub fn new_rc() -> Rc<Self> {
-        Rc::new(Self)
+    pub fn new_arc() -> Arc<Self> {
+        Arc::new(Self)
     }
 }
 

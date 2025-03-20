@@ -27,6 +27,7 @@ use widgets::{
 
 pub mod themes;
 pub mod widgets;
+
 extern crate alloc;
 
 pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(0);

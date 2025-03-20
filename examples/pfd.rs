@@ -14,7 +14,6 @@ use edgy::{
     },
     UiContext,
 };
-use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::mono_font::ascii::FONT_10X20;
 use embedded_graphics::mono_font::iso_8859_5::FONT_5X7;
 use embedded_graphics::text::Alignment;
