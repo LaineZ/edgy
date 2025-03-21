@@ -1,10 +1,15 @@
 use alloc::sync::Arc;
-use embedded_graphics::{mono_font::{MonoFont, MonoTextStyle}, pixelcolor::Rgb888, prelude::PixelColor, primitives::PrimitiveStyle, text::TextStyle};
+use embedded_graphics::{
+    pixelcolor::Rgb888,
+    prelude::PixelColor,
+    primitives::PrimitiveStyle,
+};
 
 use crate::Event;
 
 pub mod hope_diamond;
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub(crate) struct ColorTheme {
     /// Primary background
@@ -20,8 +25,6 @@ pub(crate) struct ColorTheme {
     pub(crate) warning: Rgb888,
 }
 
-
-
 /// Theme struct. You can freely create own themes
 #[derive(Clone)]
 pub struct Theme<C: PixelColor> {
@@ -33,7 +36,6 @@ pub struct Theme<C: PixelColor> {
     pub modal_style: WidgetStyle<C>,
     pub debug_rect: C,
 }
-
 
 /// Base style for any widget, basically any widget can have this style
 #[derive(Clone, Copy)]
@@ -85,18 +87,18 @@ impl<C: PixelColor> WidgetStyle<C> {
     }
 }
 
-impl <C: PixelColor> Into<PrimitiveStyle<C>> for WidgetStyle<C> {
-    fn into(self) -> PrimitiveStyle<C> {
+impl<C: PixelColor> From<WidgetStyle<C>> for PrimitiveStyle<C> {
+    fn from(val: WidgetStyle<C>) -> Self {
         let mut style = PrimitiveStyle::<C>::default();
-        style.fill_color = self.background_color;
-        style.stroke_color = self.stroke_color;
-        style.stroke_width = self.stroke_width;
+        style.fill_color = val.background_color;
+        style.stroke_color = val.stroke_color;
+        style.stroke_width = val.stroke_width;
 
         style
     }
 }
 
-impl <C: PixelColor> From<PrimitiveStyle<C>> for WidgetStyle<C> {
+impl<C: PixelColor> From<PrimitiveStyle<C>> for WidgetStyle<C> {
     fn from(value: PrimitiveStyle<C>) -> Self {
         Self {
             background_color: value.fill_color,
@@ -108,6 +110,7 @@ impl <C: PixelColor> From<PrimitiveStyle<C>> for WidgetStyle<C> {
 }
 
 pub struct NoneStyle;
+
 impl<C: PixelColor> Style<C> for NoneStyle {
     fn style(&self, _event: &Event) -> WidgetStyle<C> {
         WidgetStyle::default()
@@ -121,10 +124,7 @@ impl NoneStyle {
 }
 
 /// Base primitive style for widget
-pub trait Style<C>:
-where
-    C: PixelColor,
-{
+pub trait Style<C: PixelColor> {
     /// Specifies style that depends on [Event]
     fn style(&self, event: &Event) -> WidgetStyle<C>;
 

@@ -77,7 +77,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
 
     loop {
-        window.update(&ui_ctx.draw_target);
+        window.update(ui_ctx.draw_target);
 
         for event in window.events() {
             match event {

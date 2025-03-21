@@ -51,7 +51,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     );
 
     loop {
-        window.update(&ui_ctx.draw_target);
+        window.update(ui_ctx.draw_target);
 
         for event in window.events() {
             match event {

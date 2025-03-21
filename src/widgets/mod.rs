@@ -218,7 +218,7 @@ where
             },
         }
 
-        return Event::Idle;
+        Event::Idle
     }
 
     /// Actual draw and event handling function for widget.

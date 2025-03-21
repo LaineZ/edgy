@@ -1,7 +1,7 @@
 use crate::UiContext;
 
 use super::Widget;
-use embedded_graphics::{prelude::*};
+use embedded_graphics::prelude::*;
 
 pub enum FillStrategy {
     Vertical,

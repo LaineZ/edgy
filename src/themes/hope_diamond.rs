@@ -44,7 +44,7 @@ impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultStyle {
     }
 }
 
-pub fn apply<'a, C: PixelColor + From<Rgb888>>() -> Theme<C> {
+pub fn apply<C: PixelColor + From<Rgb888>>() -> Theme<C> {
     Theme {
         button_style: Arc::new(DefaultButtonStyle),
         layout_style: Arc::new(DefaultStyle),

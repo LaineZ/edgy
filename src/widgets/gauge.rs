@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 
-use core::{f32::consts::PI, u32};
+use core::f32::consts::PI;
 use micromath::F32Ext;
 
 use super::{Widget, WidgetEvent};

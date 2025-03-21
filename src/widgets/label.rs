@@ -20,9 +20,9 @@ pub struct SevenSegmentWidget<C: PixelColor> {
     style: SevenSegmentStyle<C>,
 }
 
-impl<'a, C> SevenSegmentWidget<C>
+impl<C> SevenSegmentWidget<C>
 where
-    C: PixelColor + 'a,
+    C: PixelColor,
 {
     pub fn new(text: String, style: SevenSegmentStyle<C>) -> Self {
         Self {

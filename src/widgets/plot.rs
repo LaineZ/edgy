@@ -110,7 +110,7 @@ where
         // draw grid
         if self.y_scale > 0.2 {
             for x in (start_x..)
-                .step_by(10 as usize)
+                .step_by(10_usize)
                 .take_while(|&x| x <= min_size.width + rect.size.width)
             {
                 let scaled_x = ((x - min_size.width) as f32 * scale_x) as i32 + rect.top_left.x;

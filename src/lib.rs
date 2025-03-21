@@ -62,11 +62,7 @@ pub enum SystemEvent {
 
 impl SystemEvent {
     fn is_motion_event(&self) -> bool {
-        match self {
-            SystemEvent::FocusTo(_) => true,
-            SystemEvent::Move(_) => true,
-            _ => false,
-        }
+        matches!(self, SystemEvent::FocusTo(_) | SystemEvent::Move(_))
     }
 }
 

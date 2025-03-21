@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::mem;
 
-use edgy::themes::hope_diamond::{self, DefaultButtonStyle};
+use edgy::themes::hope_diamond::DefaultButtonStyle;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
@@ -54,7 +54,7 @@ pub struct UiState {
 impl UiState {
     fn _cycle_page(&mut self) {
         let current_page_index = self.page as u8;
-        if current_page_index <= 0 {
+        if current_page_index == 0 {
             self.page = Pages::from((current_page_index + 1).clamp(0, 1));
         } else {
             self.page = Pages::PFD;
@@ -85,7 +85,7 @@ where
         .alignment(LayoutAlignment::Center)
         .direction(LayoutDirection::Vertical);
 
-    let mut gauge = Gauge::new(value, &text, GaugeStyle::default().divisions(10));
+    let mut gauge = Gauge::new(value, text, GaugeStyle::default().divisions(10));
 
     gauge.add_detent(GaugeDetent::new([0.0, 0.5], Rgb888::WHITE));
     gauge.add_detent(GaugeDetent::new([0.5, 0.7], Rgb888::YELLOW));
@@ -251,7 +251,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
     loop {
         let frame_render = std::time::Instant::now();
-        window.update(&ui_ctx.draw_target);
+        window.update(ui_ctx.draw_target);
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
         for event in window.events() {
             match event {
@@ -261,12 +261,12 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                 SimulatorEvent::MouseButtonDown {
                     mouse_btn: _,
-                    point,
+                    point: _
                 } => {
                     is_mouse_down = true;
                 }
 
-                SimulatorEvent::MouseWheel { scroll_delta, direction } => {
+                SimulatorEvent::MouseWheel { scroll_delta, direction: _ } => {
                     if scroll_delta.y > 0 {
                         ui_ctx.push_event(SystemEvent::Increase(ui_ctx.get_focused_widget_id(), 0.1));
                     } else {

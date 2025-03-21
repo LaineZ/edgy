@@ -1,17 +1,15 @@
 use core::marker::PhantomData;
 
-use alloc::{boxed::Box, string::String};
+use alloc::boxed::Box;
 use embedded_graphics::{
-    mono_font::MonoFont,
     prelude::*,
     primitives::{PrimitiveStyle, Rectangle},
-    text::Alignment,
 };
 
 use super::{Widget, WidgetEvent};
 use crate::{
-    themes::{NoneStyle, Style},
-    Event, EventResult, SystemEvent, UiContext,
+    themes::Style,
+    Event, EventResult, UiContext,
 };
 
 #[derive(Clone, Copy)]
@@ -80,7 +78,7 @@ where
     TrackStyle: Style<C> + 'a,
     HandleStyle: Style<C> + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         Size::new(
             hint.width,
             self.style.track_height.max(self.style.handle_size.height),
@@ -122,7 +120,8 @@ where
         .into_styled::<PrimitiveStyle<C>>(handle_style.into())
         .draw(context.draw_target);
 
-        let event_result = match event_args.event {
+        
+        match event_args.event {
             Event::Active(Some(position)) => {
                 self.pos_to_value(rect, *position);
                 (self.callback)(self.value);
@@ -145,8 +144,7 @@ where
                 EventResult::Stop
             }
             _ => EventResult::Pass,
-        };
-        event_result
+        }
     }
 }
 
