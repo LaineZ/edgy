@@ -99,7 +99,7 @@ where
         let track_style = self.style.track_style.style(event_args.event);
 
         let track_rect = Rectangle::new(
-            rect.top_left,
+            Point::new(rect.top_left.x, rect.top_left.y + self.style.handle_size.height as i32),
             Size::new(rect.size.width, self.style.track_height),
         );
 
