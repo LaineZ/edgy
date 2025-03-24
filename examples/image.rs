@@ -33,7 +33,7 @@ where
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(256, 286));
+    let display = SimulatorDisplay::<Rgb888>::new(Size::new(256, 286));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
@@ -41,7 +41,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
 
     let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("bee.bmp")).unwrap();
     println!(
@@ -51,7 +51,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     );
 
     loop {
-        window.update(ui_ctx.draw_target);
+        window.update(&ui_ctx.draw_target);
 
         for event in window.events() {
             match event {

@@ -231,7 +231,7 @@ where
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
+    let display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
@@ -241,7 +241,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let debug_text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::BLUE);
 
-    let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
     let mut default_state = UiState::default();
     let state = &RefCell::new(&mut default_state);
 
@@ -251,7 +251,7 @@ fn main() -> Result<(), core::convert::Infallible> {
 
     loop {
         let frame_render = std::time::Instant::now();
-        window.update(ui_ctx.draw_target);
+        window.update(&mut ui_ctx.draw_target);
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
         for event in window.events() {
             match event {
@@ -327,7 +327,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                 Point::new(2, 10),
                 debug_text_style,
             )
-            .draw(ui_ctx.draw_target)?;
+            .draw(&mut ui_ctx.draw_target)?;
 
             let seconds = frame_render.elapsed().as_secs_f32();
             Text::new(
@@ -335,7 +335,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                 Point::new(2, 5),
                 debug_text_style,
             )
-            .draw(ui_ctx.draw_target)?;
+            .draw(&mut ui_ctx.draw_target)?;
         }
     }
 }

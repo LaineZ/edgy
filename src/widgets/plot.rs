@@ -93,14 +93,14 @@ where
             Point::new(bottom_right.x, rect.center().y),
         )
         .into_styled(axis_style)
-        .draw(context.draw_target);
+        .draw(&mut context.draw_target);
 
         let _ = Line::new(
             Point::new(rect.center().x, rect.top_left.y),
             Point::new(rect.center().x, bottom_right.y),
         )
         .into_styled(axis_style)
-        .draw(context.draw_target);
+        .draw(&mut context.draw_target);
 
         let (min_size, max_size) = self.scale_graph(rect);
 
@@ -122,7 +122,7 @@ where
                     Point::new(scaled_x, bottom_right.y),
                 )
                 .into_styled(grid_style)
-                .draw(context.draw_target);
+                .draw(&mut context.draw_target);
             }
 
             let step_y = (10.0 * self.y_scale) as i32;
@@ -135,7 +135,7 @@ where
                     Point::new(rect.bottom_right().unwrap_or_default().x, y),
                 )
                 .into_styled(grid_style)
-                .draw(context.draw_target);
+                .draw(&mut context.draw_target);
             }
         }
 
@@ -147,7 +147,7 @@ where
                 1,
             ))
             .translate(self.offset)
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
 
         EventResult::Pass
     }

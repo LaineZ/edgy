@@ -162,7 +162,7 @@ where
         rect: Rectangle,
         event_args: WidgetEvent,
     ) -> EventResult {
-        let _ = rect.into_styled(self.style).draw(context.draw_target);
+        let _ = rect.into_styled(self.style).draw(&mut context.draw_target);
         self.child
             .as_mut()
             .unwrap()

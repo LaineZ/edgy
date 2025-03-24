@@ -99,14 +99,14 @@ where
                     .accent_color
                     .expect("Toggle button must have a accent color for drawing"),
             ))
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
         } else {
             let _ = rect_light.into_styled(PrimitiveStyle::with_fill(
                 style
                     .foreground_color
                     .expect("Toggle button must have a storke color for drawing"),
             ))
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
         }
 
         event_result

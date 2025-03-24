@@ -335,7 +335,7 @@ where
     ) -> EventResult {
         let _ = rect
             .into_styled(self.style.into())
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
 
         let mut event_result = EventResult::Pass;
 

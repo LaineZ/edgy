@@ -250,7 +250,7 @@ where
                     ),
                     text,
                 )
-                .draw(context.draw_target);
+                .draw(&mut context.draw_target);
             } else {
                 let _ = Text::new(
                     &format!(
@@ -263,7 +263,7 @@ where
                     ),
                     text,
                 )
-                .draw(context.draw_target);
+                .draw(&mut context.draw_target);
             }
             let _ = embedded_graphics::prelude::Primitive::into_styled(
                 self.rect(),
@@ -272,7 +272,7 @@ where
                     .stroke_width(1)
                     .build(),
             )
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
         }
 
         event_result

@@ -13,7 +13,7 @@ use embedded_graphics::{
 use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, SimulatorDisplay, Window};
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
+    let display = SimulatorDisplay::<Rgb888>::new(Size::new(320, 240));
 
     let output_settings = OutputSettingsBuilder::new()
         .pixel_spacing(0)
@@ -21,7 +21,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(&mut display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
 
     let mut points = Vec::new();
     let mut offset = Point::zero();
@@ -34,7 +34,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     }
 
     loop {
-        window.update(ui_ctx.draw_target);
+        window.update(&mut ui_ctx.draw_target);
 
         for event in window.events() {
             match event {

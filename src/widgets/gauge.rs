@@ -116,7 +116,7 @@ where
 
         let circle_size = circle.primitive.diameter;
         let center = circle.primitive.center();
-        let _ = circle.draw(context.draw_target);
+        let _ = circle.draw(&mut context.draw_target);
 
         // draw detents
         for detent in self.detents.iter() {
@@ -135,7 +135,7 @@ where
                 gauge_stroke_width / 2,
             ));
 
-            let _ = arc.draw(context.draw_target);
+            let _ = arc.draw(&mut context.draw_target);
         }
 
         // draw a dashes
@@ -165,7 +165,7 @@ where
             )
             .draw_styled(
                 &PrimitiveStyle::with_stroke(stroke_color, gauge_stroke_width / 2),
-                context.draw_target,
+                &mut context.draw_target,
             );
         }
 
@@ -175,7 +175,7 @@ where
             (circle.primitive.diameter / 10).clamp(2, 4),
         )
         .into_styled(PrimitiveStyle::with_fill(foreground_color))
-        .draw(context.draw_target);
+        .draw(&mut context.draw_target);
 
         // needle
         let needle_width = (circle.primitive.diameter / 10).clamp(1, 2) as f32;
@@ -196,7 +196,7 @@ where
                 accent_color,
                 needle_width as u32,
             ))
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
 
         let _ = Text::with_alignment(
             self.text,
@@ -204,7 +204,7 @@ where
             MonoTextStyle::new(&FONT_4X6, accent_color),
             Alignment::Center,
         )
-        .draw(context.draw_target);
+        .draw(&mut context.draw_target);
 
         EventResult::Pass
     }

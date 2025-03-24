@@ -73,7 +73,7 @@ where
         text: &str,
     ) {
         let styled_rect = rect.into_styled(self.style.style(event).into());
-        let _ = styled_rect.draw(context.draw_target);
+        let _ = styled_rect.draw(&mut context.draw_target);
 
         if let Some(style) = self.text_style {
 
@@ -87,7 +87,7 @@ where
                 Alignment::Right => todo!(),
             };
 
-            let _ = text.draw(context.draw_target);
+            let _ = text.draw(&mut context.draw_target);
         }
     }
 }

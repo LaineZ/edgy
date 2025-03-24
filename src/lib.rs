@@ -4,8 +4,7 @@
 //! dynamic dispatch, threfore a allocator is required.
 use alloc::{rc::Rc, string::String};
 use core::{
-    cell::Cell,
-    sync::atomic::{AtomicUsize, Ordering},
+    cell::Cell, marker::PhantomData, sync::atomic::{AtomicUsize, Ordering}
 };
 pub use embedded_graphics;
 use themes::Theme;
@@ -83,11 +82,11 @@ pub enum Event {
 /// Primary UI Context
 pub struct UiContext<'a, D, C>
 where
-    D: DrawTarget<Color = C>,
+    D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
     /// ``DrawTarget`` basically is display for drawing
-    pub draw_target: &'a mut D,
+    pub draw_target: D,
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
     /// Event to pass in the library
@@ -98,6 +97,7 @@ where
     alert_text: String,
     elements_count: usize,
     focused_element: usize,
+    marker: PhantomData<&'a C>,
 }
 
 impl<'a, D, C> UiContext<'a, D, C>
@@ -106,7 +106,7 @@ where
     C: PixelColor,
 {
     /// Creates a new UI context with specified `DrawTaget` and `Theme`
-    pub fn new(draw_target: &'a mut D, theme: Theme<C>) -> Self {
+    pub fn new(draw_target: D, theme: Theme<C>) -> Self {
         Self {
             elements_count: 0,
             draw_target,
@@ -116,6 +116,7 @@ where
             debug_mode: false,
             alert_text: String::new(),
             alert_shown: Rc::new(Cell::new(false)),
+            marker: PhantomData,
         }
     }
 
@@ -179,7 +180,7 @@ where
             for y in 0..size.height {
                 if (x + y) % 2 == 0 {
                     let _ = Pixel(Point::new(x as i32, y as i32), modal_background)
-                        .draw(self.draw_target);
+                        .draw(&mut self.draw_target);
                 }
             }
         }

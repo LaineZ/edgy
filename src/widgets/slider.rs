@@ -106,7 +106,7 @@ where
         let _ = track_rect
             // пиздец компилер лох. даже ТАКУЮ ПРОСТУЮ ВЕЩЬ как вычислить тип примитива не смог.....
             .into_styled::<PrimitiveStyle<C>>(track_style.into())
-            .draw(context.draw_target);
+            .draw(&mut context.draw_target);
 
         let handle_position_x = rect.top_left.x + (rect.size.width as f32 * self.value) as i32;
         let _ = Rectangle::new(
@@ -118,7 +118,7 @@ where
         )
         // пиздец компилер лох. даже ТАКУЮ ПРОСТУЮ ВЕЩЬ как вычислить тип примитива не смог.....
         .into_styled::<PrimitiveStyle<C>>(handle_style.into())
-        .draw(context.draw_target);
+        .draw(&mut context.draw_target);
 
         
         match event_args.event {
@@ -157,8 +157,8 @@ mod tests {
     #[test]
     fn slider_size() {
 
-        let mut display = MockDisplay::new();
-        let mut ctx = UiContext::new(&mut display, hope_diamond::apply());
+        let display = MockDisplay::new();
+        let mut ctx = UiContext::new(display, hope_diamond::apply());
 
         let style = SliderStyle::<Rgb565, DefaultButtonStyle, DefaultButtonStyle>::new(
             DefaultButtonStyle,

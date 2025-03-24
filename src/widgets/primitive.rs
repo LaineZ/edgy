@@ -34,7 +34,7 @@ where
 
     fn draw(&mut self, context: &mut crate::UiContext<'a, D, C>, _rect: Rectangle, _event_args: WidgetEvent) -> EventResult {
         self.primitive.translate_mut(_rect.top_left);
-        let _ = self.primitive.draw(context.draw_target);
+        let _ = self.primitive.draw(&mut context.draw_target);
         EventResult::Pass
     }
 }
