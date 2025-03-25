@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-use std::u32;
 
 use alloc::boxed::Box;
 use embedded_graphics::{
