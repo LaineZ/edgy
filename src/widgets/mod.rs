@@ -42,7 +42,8 @@ pub mod toggle_button;
 #[derive(Clone, Copy)]
 pub struct WidgetEvent<'a> {
     pub system_event: &'a SystemEvent,
-    pub focused_element: usize,
+    pub is_focused: bool,
+    pub id: usize,
     pub event: &'a Event,
 }
 
@@ -206,16 +207,9 @@ where
                     return Event::Drag(Point::new(x, y));
                 }
             }
-            SystemEvent::Increase(id, step) => {
-                if self.id == id {
-                    return Event::Increase(step);
-                }
-            },
-            SystemEvent::Decrease(id, step) => {
-                if self.id == id {
-                    return Event::Decrease(step);
-                }
-            },
+            // do nothing, since is only system event
+            SystemEvent::Decrease(_) => {}
+            SystemEvent::Increase(_) => {}
         }
 
         Event::Idle
@@ -228,16 +222,14 @@ where
         system_event: &SystemEvent,
     ) -> EventResult {
         let event = self.handle_event(system_event);
+        let event_args = WidgetEvent {
+            system_event,
+            is_focused: context.focused_element == self.id,
+            id: self.id,
+            event: &event,
+        };
 
-        let event_result = self.widget.draw(
-            context,
-            self.rect(),
-            WidgetEvent {
-                system_event,
-                focused_element: context.focused_element,
-                event: &event,
-            },
-        );
+        let event_result = self.widget.draw(context, self.rect(), event_args);
 
         if context.debug_mode {
             let text = MonoTextStyle::new(&FONT_4X6, context.theme.debug_rect);
@@ -265,14 +257,26 @@ where
                 )
                 .draw(&mut context.draw_target);
             }
-            let _ = embedded_graphics::prelude::Primitive::into_styled(
-                self.rect(),
-                PrimitiveStyleBuilder::new()
-                    .stroke_color(context.theme.debug_rect)
-                    .stroke_width(1)
-                    .build(),
-            )
-            .draw(&mut context.draw_target);
+
+            if event_args.is_focused {
+                let _ = embedded_graphics::prelude::Primitive::into_styled(
+                    self.rect(),
+                    PrimitiveStyleBuilder::new()
+                        .stroke_color(context.theme.debug_rect_active)
+                        .stroke_width(1)
+                        .build(),
+                )
+                .draw(&mut context.draw_target);
+            } else {
+                let _ = embedded_graphics::prelude::Primitive::into_styled(
+                    self.rect(),
+                    PrimitiveStyleBuilder::new()
+                        .stroke_color(context.theme.debug_rect)
+                        .stroke_width(1)
+                        .build(),
+                )
+                .draw(&mut context.draw_target);
+            }
         }
 
         event_result

@@ -76,15 +76,21 @@ where
         let _ = styled_rect.draw(&mut context.draw_target);
 
         if let Some(style) = self.text_style {
-
             let text = match self.text_alignment {
-                Alignment::Left => {
-                    Text::new(text, Point::new(rect.top_left.x + PADDING as i32, rect.center().y), style)
-                },
+                Alignment::Left => Text::new(
+                    text,
+                    Point::new(rect.top_left.x + PADDING as i32, rect.center().y),
+                    style,
+                ),
                 Alignment::Center => {
                     Text::with_alignment(text, rect.center(), style, Alignment::Center)
-                },
-                Alignment::Right => todo!(),
+                }
+                Alignment::Right => {
+                    let text_width = text.len() as i32 * style.font.character_size.width as i32;
+                    let x_pos =
+                        rect.top_left.x + rect.size.width as i32 - text_width - PADDING as i32;
+                    Text::new(text, Point::new(x_pos, rect.center().y), style)
+                }
             };
 
             let _ = text.draw(&mut context.draw_target);
@@ -127,7 +133,7 @@ where
 impl<'a, D, C> Widget<'a, D, C> for Button<'a, C>
 where
     D: DrawTarget<Color = C>,
-    C: PixelColor + 'a
+    C: PixelColor + 'a,
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
         let style = self.base.style.style(&Event::Idle);
@@ -151,6 +157,7 @@ where
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
             Event::Active(_) => {
+                context.focused_element = event_args.id;
                 (self.callback)();
                 EventResult::Stop
             }

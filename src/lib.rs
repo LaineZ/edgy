@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
@@ -53,10 +53,12 @@ pub enum SystemEvent {
     Active(Point),
     /// Movement at surface event (e.g mouse moved to element)
     Move(Point),
-    /// Draggin at surface event (e.g mouse press and move)
+    /// Dragging at surface event (e.g mouse press and move)
     Drag(Point),
-    Increase(usize, f32),
-    Decrease(usize, f32),
+    /// Increase the value in specified step in range 0.0-1.0, used for sliders
+    Increase(f32),
+    /// Decreases the value in specified step in range 0.0-1.0, used for sliders
+    Decrease(f32),
 }
 
 impl SystemEvent {
@@ -65,7 +67,7 @@ impl SystemEvent {
     }
 }
 
-/// Event that can widget recieve
+/// Filtered to specified widget event
 #[derive(Clone, Copy, PartialEq)]
 pub enum Event {
     /// Idle event (None, Null) event
@@ -75,8 +77,6 @@ pub enum Event {
     // Active press at surface. E.g touch or mouse click
     Active(Option<Point>),
     Drag(Point),
-    Increase(f32),
-    Decrease(f32),
 }
 
 /// Primary UI Context
@@ -96,7 +96,7 @@ where
     alert_shown: Rc<Cell<bool>>,
     alert_text: String,
     elements_count: usize,
-    focused_element: usize,
+    pub(crate) focused_element: usize,
     marker: PhantomData<&'a C>,
 }
 

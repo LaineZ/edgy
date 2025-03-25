@@ -62,5 +62,6 @@ pub fn apply<C: PixelColor + From<Rgb888>>() -> Theme<C> {
             .foreground_color(HOPE_DIAMOND_COLORS.background2.into())
             .accent_color(HOPE_DIAMOND_COLORS.foreground.into())
             .storke(2, HOPE_DIAMOND_COLORS.foreground.into()),
+        debug_rect_active: Rgb888::GREEN.into(),
     }
 }

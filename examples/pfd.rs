@@ -268,9 +268,9 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                 SimulatorEvent::MouseWheel { scroll_delta, direction: _ } => {
                     if scroll_delta.y > 0 {
-                        ui_ctx.push_event(SystemEvent::Increase(ui_ctx.get_focused_widget_id(), 0.1));
+                        ui_ctx.push_event(SystemEvent::Increase(0.1));
                     } else {
-                        ui_ctx.push_event(SystemEvent::Decrease(ui_ctx.get_focused_widget_id(), 0.1));
+                        ui_ctx.push_event(SystemEvent::Decrease(0.1));
                     }
                 }
                 SimulatorEvent::MouseButtonUp {

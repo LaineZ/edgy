@@ -78,6 +78,7 @@ where
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
             Event::Active(_) => {
+                context.focused_element = event_args.id;
                 (self.callback)(!self.state);
                 EventResult::Stop
             }

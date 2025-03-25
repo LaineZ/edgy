@@ -35,6 +35,7 @@ pub struct Theme<C: PixelColor> {
     pub gauge_style: WidgetStyle<C>,
     pub modal_style: WidgetStyle<C>,
     pub debug_rect: C,
+    pub debug_rect_active: C,
 }
 
 /// Base style for any widget, basically any widget can have this style

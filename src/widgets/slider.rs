@@ -1,4 +1,5 @@
 use core::marker::PhantomData;
+use std::u32;
 
 use alloc::boxed::Box;
 use embedded_graphics::{
@@ -7,10 +8,7 @@ use embedded_graphics::{
 };
 
 use super::{Widget, WidgetEvent};
-use crate::{
-    themes::Style,
-    Event, EventResult, UiContext,
-};
+use crate::{themes::Style, Event, EventResult, SystemEvent, UiContext};
 
 #[derive(Clone, Copy)]
 pub struct SliderStyle<C: PixelColor, TrackStyle: Style<C>, HandleStyle: Style<C>> {
@@ -89,6 +87,10 @@ where
         true
     }
 
+    fn max_size(&mut self) -> Size {
+        Size::new(u32::MAX, self.style.handle_size.height)
+    }
+
     fn draw(
         &mut self,
         context: &mut UiContext<'a, D, C>,
@@ -99,7 +101,10 @@ where
         let track_style = self.style.track_style.style(event_args.event);
 
         let track_rect = Rectangle::new(
-            Point::new(rect.top_left.x, rect.top_left.y + self.style.handle_size.height as i32),
+            Point::new(
+                rect.top_left.x,
+                rect.top_left.y + self.style.handle_size.height as i32,
+            ),
             Size::new(rect.size.width, self.style.track_height),
         );
 
@@ -120,25 +125,41 @@ where
         .into_styled::<PrimitiveStyle<C>>(handle_style.into())
         .draw(&mut context.draw_target);
 
-        
+        if event_args.is_focused {
+            if let Some(color) = self.style.handle_style.base().accent_color {
+                let _ = Rectangle::new(
+                    Point::new(track_rect.top_left.x, track_rect.center().y - self.style.track_height as i32 - 2),
+                    Size::new(rect.size.width, self.style.handle_size.height + 2),
+                )
+                .into_styled(PrimitiveStyle::with_stroke(color, 1))
+                .draw(&mut context.draw_target);
+            }
+
+            match event_args.system_event {
+                SystemEvent::Increase(step) => {
+                    self.value += step;
+                    (self.callback)(self.value);
+                }
+
+                SystemEvent::Decrease(step) => {
+                    self.value -= step;
+                    (self.callback)(self.value);
+                }
+
+                _ => {}
+            }
+        }
+
         match event_args.event {
             Event::Active(Some(position)) => {
+                context.focused_element = event_args.id;
                 self.pos_to_value(rect, *position);
                 (self.callback)(self.value);
                 EventResult::Stop
             }
 
-            Event::Increase(step) => {
-                self.value += step;
-                EventResult::Stop
-            }
-
-            Event::Decrease(step) => {
-                self.value -= step;
-                EventResult::Stop
-            }
-
             Event::Drag(position) => {
+                context.focused_element = event_args.id;
                 self.pos_to_value(rect, *position);
                 (self.callback)(self.value);
                 EventResult::Stop
@@ -150,13 +171,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb565};
-    use crate::themes::hope_diamond::{self, DefaultButtonStyle};
     use super::*;
+    use crate::themes::hope_diamond::{self, DefaultButtonStyle};
+    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb565};
 
     #[test]
     fn slider_size() {
-
         let display = MockDisplay::new();
         let mut ctx = UiContext::new(display, hope_diamond::apply());
 
