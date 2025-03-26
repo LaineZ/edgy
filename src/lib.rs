@@ -4,7 +4,7 @@
 //! dynamic dispatch, threfore a allocator is required.
 use alloc::{rc::Rc, string::String};
 use core::{
-    cell::Cell, marker::PhantomData, sync::atomic::{AtomicUsize, Ordering}
+    cell::Cell, marker::PhantomData, sync::atomic::{AtomicUsize, Ordering}, u32
 };
 pub use embedded_graphics;
 use themes::Theme;
@@ -17,7 +17,7 @@ use embedded_graphics::{
 };
 use widgets::{
     linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
-    UiBuilder, WidgetObj,
+    UiBuilder, WidgetObject,
 };
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
@@ -30,6 +30,9 @@ pub mod widgets;
 extern crate alloc;
 
 pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
+
+pub const MAX_SIZE: Size = Size::new(u32::MAX, u32::MAX);
+pub const MIN_SIZE: Size = Size::zero();
 
 /// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -196,7 +199,7 @@ where
     }
 
     /// Updates and draws the UI, probably you want run this in main loop
-    pub fn update(&mut self, root: &mut WidgetObj<'a, D, C>) {
+    pub fn update(&mut self, root: &mut WidgetObject<'a, D, C>) {
         let bounds = self.draw_target.bounding_box();
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
         WIDGET_IDS.store(0, Ordering::Relaxed);

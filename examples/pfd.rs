@@ -12,7 +12,7 @@ use edgy::{margin, themes, SystemEvent};
 use edgy::{
     widgets::{
         linear_layout::{LayoutDirection, LinearLayoutBuilder},
-        UiBuilder, WidgetObj,
+        UiBuilder, WidgetObject,
     },
     UiContext,
 };
@@ -77,7 +77,7 @@ impl Default for UiState {
     }
 }
 
-fn gauge_with_text<'a, D>(value: f32, text: &'a str) -> WidgetObj<'a, D, Rgb888>
+fn gauge_with_text<'a, D>(value: f32, text: &'a str) -> WidgetObject<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {
@@ -94,7 +94,7 @@ where
     linear.finish()
 }
 
-fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObj<'a, D, Rgb888>
+fn demo_ui<'a, D>(state: &'a RefCell<&'a mut UiState>) -> WidgetObject<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {

@@ -38,6 +38,7 @@ pub mod plot;
 pub mod primitive;
 pub mod slider;
 pub mod toggle_button;
+pub mod root_layout;
 
 #[derive(Clone, Copy)]
 pub struct WidgetEvent<'a> {
@@ -90,7 +91,7 @@ where
 }
 
 /// Any-widget struct
-pub struct WidgetObj<'a, D, C>
+pub struct WidgetObject<'a, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
@@ -101,7 +102,7 @@ where
     pub(crate) id: usize,
 }
 
-impl<'a, D, C> WidgetObj<'a, D, C>
+impl<'a, D, C> WidgetObject<'a, D, C>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor,
@@ -116,7 +117,7 @@ where
     }
 }
 
-impl<'a, D, C> WidgetObj<'a, D, C>
+impl<'a, D, C> WidgetObject<'a, D, C>
 where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
@@ -292,11 +293,11 @@ where
     // here add function for building widgets like button
 
     /// Method for adding widget in Layouts
-    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>);
+    fn add_widget_obj(&mut self, widget: WidgetObject<'a, D, C>);
 
     /// Adds a widget in current layout
     fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W) {
-        let mut object = WidgetObj::new(Box::new(widget));
+        let mut object = WidgetObject::new(Box::new(widget));
         object.assign_id();
         self.add_widget_obj(object);
     }
@@ -451,5 +452,5 @@ where
         self.add_widget(Slider::new(value, Box::new(callback), style));
     }
 
-    fn finish(self) -> WidgetObj<'a, D, C>;
+    fn finish(self) -> WidgetObject<'a, D, C>;
 }

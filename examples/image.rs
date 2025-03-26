@@ -1,7 +1,7 @@
 use edgy::{
     themes::{self}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
-        UiBuilder, WidgetObj,
+        UiBuilder, WidgetObject,
     }, UiContext
 };
 use embedded_graphics::{
@@ -13,7 +13,7 @@ use embedded_graphics::{
 use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, SimulatorDisplay, Window};
 use tinybmp::Bmp;
 
-pub fn demo_ui<'a, D, I>(image: &'a I) -> WidgetObj<'a, D, Rgb888>
+pub fn demo_ui<'a, D, I>(image: &'a I) -> WidgetObject<'a, D, Rgb888>
 where
     I: ImageDrawable<Color = Rgb888>,
     D: DrawTarget<Color = Rgb888> + 'a,

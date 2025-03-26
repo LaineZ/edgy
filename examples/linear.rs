@@ -1,7 +1,7 @@
 use edgy::{
     margin, themes::{self}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
-        UiBuilder, WidgetObj,
+        UiBuilder, WidgetObject,
     }, SystemEvent, UiContext
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
@@ -20,7 +20,7 @@ const PANEL_STYLE: PrimitiveStyle<Rgb888> = PrimitiveStyleBuilder::new()
     .stroke_width(1)
     .build();
 
-pub fn demo_ui<'a, D>() -> WidgetObj<'a, D, Rgb888>
+pub fn demo_ui<'a, D>() -> WidgetObject<'a, D, Rgb888>
 where
     D: DrawTarget<Color = Rgb888> + 'a,
 {

@@ -1,4 +1,4 @@
-use super::{UiBuilder, Widget, WidgetEvent, WidgetObj};
+use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 use crate::{EventResult, SystemEvent, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
@@ -18,7 +18,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    pub children: Vec<WidgetObj<'a, D, C>>,
+    pub children: Vec<WidgetObject<'a, D, C>>,
     pub col_fracs: Vec<u32>,
     pub row_fracs: Vec<u32>,
 }
@@ -58,12 +58,12 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>) {
+    fn add_widget_obj(&mut self, widget: WidgetObject<'a, D, C>) {
         self.children.push(widget);
     }
 
-    fn finish(self) -> WidgetObj<'a, D, C> {
-        WidgetObj::new(Box::new(GridLayout {
+    fn finish(self) -> WidgetObject<'a, D, C> {
+        WidgetObject::new(Box::new(GridLayout {
             children: self.children,
             col_fracs: self.col_fracs,
             row_fracs: self.row_fracs,
@@ -76,7 +76,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    pub children: Vec<WidgetObj<'a, D, C>>,
+    pub children: Vec<WidgetObject<'a, D, C>>,
     pub col_fracs: Vec<u32>,
     pub row_fracs: Vec<u32>,
 }

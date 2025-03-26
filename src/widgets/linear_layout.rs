@@ -9,7 +9,7 @@ use crate::{
     EventResult, SystemEvent, UiContext,
 };
 
-use super::{UiBuilder, Widget, WidgetEvent, WidgetObj};
+use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum LayoutDirection {
@@ -31,7 +31,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    pub children: Vec<WidgetObj<'a, D, C>>,
+    pub children: Vec<WidgetObject<'a, D, C>>,
     pub horizontal_alignment: LayoutAlignment,
     pub vertical_alignment: LayoutAlignment,
     pub direction: LayoutDirection,
@@ -119,12 +119,12 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>) {
+    fn add_widget_obj(&mut self, widget: WidgetObject<'a, D, C>) {
         self.children.push(widget);
     }
 
-    fn finish(self) -> WidgetObj<'a, D, C> {
-        WidgetObj::new(Box::new(LinearLayout {
+    fn finish(self) -> WidgetObject<'a, D, C> {
+        WidgetObject::new(Box::new(LinearLayout {
             direction: self.direction,
             children: self.children,
             horizontal_alignment: self.horizontal_alignment,
@@ -142,7 +142,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    children: Vec<WidgetObj<'a, D, C>>,
+    children: Vec<WidgetObject<'a, D, C>>,
     direction: LayoutDirection,
     horizontal_alignment: LayoutAlignment,
     vertical_alignment: LayoutAlignment,

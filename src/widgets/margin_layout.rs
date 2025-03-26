@@ -6,7 +6,7 @@ use embedded_graphics::{
 
 use crate::{EventResult, UiContext};
 
-use super::{UiBuilder, Widget, WidgetEvent, WidgetObj};
+use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 
 /// Margin struct
 #[derive(Default, Debug, Copy, Clone)]
@@ -58,7 +58,7 @@ where
     C: PixelColor,
 {
     pub(crate) margin: Margin,
-    pub(crate) child: Option<WidgetObj<'a, D, C>>,
+    pub(crate) child: Option<WidgetObject<'a, D, C>>,
     pub(crate) style: PrimitiveStyle<C>,
 }
 
@@ -89,7 +89,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn add_widget_obj(&mut self, widget: WidgetObj<'a, D, C>) {
+    fn add_widget_obj(&mut self, widget: WidgetObject<'a, D, C>) {
         if self.child.is_none() {
             self.child = Some(widget);
         } else {
@@ -97,16 +97,12 @@ where
         }
     }
 
-    fn finish(self) -> WidgetObj<'a, D, C> {
+    fn finish(self) -> WidgetObject<'a, D, C> {
         if self.child.is_none() {
             panic!("MarginContainer must have a child before finishing!");
         }
 
-        WidgetObj::new(Box::new(MarginLayout {
-            margin: self.margin,
-            child: self.child,
-            style: self.style,
-        }))
+        WidgetObject::new(Box::new(self))
     }
 }
 
