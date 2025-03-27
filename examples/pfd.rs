@@ -26,7 +26,9 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_graphics_simulator::sdl2::Keycode;
-use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window};
+use embedded_graphics_simulator::{
+    OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Pages {
@@ -261,12 +263,15 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                 SimulatorEvent::MouseButtonDown {
                     mouse_btn: _,
-                    point: _
+                    point: _,
                 } => {
                     is_mouse_down = true;
                 }
 
-                SimulatorEvent::MouseWheel { scroll_delta, direction: _ } => {
+                SimulatorEvent::MouseWheel {
+                    scroll_delta,
+                    direction: _,
+                } => {
                     if scroll_delta.y > 0 {
                         ui_ctx.push_event(SystemEvent::Increase(0.1));
                     } else {
@@ -314,7 +319,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         let ui_context_render = std::time::Instant::now();
-        ui_ctx.update(&mut demo_ui(state));
+        ui_ctx.update(demo_ui(state));
         let seconds_ui = ui_context_render.elapsed().as_secs_f32();
 
         if ui_ctx.debug_mode {

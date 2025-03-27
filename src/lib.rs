@@ -16,8 +16,7 @@ use embedded_graphics::{
     text::Alignment,
 };
 use widgets::{
-    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
-    UiBuilder, WidgetObject,
+    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder}, root_layout::RootLayout, UiBuilder, WidgetObject
 };
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
@@ -199,89 +198,19 @@ where
     }
 
     /// Updates and draws the UI, probably you want run this in main loop
-    pub fn update(&mut self, root: &mut WidgetObject<'a, D, C>) {
-        let bounds = self.draw_target.bounding_box();
+    pub fn update(&mut self, root: WidgetObject<'a, D, C>) {
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
         WIDGET_IDS.store(0, Ordering::Relaxed);
-        root.size(self, bounds.size);
-        root.layout(self, bounds);
+        let bounds = self.draw_target.bounding_box();
+        let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
 
-        if !self.alert_shown.get() {
-            let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
+        let mut root_layout = RootLayout::new().add_widget_obj(root, bounds).finish();
+        root_layout.size(self, bounds.size);
+        root_layout.layout(self, bounds);
 
-            root.draw(self, &event);
-            if !event.is_motion_event() {
-                self.consume_event(&event);
-            }
-        } else {
-            root.draw(self, &SystemEvent::Idle);
-        }
-
-        // alerts
-        if self.alert_shown.get() {
-            self.dim_screen();
-            let bounds = self.draw_target.bounding_box();
-            let mut layout = LinearLayoutBuilder::default()
-                .direction(LayoutDirection::Vertical)
-                .vertical_alignment(LayoutAlignment::Stretch)
-                .horizontal_alignment(LayoutAlignment::Stretch)
-                .style(self.theme.modal_style);
-
-            let alert_shown = self.alert_shown.clone();
-
-            // layout.margin_layout(margin!(5), |ui| {
-            //     ui.grid_layout([100].into(), [25, 75].into(), |ui| {
-            //         ui.add_widget(WarningTriangle::new_both_sizes(Size::new(16, 16), Size::new(32, 32)));
-            //         ui.margin_layout(margin!(5), |ui| {
-            //             ui.label(
-            //                 &self.alert_text,
-            //                 Alignment::Left,
-            //                 MonoTextStyle::new(&FONT_4X6, self.theme.foreground),
-            //             );
-            //         });
-            //     });
-            // });
-
-            layout.margin_layout(margin!(5), |ui| {
-                ui.label(
-                    &self.alert_text,
-                    Alignment::Left,
-                    MonoTextStyle::new(
-                        &FONT_4X6,
-                        self.theme
-                            .modal_style
-                            .foreground_color
-                            .expect("Modal style must have a foreground color for drawing"),
-                    ),
-                );
-            });
-
-            layout.button("OK", &FONT_4X6, move || {
-                alert_shown.set(false);
-            });
-
-            let mut obj = layout.finish();
-
-            let size = obj.size(self, bounds.size);
-            let modal_size = Size::new(
-                size.width.min(bounds.size.width),
-                size.height.min(bounds.size.height),
-            );
-
-            obj.layout(
-                self,
-                Rectangle::new(
-                    bounds.center() - Rectangle::new(Point::zero(), modal_size).center(),
-                    modal_size,
-                ),
-            );
-
-            // TODO: Event handling for alert
-            let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
-            obj.draw(self, &event);
-            if !event.is_motion_event() {
-                self.consume_event(&event);
-            }
+        root_layout.draw(self, &event);
+        if !event.is_motion_event() {
+            self.consume_event(&event);
         }
     }
 }

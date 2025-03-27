@@ -133,8 +133,7 @@ where
 
     fn assign_id(&mut self) {
         if self.widget.is_interactive() {
-            let id = crate::WIDGET_IDS.load(core::sync::atomic::Ordering::Relaxed) + 1;
-            crate::WIDGET_IDS.store(id, core::sync::atomic::Ordering::Relaxed);
+            let id = crate::WIDGET_IDS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
             self.id = id;
         }
     }

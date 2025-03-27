@@ -36,8 +36,9 @@ where
     }
 
     /// Adds a [WidgetObject] within specified `rect`
-    pub fn add_widget_obj(&mut self, widget: WidgetObject<'a, D, C>, rect: Rectangle) {
+    pub fn add_widget_obj(mut self, widget: WidgetObject<'a, D, C>, rect: Rectangle) -> Self {
         self.children.push(WidgetAndPosition { widget_object: widget, dimensions: rect });
+        self
     }
 
     pub fn finish(self) -> WidgetObject<'a, D, C> {

@@ -83,6 +83,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         ui.plot(points.clone(), scale, offset);
 
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.update(&mut ui.finish());
+        ui_ctx.update(ui.finish());
     }
 }

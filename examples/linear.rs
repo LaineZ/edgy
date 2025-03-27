@@ -105,6 +105,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.update(&mut demo_ui());
+        ui_ctx.update(demo_ui());
     }
 }
