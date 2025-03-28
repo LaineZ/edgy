@@ -2,11 +2,11 @@
 
 # Edgy - embedded discreet graphics, yes
 
-Portable, lightweight and robust `no_std` immediate-mode GUI library targeted for microcontrollers. Uses [embedded_graphics](https://github.com/embedded-graphics/embedded-graphics) library for rendering therefore supports a great portion of displays out of box; and shares some types like `Rectangle` or `Size`.
+Portable, lightweight and robust `no_std` hybrid-mode (immidiate mode drawing and tree, and retained event handling) GUI library targeted for microcontrollers. Uses [embedded_graphics](https://github.com/embedded-graphics/embedded-graphics) library for rendering therefore supports a great portion of displays out of box; and shares some types like `Rectangle` or `Size`.
 
 Library uses ``alloc`` for widget dynamic dispatch, threfore a allocator is required.
 
-Work in progress, something is work, but is very ROUGH shape and requires polishing and improvements in many terms, including but not limited: code quality, documentation, features
+Work in progress, something is work, but is very ROUGH shape and requires polishing and improvements in many terms, including but not limited: code quality, documentation, features.
 
 # System requirements
 

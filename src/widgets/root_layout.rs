@@ -20,7 +20,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    children: Vec<WidgetAndPosition<'a, D, C>>
+    children: Vec<WidgetAndPosition<'a, D, C>>,
 }
 
 impl<'a, D, C> RootLayout<'a, D, C>
@@ -37,8 +37,15 @@ where
 
     /// Adds a [WidgetObject] within specified `rect`
     pub fn add_widget_obj(mut self, widget: WidgetObject<'a, D, C>, rect: Rectangle) -> Self {
-        self.children.push(WidgetAndPosition { widget_object: widget, dimensions: rect });
+        self.children.push(WidgetAndPosition {
+            widget_object: widget,
+            dimensions: rect,
+        });
         self
+    }
+
+    pub fn add_widget_obj_auto(mut self, widget: WidgetObject<'a, D, C>, position: Point) -> Self {
+        self.add_widget_obj(widget, Rectangle::new(position, Size::zero()))
     }
 
     pub fn finish(self) -> WidgetObject<'a, D, C> {

@@ -39,7 +39,7 @@ pub mod primitive;
 pub mod slider;
 pub mod toggle_button;
 pub mod root_layout;
-pub mod alert;
+//pub mod alert;
 
 /// Widget event arguments
 #[derive(Clone, Copy)]
