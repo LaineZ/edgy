@@ -39,7 +39,9 @@ pub mod primitive;
 pub mod slider;
 pub mod toggle_button;
 pub mod root_layout;
+pub mod alert;
 
+/// Widget event arguments
 #[derive(Clone, Copy)]
 pub struct WidgetEvent<'a> {
     pub system_event: &'a SystemEvent,
@@ -327,7 +329,7 @@ where
         text: S,
         font: &'a MonoFont,
         callback: impl FnMut() + 'a,
-    ) {
+    )  {
         self.add_widget(Button::new(text.into(), font, Box::new(callback)));
     }
 
