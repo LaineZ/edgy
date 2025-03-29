@@ -2,21 +2,21 @@
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
-use alloc::{rc::Rc, string::String};
+use alloc::{boxed::Box, rc::Rc, string::String};
 use core::{
-    cell::Cell, marker::PhantomData, sync::atomic::{AtomicUsize, Ordering}, u32
+    cell::RefCell,
+    marker::PhantomData,
+    sync::atomic::{AtomicUsize, Ordering},
+    u32,
 };
 pub use embedded_graphics;
 use themes::Theme;
 
-use embedded_graphics::{
-    mono_font::{ascii::FONT_4X6, MonoTextStyle},
-    prelude::*,
-    primitives::Rectangle,
-    text::Alignment,
-};
+use embedded_graphics::{prelude::*, primitives::Rectangle};
 use widgets::{
-    linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder}, root_layout::RootLayout, UiBuilder, WidgetObject
+    alert::Alert,
+    root_layout::{Anchor, RootLayout},
+    WidgetObject,
 };
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
@@ -95,8 +95,7 @@ where
     event_queue: heapless::Vec<SystemEvent, 5>,
     /// Enable/disable debug mode - displays red rectangles around widget bounds
     pub debug_mode: bool,
-    alert_shown: Rc<Cell<bool>>,
-    alert_text: String,
+    alert_text: Rc<RefCell<String>>,
     elements_count: usize,
     pub(crate) focused_element: usize,
     marker: PhantomData<&'a C>,
@@ -116,8 +115,7 @@ where
             event_queue: heapless::Vec::new(),
             focused_element: 0,
             debug_mode: false,
-            alert_text: String::new(),
-            alert_shown: Rc::new(Cell::new(false)),
+            alert_text: Rc::new(RefCell::new(String::new())),
             marker: PhantomData,
         }
     }
@@ -189,12 +187,13 @@ where
     }
 
     pub fn alert<S: Into<String>>(&mut self, text: S) {
-        self.alert_shown.set(true);
-        self.alert_text = text.into();
+        let mut borrow = self.alert_text.borrow_mut();
+        *borrow = text.into();
     }
 
     pub fn dismiss_alerts(&mut self) {
-        self.alert_shown.set(false);
+        let mut borrow = self.alert_text.borrow_mut();
+        *borrow = String::new();
     }
 
     /// Updates and draws the UI, probably you want run this in main loop
@@ -204,7 +203,31 @@ where
         let bounds = self.draw_target.bounding_box();
         let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
 
-        let mut root_layout = RootLayout::new().add_widget_obj(root, bounds).finish();
+        let alert_shown = !self.alert_text.borrow().is_empty();
+        let mut root_layout = RootLayout::new();
+        root_layout.add_widget_obj(root, bounds, !alert_shown, Anchor::TopLeft);
+
+        if alert_shown {
+            let alert_text = self.alert_text.clone();
+            let alert_msg = alert_text.borrow().clone();
+
+            let alert = Alert::new(
+                alert_msg,
+                self.theme.modal_style,
+                Box::new(move || {
+                    alert_text.take();
+                }),
+            );
+
+            root_layout.add_widget_obj(
+                WidgetObject::new(Box::new(alert)),
+                Rectangle::new(bounds.center(), Size::zero()),
+                true,
+                Anchor::Center,
+            );
+        }
+
+        let mut root_layout = root_layout.finish();
         root_layout.size(self, bounds.size);
         root_layout.layout(self, bounds);
 

@@ -1,9 +1,14 @@
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
+use super::{Widget, WidgetEvent, WidgetObject};
 use crate::{EventResult, SystemEvent, UiContext};
 
-use super::{Widget, WidgetEvent, WidgetObject};
+#[derive(Clone, Copy, PartialEq)]
+pub enum Anchor {
+    TopLeft,
+    Center,
+}
 
 struct WidgetAndPosition<'a, D, C>
 where
@@ -12,6 +17,8 @@ where
 {
     widget_object: WidgetObject<'a, D, C>,
     dimensions: Rectangle,
+    exclusive: bool,
+    anchor: Anchor,
 }
 
 /// Root layout, bascially this is stack layout (literally) puts [Widget]'s in stack and draws it. Difference fron other layout that it's does not implement [UiBuilder] trait, and support only add [WidgetObj]'s directly
@@ -36,16 +43,19 @@ where
     }
 
     /// Adds a [WidgetObject] within specified `rect`
-    pub fn add_widget_obj(mut self, widget: WidgetObject<'a, D, C>, rect: Rectangle) -> Self {
+    pub fn add_widget_obj(
+        &mut self,
+        widget: WidgetObject<'a, D, C>,
+        rect: Rectangle,
+        exclusive: bool,
+        anchor: Anchor,
+    ) {
         self.children.push(WidgetAndPosition {
             widget_object: widget,
             dimensions: rect,
+            exclusive,
+            anchor,
         });
-        self
-    }
-
-    pub fn add_widget_obj_auto(mut self, widget: WidgetObject<'a, D, C>, position: Point) -> Self {
-        self.add_widget_obj(widget, Rectangle::new(position, Size::zero()))
     }
 
     pub fn finish(self) -> WidgetObject<'a, D, C> {
@@ -62,15 +72,28 @@ where
         let mut size = Size::zero();
 
         for child in self.children.iter_mut() {
-            size += child.widget_object.size(context, child.dimensions.size);
+            let child_size = child.widget_object.size(context, child.dimensions.size);
+            size += child_size;
+            child.dimensions.size = child_size;
         }
 
         size
     }
 
-    fn layout(&mut self, context: &mut UiContext<'a, D, C>, _rect: Rectangle) {
+    fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
         for child in self.children.iter_mut() {
-            child.widget_object.layout(context, child.dimensions);
+            match child.anchor {
+                Anchor::TopLeft => {
+                    child.widget_object.layout(context, child.dimensions);
+                }
+                Anchor::Center => {
+                    let centered_pos = rect.top_left
+                        + (rect.size / 2)
+                        - (child.dimensions.size / 2);
+                    let centered_rect = Rectangle::new(centered_pos, child.dimensions.size);
+                    child.widget_object.layout(context, centered_rect);
+                }
+            }
         }
     }
 
@@ -83,7 +106,7 @@ where
         let mut event_result = EventResult::Pass;
 
         for child in self.children.iter_mut() {
-            if event_result == EventResult::Stop {
+            if event_result == EventResult::Stop || !child.exclusive {
                 event_result = child.widget_object.draw(context, &SystemEvent::Idle);
             } else {
                 event_result = child.widget_object.draw(context, event_args.system_event);

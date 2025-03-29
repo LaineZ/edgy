@@ -26,6 +26,7 @@ use toggle_button::ToggleButton;
 
 use crate::{themes::Style, Event, EventResult, SystemEvent, UiContext};
 
+pub mod alert;
 pub mod button;
 pub mod filler;
 pub mod gauge;
@@ -157,12 +158,11 @@ where
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
     pub fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
-        self.computed_rect = rect;
+        self.computed_rect = Rectangle::new(rect.top_left, self.calculate_bound_sizes(rect.size));
         self.widget.layout(context, rect);
     }
-
-    /// Calculate sizes clamping to minimum and maximum sizes
-    pub fn calculate_bound_sizes(&mut self, size: Size) -> Size {
+    
+    fn calculate_bound_sizes(&mut self, size: Size) -> Size {
         Size::new(
             size.width
                 .clamp(self.min_size().width, self.max_size().width),

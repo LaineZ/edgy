@@ -303,7 +303,6 @@ fn main() -> Result<(), core::convert::Infallible> {
 
                     if keycode == Keycode::Return {
                         ui_ctx.activate_selected_widget();
-                        ui_ctx.dismiss_alerts();
                     }
 
                     if keycode == Keycode::F1 {
