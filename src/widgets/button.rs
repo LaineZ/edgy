@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, string::String, sync::Arc};
+use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
@@ -7,8 +7,7 @@ use embedded_graphics::{
 };
 
 use crate::{
-    themes::{NoneStyle, Style},
-    Event, EventResult, UiContext,
+    themes::DynamicStyle, Event, EventResult, UiContext
 };
 
 use super::{Widget, WidgetEvent};
@@ -22,14 +21,14 @@ pub struct ButtonGeneric<'a, C: PixelColor> {
     text_style: Option<MonoTextStyle<'a, C>>,
     font: &'a MonoFont<'a>,
     text_alignment: Alignment,
-    pub style: Arc<dyn Style<C>>,
+    pub style: DynamicStyle<C>,
 }
 
 impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(font: &'a MonoFont, text_alignment: Alignment, style: Arc<dyn Style<C>>) -> Self {
+    pub fn new(font: &'a MonoFont, text_alignment: Alignment, style: DynamicStyle<C>) -> Self {
         Self {
             font,
             style,
@@ -123,7 +122,13 @@ where
 
     pub fn new(text: String, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
-            base: ButtonGeneric::new(font, Alignment::Center, NoneStyle::new_arc()),
+            // wtf
+            base: ButtonGeneric::new(font, Alignment::Center, DynamicStyle {
+                active: Default::default(),
+                drag: Default::default(),
+                focus: Default::default(),
+                idle: Default::default()
+            }),
             text,
             callback,
         }
@@ -138,7 +143,7 @@ where
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
         let style = self.base.style.style(&Event::Idle);
         if style.foreground_color.is_none() && style.background_color.is_none() {
-            self.base.style = context.theme.button_style.clone();
+            self.base.style = context.theme.button_style;
         }
 
         self.base.size(&self.text)
@@ -156,7 +161,7 @@ where
     ) -> EventResult {
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
-            Event::Active(_) => {
+            Event::Active(_) | Event::Drag(_) => {
                 context.focused_element = event_args.id;
                 (self.callback)();
                 EventResult::Stop

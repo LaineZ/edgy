@@ -21,10 +21,10 @@ use linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder};
 use margin_layout::{Margin, MarginLayout};
 use plot::Plot;
 use primitive::Primitive;
-use slider::{Slider, SliderStyle};
+use slider::Slider;
 use toggle_button::ToggleButton;
 
-use crate::{themes::Style, Event, EventResult, SystemEvent, UiContext};
+use crate::{Event, EventResult, SystemEvent, UiContext};
 
 pub mod alert;
 pub mod button;
@@ -444,13 +444,12 @@ where
         self.add_widget(Primitive::new(primitive));
     }
 
-    fn slider<TrackStyle: Style<C> + 'a, HandleStyle: Style<C> + 'a>(
+    fn slider(
         &mut self,
         value: f32,
         callback: impl FnMut(f32) + 'a,
-        style: SliderStyle<C, TrackStyle, HandleStyle>,
     ) {
-        self.add_widget(Slider::new(value, Box::new(callback), style));
+        self.add_widget(Slider::new(value, Box::new(callback)));
     }
 
     fn finish(self) -> WidgetObject<'a, D, C>;

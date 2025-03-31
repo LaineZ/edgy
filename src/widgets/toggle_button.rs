@@ -2,11 +2,12 @@ use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::MonoFont,
     prelude::*,
-    primitives::{PrimitiveStyle, Rectangle}, text::Alignment,
+    primitives::{PrimitiveStyle, Rectangle},
+    text::Alignment,
 };
 
 use super::{button::ButtonGeneric, Widget, WidgetEvent};
-use crate::{themes::NoneStyle, Event, EventResult, UiContext};
+use crate::{themes::DynamicStyle, Event, EventResult, UiContext};
 
 /// Toggle button (Korry-like switches)
 pub struct ToggleButton<'a, C: PixelColor> {
@@ -41,7 +42,17 @@ where
         callback: Box<dyn FnMut(bool) + 'a>,
     ) -> Self {
         Self {
-            base: ButtonGeneric::new(font, Alignment::Center, NoneStyle::new_arc()),
+            // wtf
+            base: ButtonGeneric::new(
+                font,
+                Alignment::Center,
+                DynamicStyle {
+                    active: Default::default(),
+                    drag: Default::default(),
+                    focus: Default::default(),
+                    idle: Default::default(),
+                },
+            ),
             text,
             state,
             callback,
@@ -57,7 +68,7 @@ where
     fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
         let style = self.base.style.style(&Event::Idle);
         if style.foreground_color.is_none() && style.background_color.is_none() {
-            self.base.style = context.theme.button_style.clone();
+            self.base.style = context.theme.button_style;
         }
 
         self.base.size(&self.text)
@@ -95,19 +106,19 @@ where
             Size::new(rect.size.width - 2, light_size),
         );
         if self.state {
-            let _ = rect_light.into_styled(PrimitiveStyle::with_fill(
-                style
-                    .accent_color
-                    .expect("Toggle button must have a accent color for drawing"),
-            ))
-            .draw(&mut context.draw_target);
+            let _ = rect_light
+                .into_styled(PrimitiveStyle::with_fill(
+                    style
+                        .accent_color
+                        .expect("Toggle button must have a accent color for drawing"),
+                ))
+                .draw(&mut context.draw_target);
         } else {
-            let _ = rect_light.into_styled(PrimitiveStyle::with_fill(
-                style
-                    .foreground_color
-                    .expect("Toggle button must have a storke color for drawing"),
-            ))
-            .draw(&mut context.draw_target);
+            if let Some(foreground_color) = style.foreground_color {
+                let _ = rect_light
+                    .into_styled(PrimitiveStyle::with_fill(foreground_color))
+                    .draw(&mut context.draw_target);
+            }
         }
 
         event_result

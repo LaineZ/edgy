@@ -2,12 +2,9 @@
 
 use std::cell::RefCell;
 use std::mem;
-
-use edgy::themes::hope_diamond::DefaultButtonStyle;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
 use edgy::widgets::linear_layout::LayoutAlignment;
-use edgy::widgets::slider::SliderStyle;
 use edgy::{margin, themes, SystemEvent};
 use edgy::{
     widgets::{
@@ -168,12 +165,6 @@ where
                         |value| {
                             state.borrow_mut().rpm = value;
                         },
-                        SliderStyle::new(
-                            DefaultButtonStyle,
-                            DefaultButtonStyle,
-                            1,
-                            Size::new(1, 5),
-                        ),
                     );
                     ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
                         ui.toggle_button(

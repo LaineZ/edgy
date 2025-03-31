@@ -350,3 +350,24 @@ where
         event_result
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::themes::hope_diamond::{self};
+    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb565};
+
+    #[test]
+    fn linear_assume_zero_size() {
+        let display = MockDisplay::<Rgb565>::new();
+        let mut ctx = UiContext::new(display, hope_diamond::apply());
+
+        for lay_type in [LayoutDirection::Horizontal, LayoutDirection::Vertical] {
+            let mut layout = LinearLayoutBuilder::default().direction(lay_type).finish();
+            let bb = ctx.draw_target.bounding_box().size;
+            let size = layout.size(&mut ctx, bb);
+            assert_eq!(size, Size::zero());
+        }
+    }
+}

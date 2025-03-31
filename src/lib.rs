@@ -85,7 +85,7 @@ pub enum Event {
 pub struct UiContext<'a, D, C>
 where
     D: DrawTarget<Color = C> + 'a,
-    C: PixelColor + 'a,
+    C: PixelColor + 'static,
 {
     /// ``DrawTarget`` basically is display for drawing
     pub draw_target: D,

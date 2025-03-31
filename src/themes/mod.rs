@@ -1,11 +1,30 @@
-use alloc::sync::Arc;
-use embedded_graphics::{
-    pixelcolor::Rgb888,
-    prelude::PixelColor,
-    primitives::PrimitiveStyle,
-};
+use embedded_graphics::{pixelcolor::Rgb888, prelude::PixelColor, primitives::PrimitiveStyle};
 
-use crate::Event;
+use crate::{widgets::slider::SliderStyle, Event};
+
+/// dynamic styles for widgets
+#[derive(Clone, Copy, Default)]
+pub struct DynamicStyle<C: PixelColor> {
+    pub idle: WidgetStyle<C>,
+    pub focus: WidgetStyle<C>,
+    pub active: WidgetStyle<C>,
+    pub drag: WidgetStyle<C>,
+}
+
+impl<C: PixelColor> DynamicStyle<C> {
+    pub fn style(&self, event: &Event) -> WidgetStyle<C> {
+        match event {
+            Event::Idle => self.idle,
+            Event::Focus => self.focus,
+            Event::Active(_) => self.active,
+            Event::Drag(_) => self.drag,
+        }
+    }
+
+    pub fn base(&self) -> WidgetStyle<C> {
+        self.idle
+    }
+}
 
 pub mod hope_diamond;
 
@@ -26,11 +45,12 @@ pub(crate) struct ColorTheme {
 }
 
 /// Theme struct. You can freely create own themes
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Theme<C: PixelColor> {
     // using arc due to thread safety, since rust ALWAYS assume static code as multi threaded
-    pub button_style: Arc<dyn Style<C>>,
-    pub layout_style: Arc<dyn Style<C>>,
+    pub button_style: DynamicStyle<C>,
+    pub layout_style: DynamicStyle<C>,
+    pub slider_style: SliderStyle<C>,
     pub plot_style: WidgetStyle<C>,
     pub gauge_style: WidgetStyle<C>,
     pub modal_style: WidgetStyle<C>,
@@ -88,6 +108,17 @@ impl<C: PixelColor> WidgetStyle<C> {
     }
 }
 
+impl<C: PixelColor> Into<DynamicStyle<C>> for WidgetStyle<C> {
+    fn into(self) -> DynamicStyle<C> {
+        DynamicStyle {
+            idle: self,
+            focus: self,
+            active: self,
+            drag: self,
+        }
+    }
+}
+
 impl<C: PixelColor> From<WidgetStyle<C>> for PrimitiveStyle<C> {
     fn from(val: WidgetStyle<C>) -> Self {
         let mut style = PrimitiveStyle::<C>::default();
@@ -107,30 +138,5 @@ impl<C: PixelColor> From<PrimitiveStyle<C>> for WidgetStyle<C> {
             stroke_width: value.stroke_width,
             ..Default::default()
         }
-    }
-}
-
-pub struct NoneStyle;
-
-impl<C: PixelColor> Style<C> for NoneStyle {
-    fn style(&self, _event: &Event) -> WidgetStyle<C> {
-        WidgetStyle::default()
-    }
-}
-
-impl NoneStyle {
-    pub fn new_arc() -> Arc<Self> {
-        Arc::new(Self)
-    }
-}
-
-/// Base primitive style for widget
-pub trait Style<C: PixelColor> {
-    /// Specifies style that depends on [Event]
-    fn style(&self, event: &Event) -> WidgetStyle<C>;
-
-    /// Base style of widget for non-interactive widgets or default state for interactive one
-    fn base(&self) -> WidgetStyle<C> {
-        self.style(&Event::Idle)
     }
 }

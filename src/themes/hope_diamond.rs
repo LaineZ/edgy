@@ -1,12 +1,11 @@
-use alloc::sync::Arc;
 use embedded_graphics::{
     pixelcolor::Rgb888,
-    prelude::{PixelColor, RgbColor},
+    prelude::{PixelColor, RgbColor, Size},
 };
 
-use crate::Event;
+use crate::widgets::slider::SliderStyle;
 
-use super::{ColorTheme, Style, Theme, WidgetStyle};
+use super::{ColorTheme, DynamicStyle, Theme, WidgetStyle};
 
 const HOPE_DIAMOND_COLORS: ColorTheme = ColorTheme {
     background: Rgb888::new(21, 14, 16),
@@ -20,34 +19,27 @@ const HOPE_DIAMOND_COLORS: ColorTheme = ColorTheme {
     debug_rect: Rgb888::RED,
 };
 
-pub struct DefaultButtonStyle;
-impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultButtonStyle {
-    fn style(&self, event: &Event) -> WidgetStyle<C> {
-        let style = WidgetStyle::default()
-            .background_color(HOPE_DIAMOND_COLORS.background.into())
-            .foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
-            .storke(2, HOPE_DIAMOND_COLORS.background2.into())
-            .accent_color(HOPE_DIAMOND_COLORS.success.into());
+pub fn apply<C: PixelColor + From<Rgb888> + Default>() -> Theme<C> {
+    let button_style = WidgetStyle::default()
+        .background_color(HOPE_DIAMOND_COLORS.background.into())
+        .foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
+        .storke(2, HOPE_DIAMOND_COLORS.background2.into())
+        .accent_color(HOPE_DIAMOND_COLORS.success.into());
 
-        match event {
-            Event::Focus => style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
-            Event::Active(_) => style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
-            _ => style,
-        }
-    }
-}
-
-pub struct DefaultStyle;
-impl<C: PixelColor + From<Rgb888>> Style<C> for DefaultStyle {
-    fn style(&self, _event: &Event) -> WidgetStyle<C> {
-        WidgetStyle::default().foreground_color(HOPE_DIAMOND_COLORS.foreground.into())
-    }
-}
-
-pub fn apply<C: PixelColor + From<Rgb888>>() -> Theme<C> {
     Theme {
-        button_style: Arc::new(DefaultButtonStyle),
-        layout_style: Arc::new(DefaultStyle),
+        button_style: DynamicStyle {
+            idle: button_style,
+            focus: button_style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
+            active: button_style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
+            drag: button_style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
+        },
+        slider_style: SliderStyle::new(
+            button_style.into(),
+            button_style.into(),
+            2,
+            Size::new(2, 4),
+        ),
+        layout_style: DynamicStyle::default(),
         debug_rect: Rgb888::RED.into(),
         gauge_style: WidgetStyle::default()
             .background_color(HOPE_DIAMOND_COLORS.background.into())
