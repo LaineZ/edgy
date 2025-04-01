@@ -31,7 +31,7 @@ pub fn apply<C: PixelColor + From<Rgb888> + Default>() -> Theme<C> {
             idle: button_style,
             focus: button_style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
             active: button_style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
-            drag: button_style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
+            drag: button_style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
         },
         slider_style: SliderStyle::new(
             button_style.into(),

@@ -113,7 +113,7 @@ where
             .into_styled::<PrimitiveStyle<C>>(track_style.into())
             .draw(&mut context.draw_target);
 
-        let handle_position_x = rect.top_left.x + (rect.size.width as f32 * self.value) as i32;
+        let handle_position_x = rect.top_left.x + ((rect.size.width - style.handle_size.width) as f32 * self.value) as i32;
         let _ = Rectangle::new(
             Point::new(
                 handle_position_x,

@@ -153,7 +153,7 @@ where
 
     /// Cycles to next widget (like Tab key on PC)
     pub fn next_widget(&mut self) {
-        if self.focused_element > self.elements_count - 1 {
+        if self.focused_element >= self.elements_count - 1 {
             self.focused_element = 1;
         } else {
             self.focused_element += 1;
@@ -164,10 +164,7 @@ where
 
     /// Cycles to previous widget (like Shift+Tab key on PC)
     pub fn previous_widget(&mut self) {
-        if self.focused_element != 0 {
-            self.focused_element -= 1;
-        }
-
+        self.focused_element = self.focused_element.saturating_sub(1).clamp(1, self.elements_count);
         self.push_event(SystemEvent::FocusTo(self.focused_element));
     }
 
@@ -220,7 +217,7 @@ where
     /// Updates and draws the UI, probably you want run this in main loop
     pub fn update(&mut self, root: WidgetObject<'a, D, C>) {
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
-        WIDGET_IDS.store(0, Ordering::Relaxed);
+        WIDGET_IDS.store(1, Ordering::Relaxed);
         let bounds = self.draw_target.bounding_box();
 
         let alert_shown = !self.alert_text.borrow().is_empty();
@@ -232,8 +229,8 @@ where
 
         if debug_options_enaled {
             let debug_options = self.debug_options.clone();
-            let debug_pos = Point::new(self.draw_target.bounding_box().size.width as i32 - 60, 2);
-            root_layout.add_widget_obj(debug_options_ui(debug_options), Rectangle::new(debug_pos, Size::zero()), true, Anchor::TopLeft);
+            let debug_pos = Point::new(self.draw_target.bounding_box().size.width as i32 - 100, 2);
+            root_layout.add_widget_obj(debug_options_ui(debug_options, self.focused_element), Rectangle::new(debug_pos, Size::zero()), true, Anchor::TopLeft);
         }
 
         if alert_shown {

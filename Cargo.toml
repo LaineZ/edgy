@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 eg-seven-segment = "0.2.0"
 embedded-graphics = "0.8.1"
-heapless = "0.8.0"
+#heapless = "0.8.0"
 micromath = "2.1.0"
 
 [dev-dependencies]

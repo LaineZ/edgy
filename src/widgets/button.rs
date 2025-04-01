@@ -16,7 +16,7 @@ use super::{Widget, WidgetEvent};
 const PADDING: u32 = 6;
 
 /// Generic button style and drawing implementation
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct ButtonGeneric<'a, C: PixelColor> {
     text_style: Option<MonoTextStyle<'a, C>>,
     font: &'a MonoFont<'a>,

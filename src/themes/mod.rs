@@ -24,6 +24,15 @@ impl<C: PixelColor> DynamicStyle<C> {
     pub fn base(&self) -> WidgetStyle<C> {
         self.idle
     }
+
+    pub const fn new() -> Self {
+        Self {
+            active: WidgetStyle::new(),
+            drag: WidgetStyle::new(),
+            focus: WidgetStyle::new(),
+            idle: WidgetStyle::new()
+        }
+    }
 }
 
 pub mod hope_diamond;
@@ -86,6 +95,16 @@ impl<C: PixelColor> Default for WidgetStyle<C> {
 }
 
 impl<C: PixelColor> WidgetStyle<C> {
+    pub const fn new() -> Self {
+        Self {
+            accent_color: None,
+            background_color: None,
+            foreground_color: None,
+            stroke_color: None,
+            stroke_width: 0,
+        }
+    }
+
     pub fn foreground_color(mut self, color: C) -> Self {
         self.foreground_color = Some(color);
         self

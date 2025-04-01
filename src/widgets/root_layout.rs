@@ -74,7 +74,9 @@ where
         for child in self.children.iter_mut() {
             let child_size = child.widget_object.size(context, child.dimensions.size);
             size += child_size;
-            child.dimensions.size = child_size;
+            if child.dimensions.size == Size::zero() {
+                child.dimensions.size = child_size;
+            }
         }
 
         size
