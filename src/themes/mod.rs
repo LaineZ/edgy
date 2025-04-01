@@ -47,7 +47,6 @@ pub(crate) struct ColorTheme {
 /// Theme struct. You can freely create own themes
 #[derive(Clone, Copy)]
 pub struct Theme<C: PixelColor> {
-    // using arc due to thread safety, since rust ALWAYS assume static code as multi threaded
     pub button_style: DynamicStyle<C>,
     pub layout_style: DynamicStyle<C>,
     pub slider_style: SliderStyle<C>,
@@ -55,6 +54,7 @@ pub struct Theme<C: PixelColor> {
     pub gauge_style: WidgetStyle<C>,
     pub modal_style: WidgetStyle<C>,
     pub debug_rect: C,
+    pub label_color: C,
     pub debug_rect_active: C,
 }
 

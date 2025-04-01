@@ -14,9 +14,7 @@ use themes::Theme;
 
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use widgets::{
-    alert::Alert,
-    root_layout::{Anchor, RootLayout},
-    WidgetObject,
+    alert::Alert, debug::debug_options_ui, root_layout::{Anchor, RootLayout}, WidgetObject
 };
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
@@ -32,6 +30,26 @@ pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new
 
 pub const MAX_SIZE: Size = Size::new(u32::MAX, u32::MAX);
 pub const MIN_SIZE: Size = Size::zero();
+
+pub struct DebugOptions {
+    pub enabled: bool,
+    pub widget_rects: bool,
+    pub widget_rect_active: bool,
+    pub widget_sizes: bool,
+    pub widget_ids: bool,
+}
+
+impl Default for DebugOptions {
+    fn default() -> Self {
+        DebugOptions {
+            enabled: false,
+            widget_rects: true,
+            widget_rect_active: true,
+            widget_sizes: false,
+            widget_ids: true,
+        }
+    }
+}
 
 /// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -92,9 +110,9 @@ where
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
     /// Event to pass in the library
-    event_queue: heapless::Vec<SystemEvent, 5>,
-    /// Enable/disable debug mode - displays red rectangles around widget bounds
-    pub debug_mode: bool,
+    motion_event: SystemEvent,
+    interaction_event: SystemEvent,
+    debug_options: Rc<RefCell<DebugOptions>>,
     alert_text: Rc<RefCell<String>>,
     elements_count: usize,
     pub(crate) focused_element: usize,
@@ -112,34 +130,25 @@ where
             elements_count: 0,
             draw_target,
             theme,
-            event_queue: heapless::Vec::new(),
+            motion_event: SystemEvent::Idle,
+            interaction_event: SystemEvent::Idle,
             focused_element: 0,
-            debug_mode: false,
+            debug_options: Rc::new(RefCell::new(DebugOptions::default())),
             alert_text: Rc::new(RefCell::new(String::new())),
             marker: PhantomData,
         }
     }
 
     pub fn push_event(&mut self, event: SystemEvent) {
-        if self.event_queue.is_full() || !event.is_motion_event() {
-            self.event_queue.clear();
+        if event.is_motion_event() {
+            self.motion_event = event;
+        } else {
+            self.interaction_event = event;
         }
-
-        if let Some(last_event) = self.event_queue.last() {
-            if last_event == &event {
-                return;
-            }
-        }
-
-        self.event_queue.push(event).unwrap();
     }
 
     pub fn get_focused_widget_id(&self) -> usize {
         self.focused_element
-    }
-
-    pub fn consume_event(&mut self, event: &SystemEvent) {
-        self.event_queue.retain(|f| f != event);
     }
 
     /// Cycles to next widget (like Tab key on PC)
@@ -196,16 +205,36 @@ where
         *borrow = String::new();
     }
 
+
+    pub fn toggle_debug_mode(&mut self) {
+        let mut debug_options = self.debug_options.borrow_mut();
+
+        debug_options.enabled = !debug_options.enabled;
+    }
+
+
+    pub fn is_debug_enaled(&self) -> bool {
+        self.debug_options.borrow().enabled
+    }
+
     /// Updates and draws the UI, probably you want run this in main loop
     pub fn update(&mut self, root: WidgetObject<'a, D, C>) {
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
         WIDGET_IDS.store(0, Ordering::Relaxed);
         let bounds = self.draw_target.bounding_box();
-        let event = *self.event_queue.last().unwrap_or(&SystemEvent::Idle);
 
         let alert_shown = !self.alert_text.borrow().is_empty();
+        let debug_options_enaled = self.debug_options.borrow().enabled;
+
         let mut root_layout = RootLayout::new();
         root_layout.add_widget_obj(root, bounds, !alert_shown, Anchor::TopLeft);
+
+
+        if debug_options_enaled {
+            let debug_options = self.debug_options.clone();
+            let debug_pos = Point::new(self.draw_target.bounding_box().size.width as i32 - 60, 2);
+            root_layout.add_widget_obj(debug_options_ui(debug_options), Rectangle::new(debug_pos, Size::zero()), true, Anchor::TopLeft);
+        }
 
         if alert_shown {
             let alert_text = self.alert_text.clone();
@@ -231,9 +260,11 @@ where
         root_layout.size(self, bounds.size);
         root_layout.layout(self, bounds);
 
-        root_layout.draw(self, &event);
-        if !event.is_motion_event() {
-            self.consume_event(&event);
+        if self.interaction_event == SystemEvent::Idle {
+            root_layout.draw(self, &self.motion_event.clone());
+        } else {
+            root_layout.draw(self, &self.interaction_event.clone());
+            self.interaction_event = SystemEvent::Idle;
         }
     }
 }

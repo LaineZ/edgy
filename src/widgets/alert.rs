@@ -1,6 +1,6 @@
 use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
-    mono_font::{ascii::FONT_4X6, MonoTextStyle},
+    mono_font::ascii::FONT_4X6,
     prelude::{DrawTarget, PixelColor, Size},
     primitives::Rectangle,
     text::Alignment,
@@ -31,16 +31,7 @@ where
             .style(style);
 
         layout.margin_layout(margin!(5), |ui| {
-            ui.label(
-                &text,
-                Alignment::Left,
-                MonoTextStyle::new(
-                    &FONT_4X6,
-                    style
-                        .foreground_color
-                        .expect("Modal style requires foreground color for drawing"),
-                ),
-            );
+            ui.label(&text, Alignment::Left, &FONT_4X6);
         });
 
         layout.button("OK", &FONT_4X6, move || (callback)());

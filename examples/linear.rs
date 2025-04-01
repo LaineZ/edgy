@@ -6,7 +6,7 @@ use edgy::{
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_5X8, MonoTextStyle},
+    mono_font::{ascii::FONT_5X8, iso_8859_1::FONT_10X20},
     pixelcolor::Rgb888,
     prelude::*,
     primitives::{PrimitiveStyle, PrimitiveStyleBuilder},
@@ -56,7 +56,7 @@ where
             ui.label(
                 "R. HUMIDITY %",
                 text::Alignment::Left,
-                MonoTextStyle::new(&FONT_5X8, Rgb888::WHITE),
+                &FONT_10X20,
             );
             ui.seven_segment("100", seven_segment_style);
         });
@@ -97,7 +97,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     repeat: _,
                 } => {
                     if keycode == Keycode::F1 {
-                        ui_ctx.debug_mode = !ui_ctx.debug_mode;
+                        ui_ctx.toggle_debug_mode();
                     }
                 }
                 _ => {}

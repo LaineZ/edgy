@@ -1,11 +1,13 @@
 use edgy::{
-    themes::{self}, widgets::{
+    themes::{self},
+    widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObject,
-    }, UiContext
+    },
+    UiContext,
 };
 use embedded_graphics::{
-    mono_font::{iso_8859_10::FONT_10X20, MonoTextStyle},
+    mono_font::iso_8859_10::FONT_10X20,
     pixelcolor::Rgb888,
     prelude::*,
     text::Alignment,
@@ -23,11 +25,7 @@ where
         .vertical_alignment(LayoutAlignment::Center)
         .direction(LayoutDirection::Vertical);
 
-    ui.label(
-        "DISPLAYING BEE!",
-        Alignment::Center,
-        MonoTextStyle::new(&FONT_10X20, Rgb888::WHITE),
-    );
+    ui.label("DISPLAYING BEE!", Alignment::Center, &FONT_10X20);
     ui.image(image);
     ui.finish()
 }
@@ -64,7 +62,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     repeat: _,
                 } => {
                     if keycode == Keycode::F1 {
-                        ui_ctx.debug_mode = !ui_ctx.debug_mode;
+                        ui_ctx.toggle_debug_mode();
                     }
                 }
                 _ => {}

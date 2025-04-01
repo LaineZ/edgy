@@ -1,6 +1,6 @@
 use alloc::string::String;
 use embedded_graphics::{
-    mono_font::MonoTextStyle,
+    mono_font::{MonoFont, MonoTextStyle, MonoTextStyleBuilder},
     prelude::*,
     primitives::Rectangle,
     text::{renderer::TextRenderer, Alignment, Text},
@@ -81,9 +81,17 @@ impl<'a, C> Label<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(text: String, alignment: Alignment, style: MonoTextStyle<'a, C>) -> Self {
+    pub fn new<S: Into<String>>(text: S, alignment: Alignment, font: &'a MonoFont) -> Self {
         Self {
-            text,
+            text: text.into(),
+            alignment,
+            style: MonoTextStyleBuilder::new().font(font).build()
+        }
+    }
+
+    pub fn new_with_style<S: Into<String>>(text: S, alignment: Alignment, style: MonoTextStyle<'a, C>) -> Self {
+        Self {
+            text: text.into(),
             alignment,
             style,
         }
@@ -95,7 +103,12 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+
+        if self.style.text_color.is_none() {
+            self.style.text_color = Some(context.theme.label_color);
+        }
+
         let mut total_width = 0;
         let mut total_height = 0;
         let line_spacing = self.style.line_height() / 2;

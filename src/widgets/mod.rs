@@ -28,6 +28,7 @@ use crate::{Event, EventResult, SystemEvent, UiContext};
 
 pub mod alert;
 pub mod button;
+pub mod debug;
 pub mod filler;
 pub mod gauge;
 pub mod grid_layout;
@@ -37,9 +38,9 @@ pub mod linear_layout;
 pub mod margin_layout;
 pub mod plot;
 pub mod primitive;
+pub mod root_layout;
 pub mod slider;
 pub mod toggle_button;
-pub mod root_layout;
 //pub mod alert;
 
 /// Widget event arguments
@@ -161,7 +162,7 @@ where
         self.computed_rect = Rectangle::new(rect.top_left, self.calculate_bound_sizes(rect.size));
         self.widget.layout(context, rect);
     }
-    
+
     fn calculate_bound_sizes(&mut self, size: Size) -> Size {
         Size::new(
             size.width
@@ -233,19 +234,27 @@ where
 
         let event_result = self.widget.draw(context, self.rect(), event_args);
 
-        if context.debug_mode {
-            let text = MonoTextStyle::new(&FONT_4X6, context.theme.debug_rect);
-            if self.id > 0 {
-                let _ = Text::new(
-                    &format!("id: {}", self.id),
-                    Point::new(
-                        self.computed_rect.top_left.x,
-                        self.computed_rect.top_left.y + 6,
-                    ),
-                    text,
-                )
-                .draw(&mut context.draw_target);
-            } else {
+
+        let dbg = context.debug_options.borrow();
+        if dbg.enabled {
+            let text = MonoTextStyle::new(&FONT_4X6, context.theme.label_color);
+
+            if dbg.widget_ids {
+                if self.id > 0 {
+                    let _ = Text::new(
+                        &format!("id: {}", self.id),
+                        Point::new(
+                            self.computed_rect.top_left.x,
+                            self.computed_rect.top_left.y + 6,
+                        ),
+                        text,
+                    )
+                    .draw(&mut context.draw_target);
+                }
+            }
+
+            if dbg.widget_sizes {
+                let text = MonoTextStyle::new(&FONT_4X6, context.theme.label_color);
                 let _ = Text::new(
                     &format!(
                         "{}x{}",
@@ -260,20 +269,22 @@ where
                 .draw(&mut context.draw_target);
             }
 
-            if event_args.is_focused {
-                let _ = embedded_graphics::prelude::Primitive::into_styled(
-                    self.rect(),
-                    PrimitiveStyleBuilder::new()
-                        .stroke_color(context.theme.debug_rect_active)
-                        .stroke_width(1)
-                        .build(),
-                )
-                .draw(&mut context.draw_target);
-            } else {
+            if dbg.widget_rects {
                 let _ = embedded_graphics::prelude::Primitive::into_styled(
                     self.rect(),
                     PrimitiveStyleBuilder::new()
                         .stroke_color(context.theme.debug_rect)
+                        .stroke_width(1)
+                        .build(),
+                )
+                .draw(&mut context.draw_target);
+            }
+
+            if dbg.widget_rect_active && event_args.is_focused {
+                let _ = embedded_graphics::prelude::Primitive::into_styled(
+                    self.rect(),
+                    PrimitiveStyleBuilder::new()
+                        .stroke_color(context.theme.debug_rect_active)
                         .stroke_width(1)
                         .build(),
                 )
@@ -304,13 +315,8 @@ where
     }
 
     /// Creates a [Label] widget
-    fn label<S: Into<String>>(
-        &mut self,
-        text: S,
-        text_alignment: Alignment,
-        style: MonoTextStyle<'a, C>,
-    ) {
-        self.add_widget(Label::new(text.into(), text_alignment, style))
+    fn label<S: Into<String>>(&mut self, text: S, text_alignment: Alignment, font: &'a MonoFont) {
+        self.add_widget(Label::new(text.into(), text_alignment, font))
     }
 
     /// Creates a [SevenSegmentWidget] widget
@@ -329,7 +335,7 @@ where
         text: S,
         font: &'a MonoFont,
         callback: impl FnMut() + 'a,
-    )  {
+    ) {
         self.add_widget(Button::new(text.into(), font, Box::new(callback)));
     }
 
@@ -444,11 +450,7 @@ where
         self.add_widget(Primitive::new(primitive));
     }
 
-    fn slider(
-        &mut self,
-        value: f32,
-        callback: impl FnMut(f32) + 'a,
-    ) {
+    fn slider(&mut self, value: f32, callback: impl FnMut(f32) + 'a) {
         self.add_widget(Slider::new(value, Box::new(callback)));
     }
 

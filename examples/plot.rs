@@ -1,11 +1,13 @@
 use edgy::{
-    themes, widgets::{
+    themes,
+    widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder,
-    }, UiContext
+    },
+    UiContext,
 };
 use embedded_graphics::{
-    mono_font::{ascii::FONT_4X6, MonoTextStyle},
+    mono_font::ascii::FONT_4X6,
     pixelcolor::Rgb888,
     prelude::*,
     text::Alignment,
@@ -47,7 +49,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     repeat: _,
                 } => {
                     if keycode == Keycode::F1 {
-                        ui_ctx.debug_mode = !ui_ctx.debug_mode;
+                        ui_ctx.toggle_debug_mode();
                     }
 
                     if keycode == Keycode::UP {
@@ -76,9 +78,13 @@ fn main() -> Result<(), core::convert::Infallible> {
             .direction(LayoutDirection::Vertical);
 
         ui.label(
-            format!("HORIZONTAL OFFSET: {} SCALE: {:.0}%", offset.y, scale * 100.0),
+            format!(
+                "HORIZONTAL OFFSET: {} SCALE: {:.0}%",
+                offset.y,
+                scale * 100.0
+            ),
             Alignment::Center,
-            MonoTextStyle::new(&FONT_4X6, Rgb888::WHITE),
+            &FONT_4X6,
         );
         ui.plot(points.clone(), scale, offset);
 

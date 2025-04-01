@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::mem;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
+use edgy::widgets::label::Label;
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::{margin, themes, SystemEvent};
 use edgy::{
@@ -130,16 +131,8 @@ where
                 .horizontal_alignment(LayoutAlignment::Center);
 
             pfd_layout.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                ui.label(
-                    "ATT",
-                    Alignment::Center,
-                    MonoTextStyle::new(&FONT_10X20, Rgb888::RED),
-                );
-                ui.label(
-                    "GPS PRIMARY LOST",
-                    Alignment::Center,
-                    MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE),
-                );
+                ui.add_widget(Label::new_with_style("ATT", Alignment::Center, MonoTextStyle::new(&FONT_10X20, Rgb888::RED)));
+                ui.add_widget(Label::new_with_style("GPS PRIMARY LOST", Alignment::Center, MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE)));
             });
 
             ui.add_widget_obj(pfd_layout.finish());
@@ -299,7 +292,7 @@ fn main() -> Result<(), core::convert::Infallible> {
                     }
 
                     if keycode == Keycode::F1 {
-                        ui_ctx.debug_mode = !ui_ctx.debug_mode;
+                        ui_ctx.toggle_debug_mode();
                     }
 
                     if keycode == Keycode::F2 {
@@ -314,7 +307,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         ui_ctx.update(demo_ui(state));
         let seconds_ui = ui_context_render.elapsed().as_secs_f32();
 
-        if ui_ctx.debug_mode {
+        if ui_ctx.is_debug_enaled() {
             Text::new(
                 &format!(
                     "edgy: {:.0} fps {:.1} ms",

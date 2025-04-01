@@ -86,7 +86,7 @@ where
 
     fn max_size(&mut self) -> Size {
         let style = self.style.unwrap();
-        Size::new(u32::MAX, style.handle_size.height)
+        Size::new(u32::MAX, style.handle_size.height + 2)
     }
 
     fn draw(
@@ -103,7 +103,7 @@ where
         let track_rect = Rectangle::new(
             Point::new(
                 rect.top_left.x,
-                rect.top_left.y + style.handle_size.height as i32,
+                rect.top_left.y + style.handle_size.height as i32 - (style.handle_size.height / 2) as i32,
             ),
             Size::new(rect.size.width, style.track_height),
         );
@@ -189,8 +189,9 @@ mod tests {
             1,
             Size::new(1, 5),
         );
-        let slider = Slider::new_with_style(style,0.1, Box::new(|_| {})).size(&mut ctx, Size::new(10, 10));
+        let slider_size = Slider::new_with_style(style,0.1, Box::new(|_| {})).size(&mut ctx, Size::new(10, 10));
 
-        assert_eq!(slider.height, 5);
+        assert_eq!(slider_size.width, 10);
+        assert_eq!(slider_size.height, 5);
     }
 }
