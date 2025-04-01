@@ -129,16 +129,18 @@ where
                 .vertical_alignment(LayoutAlignment::Center)
                 .horizontal_alignment(LayoutAlignment::Center);
 
-            pfd_layout.label(
-                "ATT",
-                Alignment::Center,
-                MonoTextStyle::new(&FONT_10X20, Rgb888::RED),
-            );
-            pfd_layout.label(
-                "GPS PRIMARY LOST",
-                Alignment::Center,
-                MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE),
-            );
+            pfd_layout.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
+                ui.label(
+                    "ATT",
+                    Alignment::Center,
+                    MonoTextStyle::new(&FONT_10X20, Rgb888::RED),
+                );
+                ui.label(
+                    "GPS PRIMARY LOST",
+                    Alignment::Center,
+                    MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE),
+                );
+            });
 
             ui.add_widget_obj(pfd_layout.finish());
         }

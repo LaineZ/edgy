@@ -36,8 +36,8 @@ pub fn apply<C: PixelColor + From<Rgb888> + Default>() -> Theme<C> {
         slider_style: SliderStyle::new(
             button_style.into(),
             button_style.into(),
-            2,
-            Size::new(2, 4),
+            1,
+            Size::new(2, 5),
         ),
         layout_style: DynamicStyle::default(),
         debug_rect: Rgb888::RED.into(),
