@@ -88,7 +88,7 @@ impl SystemEvent {
 }
 
 /// Filtered to specified widget event
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Event {
     /// Idle event (None, Null) event
     Idle,
@@ -158,13 +158,16 @@ where
         } else {
             self.focused_element += 1;
         }
-
         self.push_event(SystemEvent::FocusTo(self.focused_element));
     }
 
     /// Cycles to previous widget (like Shift+Tab key on PC)
     pub fn previous_widget(&mut self) {
-        self.focused_element = self.focused_element.saturating_sub(1).clamp(1, self.elements_count);
+        if self.focused_element <= 1 {
+            self.focused_element = self.elements_count - 1;
+        } else {
+            self.focused_element -= 1;
+        }
         self.push_event(SystemEvent::FocusTo(self.focused_element));
     }
 

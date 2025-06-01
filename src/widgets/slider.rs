@@ -77,7 +77,7 @@ where
     fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         let style = self.style.get_or_insert(context.theme.slider_style);
 
-        Size::new(hint.width, style.track_height.max(style.handle_size.height))
+        Size::new(hint.width, style.track_height.max(style.handle_size.height) + 2)
     }
 
     fn is_interactive(&mut self) -> bool {
@@ -192,6 +192,7 @@ mod tests {
         let slider_size = Slider::new_with_style(style,0.1, Box::new(|_| {})).size(&mut ctx, Size::new(10, 10));
 
         assert_eq!(slider_size.width, 10);
-        assert_eq!(slider_size.height, 5);
+        // because of 2 pixel padding for selection box
+        assert_eq!(slider_size.height, 5 + 2);
     }
 }

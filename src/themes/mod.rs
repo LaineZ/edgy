@@ -105,22 +105,22 @@ impl<C: PixelColor> WidgetStyle<C> {
         }
     }
 
-    pub fn foreground_color(mut self, color: C) -> Self {
+    pub const fn foreground_color(mut self, color: C) -> Self {
         self.foreground_color = Some(color);
         self
     }
 
-    pub fn accent_color(mut self, color: C) -> Self {
+    pub const fn accent_color(mut self, color: C) -> Self {
         self.accent_color = Some(color);
         self
     }
 
-    pub fn background_color(mut self, color: C) -> Self {
+    pub const fn background_color(mut self, color: C) -> Self {
         self.background_color = Some(color);
         self
     }
 
-    pub fn storke(mut self, width: u32, color: C) -> Self {
+    pub const fn storke(mut self, width: u32, color: C) -> Self {
         self.stroke_color = Some(color);
         self.stroke_width = width;
         self

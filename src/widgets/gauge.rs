@@ -5,7 +5,7 @@ use micromath::F32Ext;
 
 use super::{Widget, WidgetEvent};
 use crate::{EventResult, UiContext};
-use alloc::vec::Vec;
+use alloc::{string::ToString, vec::Vec};
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
     prelude::*,
@@ -30,6 +30,9 @@ impl<C: PixelColor> GaugeDetent<C> {
 #[derive(Copy, Clone)]
 pub struct GaugeStyle {
     divisions: u32,
+    display_values: bool,
+    min_value: f32,
+    max_value: f32,
     min_angle: f32,
     max_angle: f32,
 }
@@ -57,6 +60,9 @@ impl Default for GaugeStyle {
             divisions: 5,
             min_angle: 40.0,
             max_angle: 320.0,
+            display_values: false,
+            max_value: 1.0,
+            min_value: 0.0,
         }
     }
 }
@@ -93,7 +99,7 @@ where
         Size::new(hint.height, hint.height)
     }
 
-       fn draw(
+    fn draw(
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
@@ -159,6 +165,20 @@ where
             let end_y =
                 center.y as f32 + (circle_size as f32 / 2.0 - tick_length) * angle_rad.sin();
 
+            if self.gauge_style.display_values {
+                let tex_end_x =
+                    center.x as f32 + (circle_size as f32 / 2.5 - tick_length) * angle_rad.cos();
+                let tex_end_y =
+                    center.x as f32 + (circle_size as f32 / 2.5 - tick_length) * angle_rad.sin();
+
+                let _ = Text::new(
+                    "0",
+                    Point::new(tex_end_x as i32, tex_end_y as i32),
+                    MonoTextStyle::new(&FONT_4X6, stroke_color),
+                )
+                .draw(&mut context.draw_target);
+            }
+
             let _ = Line::new(
                 Point::new((start_x + 0.5) as i32, (start_y + 0.5) as i32),
                 Point::new((end_x + 0.5) as i32, (end_y + 0.5) as i32),
@@ -198,6 +218,7 @@ where
             ))
             .draw(&mut context.draw_target);
 
+        // text
         let _ = Text::with_alignment(
             self.text,
             Point::new(center.x, center.y + 10),

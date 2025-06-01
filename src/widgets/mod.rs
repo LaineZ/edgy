@@ -44,7 +44,7 @@ pub mod toggle_button;
 //pub mod alert;
 
 /// Widget event arguments
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct WidgetEvent<'a> {
     pub system_event: &'a SystemEvent,
     pub is_focused: bool,
@@ -325,8 +325,8 @@ where
     }
 
     /// Creates a [Gauge] widget
-    fn gauge(&mut self, value: f32) {
-        self.add_widget(Gauge::new(value, "text", GaugeStyle::default()));
+    fn gauge(&mut self, label: &'a str, value: f32) {
+        self.add_widget(Gauge::new(value, label, GaugeStyle::default()));
     }
 
     /// Shorthand construct for [Button] widget
