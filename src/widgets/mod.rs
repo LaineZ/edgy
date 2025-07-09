@@ -40,6 +40,7 @@ pub mod plot;
 pub mod primitive;
 pub mod root_layout;
 pub mod slider;
+pub mod battery;
 pub mod toggle_button;
 
 /// Widget event arguments
