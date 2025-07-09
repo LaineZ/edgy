@@ -24,7 +24,7 @@ use primitive::Primitive;
 use slider::Slider;
 use toggle_button::ToggleButton;
 
-use crate::{widgets::label::LabelOptions, Event, EventResult, SystemEvent, UiContext};
+use crate::{widgets::{battery::{Battery, BatteryStyle}, label::LabelOptions}, Event, EventResult, SystemEvent, UiContext};
 
 pub mod alert;
 pub mod button;
@@ -464,6 +464,7 @@ where
         self.add_widget(Primitive::new(primitive));
     }
 
+    /// Shorthand for the [Slider] widget
     fn slider(&mut self, value: f32, callback: impl FnMut(f32) + 'a) {
         self.add_widget(Slider::new(value, Box::new(callback)));
     }

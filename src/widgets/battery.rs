@@ -1,3 +1,5 @@
+use std::u32;
+
 use crate::{
     prelude::LayoutDirection,
     themes::WidgetStyle,
@@ -9,34 +11,25 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle, StrokeAlignment, StyledDrawable},
 };
 
+// TODO: Terminal size setting
 pub struct BatteryStyle<C: PixelColor> {
     pub style: WidgetStyle<C>,
-    pub size: Size,
     pub direction: LayoutDirection,
 }
 
 impl<C: PixelColor> BatteryStyle<C> {
-    pub fn new_vertical(style: WidgetStyle<C>, size: Size) -> Self {
-        Self {
-            style,
-            size,
-            direction: LayoutDirection::Vertical,
-        }
-    }
-
-    pub fn new_horizontal(style: WidgetStyle<C>, size: Size) -> Self {
-        Self {
-            style,
-            size,
-            direction: LayoutDirection::Horizontal,
-        }
+    pub fn new(style: WidgetStyle<C>, direction: LayoutDirection) -> Self {
+        Self { style, direction }
     }
 }
 
 /// Battery indicator widget, represents some kind of battery
 pub struct Battery<C: PixelColor> {
-    pub charge_percentage: u8, // Charge percentage 0-100
-    pub charging: bool,        // Battery charge status
+    /// Charge percentage 0-100
+    pub charge_percentage: u8,
+    /// Battery charge status
+    pub charging: bool,
+    size: Size,
     style: BatteryStyle<C>,
 }
 
@@ -44,10 +37,11 @@ impl<'a, C> Battery<C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(charge_percentage: u8, charging: bool, style: BatteryStyle<C>) -> Self {
+    pub fn new(charge_percentage: u8, charging: bool, size: Size, style: BatteryStyle<C>) -> Self {
         Self {
             charge_percentage,
             charging,
+            size: size.clamp(Size::new(5, 3), Size::new(u32::MAX, u32::MAX)),
             style,
         }
     }
@@ -59,15 +53,15 @@ where
     C: PixelColor + 'a,
 {
     fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        self.style.size
+        self.size
     }
 
     fn min_size(&mut self) -> Size {
-        self.style.size
+        self.size
     }
 
     fn max_size(&mut self) -> Size {
-        self.style.size
+        self.size
     }
 
     fn draw(
@@ -78,8 +72,13 @@ where
     ) -> EventResult {
         match self.style.direction {
             LayoutDirection::Horizontal => {
-                let terminal_width = rect.size.width / 4;
-                let terminal_height = rect.size.height / 2;
+                let terminal_width = self.style.style.stroke_width;
+                let terminal_height: u32 = if (rect.size.height as i32 / 2) & 1 == 0 {
+                    rect.size.height / 2
+                } else {
+                    rect.size.height / 2 + 1
+                };
+
                 let battery = Rectangle::new(
                     rect.top_left,
                     Size::new(rect.size.width - terminal_width, rect.size.height),
@@ -93,7 +92,7 @@ where
                         battery.top_left.x + rect.size.width as i32 - terminal_width as i32,
                         terminal_y,
                     ),
-                    Size::new(rect.size.width / 4, terminal_height),
+                    Size::new(terminal_width, terminal_height),
                 );
 
                 let battery_terminal_style =
@@ -124,10 +123,14 @@ where
                     Size::new(fill_width, battery.size.height - style.stroke_width * 2),
                 );
 
-                let _ = charge_rect.draw_styled(
-                    &PrimitiveStyle::with_fill(self.style.style.accent_color.unwrap()),
-                    &mut context.draw_target,
-                );
+                let color = if self.charging {
+                    self.style.style.foreground_color.unwrap()
+                } else {
+                    self.style.style.accent_color.unwrap()
+                };
+
+                let _ = charge_rect
+                    .draw_styled(&PrimitiveStyle::with_fill(color), &mut context.draw_target);
             }
             LayoutDirection::Vertical => todo!(),
         }
@@ -147,6 +150,11 @@ mod tests {
     use embedded_graphics::primitives::Rectangle;
     use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb888};
 
+    const BATTERY_STYLE: WidgetStyle<Rgb888> = WidgetStyle::new()
+        .background_color(Rgb888::WHITE)
+        .foreground_color(Rgb888::RED)
+        .accent_color(Rgb888::RED);
+
     #[test]
     fn battery_small_terminal_uneven() {
         let mut display = MockDisplay::<Rgb888>::new();
@@ -162,12 +170,8 @@ mod tests {
         ui.add_widget(Battery::new(
             50,
             false,
-            BatteryStyle::new_horizontal(
-                WidgetStyle::new()
-                    .background_color(Rgb888::WHITE)
-                    .accent_color(Rgb888::RED),
-                Size::new(7, 3),
-            ),
+            Size::new(7, 3),
+            BatteryStyle::new(BATTERY_STYLE, LayoutDirection::Horizontal),
         ));
         let mut ui = ui.finish();
 
@@ -196,12 +200,8 @@ mod tests {
         ui.add_widget(Battery::new(
             50,
             false,
-            BatteryStyle::new_horizontal(
-                WidgetStyle::new()
-                    .background_color(Rgb888::WHITE)
-                    .accent_color(Rgb888::RED),
-                Size::new(16, 8),
-            ),
+            Size::new(7, 3),
+            BatteryStyle::new(BATTERY_STYLE, LayoutDirection::Horizontal),
         ));
         let mut ui = ui.finish();
 

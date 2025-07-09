@@ -46,7 +46,7 @@ impl Default for DebugOptions {
             enabled: false,
             widget_rects: true,
             widget_rect_active: true,
-            widget_sizes: true,
+            widget_sizes: false,
             widget_ids: false,
         }
     }
