@@ -24,7 +24,7 @@ use primitive::Primitive;
 use slider::Slider;
 use toggle_button::ToggleButton;
 
-use crate::{Event, EventResult, SystemEvent, UiContext};
+use crate::{widgets::label::LabelOptions, Event, EventResult, SystemEvent, UiContext};
 
 pub mod alert;
 pub mod button;
@@ -41,7 +41,6 @@ pub mod primitive;
 pub mod root_layout;
 pub mod slider;
 pub mod toggle_button;
-//pub mod alert;
 
 /// Widget event arguments
 #[derive(Clone, Copy, Debug)]
@@ -50,6 +49,17 @@ pub struct WidgetEvent<'a> {
     pub is_focused: bool,
     pub id: usize,
     pub event: &'a Event,
+}
+
+impl<'a> Default for WidgetEvent<'a> {
+    fn default() -> Self {
+        Self {
+            system_event: &SystemEvent::Idle,
+            is_focused: false,
+            id: 0,
+            event: &Event::Idle,
+        }
+    }
 }
 
 /// Trait for any widgets including containers
@@ -234,7 +244,6 @@ where
 
         let event_result = self.widget.draw(context, self.rect(), event_args);
 
-
         let dbg = context.debug_options.borrow();
         if dbg.enabled {
             let text = MonoTextStyle::new(&FONT_4X6, context.theme.label_color);
@@ -254,7 +263,7 @@ where
             }
 
             if dbg.widget_sizes {
-                let text = MonoTextStyle::new(&FONT_4X6, context.theme.label_color);
+                let text = MonoTextStyle::new(&FONT_4X6, context.theme.debug_rect_active);
                 let _ = Text::new(
                     &format!(
                         "{}x{}",
@@ -316,7 +325,11 @@ where
 
     /// Creates a [Label] widget
     fn label<S: Into<String>>(&mut self, text: S, text_alignment: Alignment, font: &'a MonoFont) {
-        self.add_widget(Label::new(text.into(), text_alignment, font))
+        self.add_widget(Label::new(
+            text.into(),
+            LabelOptions::new().alignment(text_alignment),
+            font,
+        ))
     }
 
     /// Creates a [SevenSegmentWidget] widget

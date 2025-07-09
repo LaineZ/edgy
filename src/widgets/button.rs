@@ -3,17 +3,12 @@ use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
     primitives::Rectangle,
-    text::{renderer::TextRenderer, Alignment, Text},
+    text::{renderer::TextRenderer, Alignment, Baseline, Text, TextStyle, TextStyleBuilder},
 };
 
-use crate::{
-    themes::DynamicStyle, Event, EventResult, UiContext
-};
+use crate::{themes::DynamicStyle, Event, EventResult, UiContext};
 
 use super::{Widget, WidgetEvent};
-
-// TODO: make as field
-const PADDING: u32 = 6;
 
 /// Generic button style and drawing implementation
 #[derive(Clone, Copy)]
@@ -21,6 +16,7 @@ pub struct ButtonGeneric<'a, C: PixelColor> {
     text_style: Option<MonoTextStyle<'a, C>>,
     font: &'a MonoFont<'a>,
     text_alignment: Alignment,
+    pub padding: u32,
     pub style: DynamicStyle<C>,
 }
 
@@ -28,10 +24,16 @@ impl<'a, C> ButtonGeneric<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new(font: &'a MonoFont, text_alignment: Alignment, style: DynamicStyle<C>) -> Self {
+    pub fn new(
+        font: &'a MonoFont,
+        text_alignment: Alignment,
+        style: DynamicStyle<C>,
+        padding: u32,
+    ) -> Self {
         Self {
             font,
             style,
+            padding: padding,
             text_alignment,
             text_style: None,
         }
@@ -50,17 +52,13 @@ where
         let text_size = self
             .text_style
             .unwrap()
-            .measure_string(
-                text,
-                Point::zero(),
-                embedded_graphics::text::Baseline::Bottom,
-            )
+            .measure_string(text, Point::zero(), embedded_graphics::text::Baseline::Top)
             .bounding_box
             .size;
 
         Size::new(
-            text_size.width + 2 * PADDING,
-            text_size.height + 2 * PADDING,
+            text_size.width + 2 * self.padding,
+            text_size.height + 2 * self.padding,
         )
     }
 
@@ -71,24 +69,34 @@ where
         event: &Event,
         text: &str,
     ) {
+        const TEXT_BASELINE: Baseline = Baseline::Middle;
         let styled_rect = rect.into_styled(self.style.style(event).into());
         let _ = styled_rect.draw(&mut context.draw_target);
 
         if let Some(style) = self.text_style {
             let text = match self.text_alignment {
-                Alignment::Left => Text::new(
+                Alignment::Left => Text::with_baseline(
                     text,
-                    Point::new(rect.top_left.x + PADDING as i32, rect.center().y),
+                    Point::new(rect.top_left.x + self.padding as i32, rect.center().y),
                     style,
+                    TEXT_BASELINE,
                 ),
                 Alignment::Center => {
-                    Text::with_alignment(text, rect.center(), style, Alignment::Center)
+                    let text_style = TextStyleBuilder::new()
+                        .alignment(self.text_alignment)
+                        .baseline(TEXT_BASELINE);
+                    Text::with_text_style(text, rect.center(), style, text_style.build())
                 }
                 Alignment::Right => {
                     let text_width = text.len() as i32 * style.font.character_size.width as i32;
                     let x_pos =
-                        rect.top_left.x + rect.size.width as i32 - text_width - PADDING as i32;
-                    Text::new(text, Point::new(x_pos, rect.center().y), style)
+                        rect.top_left.x + rect.size.width as i32 - text_width - self.padding as i32;
+                    Text::with_baseline(
+                        text,
+                        Point::new(x_pos, rect.center().y),
+                        style,
+                        TEXT_BASELINE,
+                    )
                 }
             };
 
@@ -122,13 +130,17 @@ where
 
     pub fn new(text: String, font: &'a MonoFont, callback: Box<dyn FnMut() + 'a>) -> Self {
         Self {
-            // wtf
-            base: ButtonGeneric::new(font, Alignment::Center, DynamicStyle {
-                active: Default::default(),
-                drag: Default::default(),
-                focus: Default::default(),
-                idle: Default::default()
-            }),
+            base: ButtonGeneric::new(
+                font,
+                Alignment::Center,
+                DynamicStyle {
+                    active: Default::default(),
+                    drag: Default::default(),
+                    focus: Default::default(),
+                    idle: Default::default(),
+                },
+                6,
+            ),
             text,
             callback,
         }
@@ -171,5 +183,42 @@ where
 
         self.base.draw(context, rect, event_args.event, &self.text);
         event_result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::widgets::linear_layout::LinearLayoutBuilder;
+    use crate::SystemEvent;
+    use crate::{prelude::*, themes::hope_diamond, UiContext};
+    use embedded_graphics::geometry::OriginDimensions;
+    use embedded_graphics::mono_font::ascii::FONT_4X6;
+    use embedded_graphics::prelude::Point;
+    use embedded_graphics::primitives::Rectangle;
+    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb888};
+
+    #[test]
+    fn button_render() {
+        let mut display = MockDisplay::<Rgb888>::new();
+        let disp_size = display.size();
+        display.set_allow_overdraw(true);
+        let mut ctx = UiContext::new(display, hope_diamond::apply());
+
+        let mut ui = LinearLayoutBuilder::default()
+            .horizontal_alignment(LayoutAlignment::Center)
+            .vertical_alignment(LayoutAlignment::Center)
+            .direction(LayoutDirection::Vertical);
+
+        ui.button("pidor", &FONT_4X6, || {});
+        let mut ui = ui.finish();
+
+        ui.size(&mut ctx, disp_size);
+        ui.layout(&mut ctx, Rectangle::new(Point::zero(), disp_size));
+        ui.draw(&mut ctx, &SystemEvent::Idle);
+
+        assert_eq!(
+            ctx.draw_target.get_pixel(Point::new(22, 28)),
+            ctx.theme.button_style.idle.background_color
+        );
     }
 }

@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
@@ -23,6 +23,7 @@ use widgets::{
 
 pub mod themes;
 pub mod widgets;
+pub mod prelude;
 
 extern crate alloc;
 
@@ -45,8 +46,8 @@ impl Default for DebugOptions {
             enabled: false,
             widget_rects: true,
             widget_rect_active: true,
-            widget_sizes: false,
-            widget_ids: true,
+            widget_sizes: true,
+            widget_ids: false,
         }
     }
 }
@@ -230,11 +231,11 @@ where
         root_layout.add_widget_obj(root, bounds, !alert_shown, Anchor::TopLeft);
 
 
-        if debug_options_enaled {
-            let debug_options = self.debug_options.clone();
-            let debug_pos = Point::new(self.draw_target.bounding_box().size.width as i32 - 100, 2);
-            root_layout.add_widget_obj(debug_options_ui(debug_options, self.focused_element), Rectangle::new(debug_pos, Size::zero()), true, Anchor::TopLeft);
-        }
+        // if debug_options_enaled {
+        //     let debug_options = self.debug_options.clone();
+        //     let debug_pos = Point::new(self.draw_target.bounding_box().size.width as i32 - 100, 2);
+        //     root_layout.add_widget_obj(debug_options_ui(debug_options, self.focused_element), Rectangle::new(debug_pos, Size::zero()), true, Anchor::TopLeft);
+        // }
 
         if alert_shown {
             let alert_text = self.alert_text.clone();

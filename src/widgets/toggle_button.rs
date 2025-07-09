@@ -52,6 +52,7 @@ where
                     focus: Default::default(),
                     idle: Default::default(),
                 },
+                6
             ),
             text,
             state,

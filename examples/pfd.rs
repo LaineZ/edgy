@@ -1,10 +1,8 @@
 // this is a test bench rather than a example...
 
-use std::cell::RefCell;
-use std::mem;
 use edgy::widgets::gauge::{Gauge, GaugeDetent, GaugeStyle};
 use edgy::widgets::grid_layout::GridLayoutBuilder;
-use edgy::widgets::label::Label;
+use edgy::widgets::label::{Label, LabelOptions};
 use edgy::widgets::linear_layout::LayoutAlignment;
 use edgy::{margin, themes, SystemEvent};
 use edgy::{
@@ -27,6 +25,8 @@ use embedded_graphics_simulator::sdl2::Keycode;
 use embedded_graphics_simulator::{
     OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 };
+use std::cell::RefCell;
+use std::mem;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Pages {
@@ -131,8 +131,16 @@ where
                 .horizontal_alignment(LayoutAlignment::Center);
 
             pfd_layout.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                ui.add_widget(Label::new_with_style("ATT", Alignment::Center, MonoTextStyle::new(&FONT_10X20, Rgb888::RED)));
-                ui.add_widget(Label::new_with_style("GPS PRIMARY LOST", Alignment::Center, MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE)));
+                ui.add_widget(Label::new_with_style(
+                    "ATT",
+                    LabelOptions::from(Alignment::Center),
+                    MonoTextStyle::new(&FONT_10X20, Rgb888::RED),
+                ));
+                ui.add_widget(Label::new_with_style(
+                    "GPS PRIMARY LOST",
+                    LabelOptions::from(Alignment::Center),
+                    MonoTextStyle::new(&FONT_5X7, Rgb888::CSS_ORANGE),
+                ));
             });
 
             ui.add_widget_obj(pfd_layout.finish());
@@ -155,12 +163,9 @@ where
                 });
 
                 ui.vertical_linear_layout(LayoutAlignment::Stretch, |ui| {
-                    ui.slider(
-                        state.borrow().rpm,
-                        |value| {
-                            state.borrow_mut().rpm = value;
-                        },
-                    );
+                    ui.slider(state.borrow().rpm, |value| {
+                        state.borrow_mut().rpm = value;
+                    });
                     ui.horizontal_linear_layout(LayoutAlignment::Stretch, |ui| {
                         ui.toggle_button(
                             "BAT 1",

@@ -8,7 +8,7 @@ use edgy::{
 };
 use eg_seven_segment::SevenSegmentStyleBuilder;
 use embedded_graphics::{
-    mono_font::{iso_8859_5::FONT_5X8, iso_8859_5::FONT_10X20},
+    mono_font::{iso_8859_5::FONT_5X8},
     pixelcolor::Rgb888,
     prelude::*,
     primitives::{PrimitiveStyle, PrimitiveStyleBuilder},
@@ -120,6 +120,7 @@ where
                 &FONT_5X8,
                 text::Alignment::Left,
                 MENU_BUTTON_STYLE,
+                6
             );
 
     ui.add_widget(Button::new_styled("тест".to_string(), style, Box::new(|| {

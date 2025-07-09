@@ -6,9 +6,14 @@ Portable, lightweight and robust `no_std` hybrid-mode (immidiate mode drawing an
 
 Library uses ``alloc`` for widget dynamic dispatch, threfore a allocator is required.
 
-Work in progress, something is work, but is very ROUGH shape and requires polishing and improvements in many terms, including but not limited: code quality, documentation, features.
+I'm making this library mostly for my own use and for some personal projects. Don't expect cool functionalty and stable work at this moment.
+
+![example 1](./resources/1.png)
+![example 2](./resources/2.png)
+![example 3](./resources/3.png)
 
 # System requirements
+
 
 Mandatory: `alloc` support
 
