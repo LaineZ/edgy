@@ -41,15 +41,11 @@ where
         for line in self.text.lines() {
             let line_rect = self
                 .style
-                .measure_string(
-                    line,
-                    Point::zero(),
-                    embedded_graphics::text::Baseline::Bottom,
-                )
+                .measure_string(line, Point::zero(), Baseline::Top)
                 .bounding_box;
 
             total_width = total_width.max(line_rect.size.width);
-            total_height += line_rect.size.height + self.style.segment_width;
+            total_height += line_rect.size.height;
         }
 
         Size::new(total_width, total_height)
@@ -61,9 +57,7 @@ where
         rect: Rectangle,
         _event_args: WidgetEvent,
     ) -> EventResult {
-        let mut position = rect.top_left;
-        position.y += self.style.digit_size.height as i32;
-        let text = Text::new(&self.text, position, self.style);
+        let text = Text::with_baseline(&self.text, rect.top_left, self.style, Baseline::Top);
         let _ = text.draw(&mut context.draw_target);
         EventResult::Pass
     }
@@ -160,7 +154,6 @@ where
 
         let mut total_width = 0;
         let mut total_height = 0;
-
         let line_count = self.text.lines().into_iter().count();
 
         let line_spacing = if line_count > 1 {
