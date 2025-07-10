@@ -2,7 +2,7 @@ use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
-    primitives::Rectangle,
+    primitives::{PrimitiveStyle, Rectangle, StrokeAlignment},
     text::{renderer::TextRenderer, Alignment, Baseline, Text, TextStyle, TextStyleBuilder},
 };
 
@@ -70,7 +70,9 @@ where
         text: &str,
     ) {
         const TEXT_BASELINE: Baseline = Baseline::Middle;
-        let styled_rect = rect.into_styled(self.style.style(event).into());
+        let mut converted_style: PrimitiveStyle<C> = self.style.style(event).into();
+        converted_style.stroke_alignment = StrokeAlignment::Inside;
+        let styled_rect = rect.into_styled(converted_style);
         let _ = styled_rect.draw(&mut context.draw_target);
 
         if let Some(style) = self.text_style {

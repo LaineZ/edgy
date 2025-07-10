@@ -1,13 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
-use embedded_graphics::{
-    prelude::*,
-    primitives::Rectangle,
-};
+use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-use crate::{
-    themes::WidgetStyle,
-    EventResult, SystemEvent, UiContext,
-};
+use crate::{themes::WidgetStyle, EventResult, SystemEvent, UiContext};
 
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 
@@ -37,6 +31,7 @@ where
     pub direction: LayoutDirection,
     pub style: WidgetStyle<C>,
     pub min_size: Size,
+    pub gap: u32,
     pub max_size: Size,
 }
 
@@ -94,6 +89,11 @@ where
         self.direction = direction;
         self
     }
+
+    pub fn gap(mut self, gap: u32) -> Self {
+        self.gap = gap;
+        self
+    }
 }
 
 impl<D, C> Default for LinearLayoutBuilder<'_, D, C>
@@ -109,6 +109,7 @@ where
             style: WidgetStyle::default(),
             direction: LayoutDirection::Vertical,
             min_size: Size::zero(),
+            gap: 0,
             max_size: Size::new(u32::MAX, u32::MAX),
         }
     }
@@ -130,6 +131,7 @@ where
             horizontal_alignment: self.horizontal_alignment,
             vertical_alignment: self.vertical_alignment,
             style: self.style,
+            gap: self.gap,
             min_size: self.min_size,
             max_size: self.max_size,
         }))
@@ -148,6 +150,7 @@ where
     vertical_alignment: LayoutAlignment,
     style: WidgetStyle<C>,
     min_size: Size,
+    gap: u32,
     max_size: Size,
 }
 
@@ -158,6 +161,7 @@ where
 {
     fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
         let mut computed_size = Size::zero();
+        let gap_total = self.gap * self.children.len().saturating_sub(1) as u32;
 
         for child in &mut self.children {
             // oh dear...
@@ -174,12 +178,12 @@ where
 
             match self.direction {
                 LayoutDirection::Horizontal => {
-                    computed_size.width += child_size.width;
+                    computed_size.width += child_size.width + gap_total;
                     computed_size.height = computed_size.height.max(child_size.height);
                 }
                 LayoutDirection::Vertical => {
                     computed_size.width = computed_size.width.max(child_size.width);
-                    computed_size.height += child_size.height;
+                    computed_size.height += child_size.height + gap_total;
                 }
             }
         }
@@ -200,6 +204,7 @@ where
     }
 
     fn layout(&mut self, context: &mut UiContext<'a, D, C>, rect: Rectangle) {
+        let total_gap = self.gap * self.children.len().saturating_sub(1) as u32;
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
                 let mut total = 0;
@@ -219,7 +224,7 @@ where
                 }
                 total
             }
-        };
+        } + total_gap;
 
         let main_axis_free_space = match self.direction {
             LayoutDirection::Horizontal => rect.size.width.saturating_sub(total_length),
@@ -250,7 +255,7 @@ where
             0 // just do not stretch
         };
 
-        for child in &mut self.children {
+        for (i, child) in self.children.iter_mut().enumerate() {
             let child_bounds = Size::new(rect.size.width, rect.size.height);
             let mut child_size = child.size(context, child_bounds);
 
@@ -321,8 +326,18 @@ where
             child.layout(context, child_rect);
 
             match self.direction {
-                LayoutDirection::Horizontal => main_offset += child_size.width as i32,
-                LayoutDirection::Vertical => main_offset += child_size.height as i32,
+                LayoutDirection::Horizontal => {
+                    main_offset += child_size.width as i32;
+                    if i != children_count - 1 {
+                        main_offset += self.gap as i32;
+                    }
+                }
+                LayoutDirection::Vertical => {
+                    main_offset += child_size.height as i32;
+                    if i != children_count - 1 {
+                        main_offset += self.gap as i32;
+                    }
+                }
             }
         }
     }
@@ -350,7 +365,6 @@ where
         event_result
     }
 }
-
 
 #[cfg(test)]
 mod tests {

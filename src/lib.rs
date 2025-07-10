@@ -44,9 +44,9 @@ impl Default for DebugOptions {
     fn default() -> Self {
         DebugOptions {
             enabled: false,
-            widget_rects: true,
-            widget_rect_active: true,
-            widget_sizes: false,
+            widget_rects: false,
+            widget_rect_active: false,
+            widget_sizes: true,
             widget_ids: false,
         }
     }
