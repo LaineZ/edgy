@@ -443,6 +443,7 @@ where
         let mut builder = GridLayoutBuilder {
             children: Vec::new(),
             col_fracs: colums,
+            gap: 0,
             row_fracs: rows,
         };
         fill(&mut builder);
