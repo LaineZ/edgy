@@ -1,5 +1,3 @@
-use std::u32;
-
 use crate::{
     prelude::LayoutDirection,
     themes::WidgetStyle,

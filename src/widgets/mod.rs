@@ -148,9 +148,11 @@ where
 
     fn assign_id(&mut self) {
         if self.widget.is_interactive() {
-            let id = crate::WIDGET_IDS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+            // Portability: Using store + load instead of `fetch_add` because of some microcontrollers, for example - RP2040 does not support fetch_add
+            let id = crate::WIDGET_IDS.load(core::sync::atomic::Ordering::Relaxed) + 1;
             self.id = id;
-        }
+            crate::WIDGET_IDS.store(id, core::sync::atomic::Ordering::Relaxed);
+        } 
     }
 
     /// Returns a minimum size of widget
