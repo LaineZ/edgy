@@ -2,7 +2,7 @@
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
-use alloc::{boxed::Box, rc::Rc, string::String};
+use alloc::{boxed::Box, rc::Rc, string::String, vec::{self, Vec}};
 use core::{
     cell::RefCell,
     marker::PhantomData,
@@ -14,22 +14,26 @@ use themes::Theme;
 
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use widgets::{
-    alert::Alert, root_layout::{Anchor, RootLayout}, WidgetObject
+    alert::Alert,
+    root_layout::{Anchor, RootLayout},
+    WidgetObject,
 };
+
+use crate::style::{Selector, Style, StyleRule, StyleSheet, Tag};
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
 // pub use embedded_graphics::geometry::Point as Point;
 // pub use embedded_graphics::geometry::Size as Size;
 
-pub mod themes;
-pub mod widgets;
 pub mod prelude;
 pub mod style;
+pub mod styles;
+pub mod themes;
+pub mod widgets;
 
 extern crate alloc;
 
 pub(crate) static WIDGET_IDS: AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
-
 pub const MAX_SIZE: Size = Size::new(u32::MAX, u32::MAX);
 pub const MIN_SIZE: Size = Size::zero();
 
@@ -111,6 +115,7 @@ where
     pub draw_target: D,
     /// Theme for widgets for this comtext
     pub theme: Theme<C>,
+    pub stylesheet: StyleSheet<'a, C>,
     /// Event to pass in the library
     motion_event: SystemEvent,
     interaction_event: SystemEvent,
@@ -132,6 +137,7 @@ where
             elements_count: 0,
             draw_target,
             theme,
+            stylesheet: Vec::new(),
             motion_event: SystemEvent::Idle,
             interaction_event: SystemEvent::Idle,
             focused_element: 0,
@@ -207,13 +213,11 @@ where
         *borrow = String::new();
     }
 
-
     pub fn toggle_debug_mode(&mut self) {
         let mut debug_options = self.debug_options.borrow_mut();
 
         debug_options.enabled = !debug_options.enabled;
     }
-
 
     pub fn is_debug_enaled(&self) -> bool {
         self.debug_options.borrow().enabled
@@ -230,7 +234,6 @@ where
 
         let mut root_layout = RootLayout::new();
         root_layout.add_widget_obj(root, bounds, !alert_shown, Anchor::TopLeft);
-
 
         // if debug_options_enaled {
         //     let debug_options = self.debug_options.clone();
