@@ -8,6 +8,7 @@ use crate::{EventResult, UiContext};
 
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 
+
 /// Margin struct
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Margin {
@@ -16,6 +17,8 @@ pub struct Margin {
     pub bottom: i32,
     pub left: i32,
 }
+
+pub type Padding = Margin;
 
 /// Macro that returns [Margin]. Defines in CSS fashion
 /// `margin!(top, right, bottom, left)`

@@ -3,7 +3,7 @@ use embedded_graphics::{
     mono_font::{MonoFont, MonoTextStyle},
     prelude::*,
     primitives::{PrimitiveStyle, Rectangle, StrokeAlignment},
-    text::{renderer::TextRenderer, Alignment, Baseline, Text, TextStyle, TextStyleBuilder},
+    text::{renderer::TextRenderer, Alignment, Baseline, Text, TextStyleBuilder},
 };
 
 use crate::{themes::DynamicStyle, Event, EventResult, UiContext};

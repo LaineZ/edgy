@@ -24,7 +24,7 @@ use primitive::Primitive;
 use slider::Slider;
 use toggle_button::ToggleButton;
 
-use crate::{widgets::{battery::{Battery, BatteryStyle}, label::LabelOptions}, Event, EventResult, SystemEvent, UiContext};
+use crate::{widgets::{label::LabelOptions}, Event, EventResult, SystemEvent, UiContext};
 
 pub mod alert;
 pub mod button;
@@ -42,6 +42,7 @@ pub mod root_layout;
 pub mod slider;
 pub mod battery;
 pub mod toggle_button;
+pub mod menu;
 
 /// Widget event arguments
 #[derive(Clone, Copy, Debug)]

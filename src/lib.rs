@@ -14,7 +14,7 @@ use themes::Theme;
 
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use widgets::{
-    alert::Alert, debug::debug_options_ui, root_layout::{Anchor, RootLayout}, WidgetObject
+    alert::Alert, root_layout::{Anchor, RootLayout}, WidgetObject
 };
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
@@ -225,7 +225,7 @@ where
         let bounds = self.draw_target.bounding_box();
 
         let alert_shown = !self.alert_text.borrow().is_empty();
-        let debug_options_enaled = self.debug_options.borrow().enabled;
+        //let debug_options_enaled = self.debug_options.borrow().enabled;
 
         let mut root_layout = RootLayout::new();
         root_layout.add_widget_obj(root, bounds, !alert_shown, Anchor::TopLeft);

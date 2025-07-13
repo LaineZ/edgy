@@ -31,8 +31,6 @@ impl<C: PixelColor> GaugeDetent<C> {
 pub struct GaugeStyle {
     divisions: u32,
     display_values: bool,
-    min_value: f32,
-    max_value: f32,
     min_angle: f32,
     max_angle: f32,
 }
@@ -61,8 +59,6 @@ impl Default for GaugeStyle {
             min_angle: 40.0,
             max_angle: 320.0,
             display_values: false,
-            max_value: 1.0,
-            min_value: 0.0,
         }
     }
 }
