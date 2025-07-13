@@ -24,6 +24,7 @@ use widgets::{
 pub mod themes;
 pub mod widgets;
 pub mod prelude;
+pub mod style;
 
 extern crate alloc;
 
@@ -89,7 +90,7 @@ impl SystemEvent {
 }
 
 /// Filtered to specified widget event
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Event {
     /// Idle event (None, Null) event
     Idle,
