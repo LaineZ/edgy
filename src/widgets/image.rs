@@ -1,5 +1,5 @@
 use super::{Widget, WidgetEvent};
-use crate::{EventResult, UiContext};
+use crate::{style::Style, EventResult, UiContext};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// Image widget, uses [ImageDrawable] trait for data (raw) you can use any supported image parser for this. Or even, generate image from pixel data! So check the [ImageDrawable] documentation for more info
@@ -22,7 +22,7 @@ where
     C: PixelColor,
     I: ImageDrawable<Color = C>,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size, resolved_style: &Style<'a, C>) -> Size {
         self.image.bounding_box().size
     }
 
@@ -34,7 +34,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent,
+        _event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let _ = self
             .image

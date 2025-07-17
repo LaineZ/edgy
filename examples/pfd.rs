@@ -220,7 +220,7 @@ where
 
     ui.add_widget_obj(menu_layout.finish());
 
-    ui.finish()
+    ui.finish(&[])
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
@@ -234,7 +234,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut window = Window::new("a bit edgy ui", &output_settings);
     let debug_text_style = MonoTextStyle::new(&FONT_4X6, Rgb888::BLUE);
 
-    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::HOPE_DIAMOND.to_vec());
     let mut default_state = UiState::default();
     let state = &RefCell::new(&mut default_state);
 

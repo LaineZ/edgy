@@ -7,7 +7,7 @@ use embedded_graphics::{
 };
 
 use super::{Widget, WidgetEvent};
-use crate::{EventResult, UiContext};
+use crate::{style::Style, EventResult, UiContext};
 
 /// Re-export of type [SevenSegmentStyle] from [eg_seven_segment]
 pub use eg_seven_segment::SevenSegmentStyle;
@@ -24,8 +24,11 @@ impl<C> SevenSegmentWidget<C>
 where
     C: PixelColor,
 {
-    pub fn new(text: String, style: SevenSegmentStyle<C>) -> Self {
-        Self { text, style }
+    pub fn new<S: Into<String>>(text: S, style: SevenSegmentStyle<C>) -> Self {
+        Self {
+            text: text.into(),
+            style,
+        }
     }
 }
 
@@ -34,7 +37,12 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        _hint: Size,
+        _resolved_style: &Style<'a, C>,
+    ) -> Size {
         let mut total_width = 0;
         let mut total_height = 0;
 
@@ -56,6 +64,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
+        _resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let text = Text::with_baseline(&self.text, rect.top_left, self.style, Baseline::Top);
         let _ = text.draw(&mut context.draw_target);
@@ -63,77 +72,20 @@ where
     }
 }
 
-/// Advanced label format options
-#[derive(Clone, Copy)]
-pub struct LabelOptions {
-    /// Horizontal alignment for label
-    pub alignment: Alignment,
-    // Line height, left `None`` for auto-computation
-    pub line_height: Option<u32>,
-}
-
-impl Default for LabelOptions {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl LabelOptions {
-    pub fn new() -> Self {
-        Self {
-            alignment: Alignment::Left,
-            line_height: None,
-        }
-    }
-
-    pub fn alignment(mut self, alignment: Alignment) -> Self {
-        self.alignment = alignment;
-        self
-    }
-
-    pub fn line_height(mut self, height: u32) -> Self {
-        self.line_height = Some(height);
-        self
-    }
-}
-
-impl From<Alignment> for LabelOptions {
-    fn from(value: Alignment) -> Self {
-        Self {
-            alignment: value,
-            ..Self::new()
-        }
-    }
-}
-
 /// Label widget
 pub struct Label<'a, C: PixelColor> {
     text: String,
     style: MonoTextStyle<'a, C>,
-    options: LabelOptions,
 }
 
 impl<'a, C> Label<'a, C>
 where
     C: PixelColor + 'a,
 {
-    pub fn new<S: Into<String>>(text: S, options: LabelOptions, font: &'a MonoFont) -> Self {
+    pub fn new<S: Into<String>>(text: S) -> Self {
         Self {
             text: text.into(),
-            options,
-            style: MonoTextStyleBuilder::new().font(font).build(),
-        }
-    }
-
-    pub fn new_with_style<S: Into<String>>(
-        text: S,
-        options: LabelOptions,
-        style: MonoTextStyle<'a, C>,
-    ) -> Self {
-        Self {
-            text: text.into(),
-            options,
-            style,
+            style: MonoTextStyleBuilder::new().build(),
         }
     }
 }
@@ -143,10 +95,17 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        if self.style.text_color.is_none() {
-            self.style.text_color = Some(context.theme.label_color);
-        }
+    fn size(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        _hint: Size,
+        resolved_style: &Style<'a, C>,
+    ) -> Size {
+        let font = resolved_style.font.unwrap();
+        let text_style = MonoTextStyle::new(font, resolved_style.color.unwrap());
+        let line_height = resolved_style
+            .line_height
+            .unwrap_or(text_style.line_height());
 
         if self.text.is_empty() {
             return Size::zero();
@@ -156,11 +115,7 @@ where
         let mut total_height = 0;
         let line_count = self.text.lines().into_iter().count();
 
-        let line_spacing = if line_count > 1 {
-            self.options.line_height.unwrap_or(self.style.line_height()) / 2
-        } else {
-            0
-        };
+        let line_spacing = if line_count > 1 { line_height } else { 0 };
 
         if line_count > 1 {
             // multiline case
@@ -199,10 +154,12 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
+        resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let mut position = rect.top_left;
+        let alignment = resolved_style.text_alignment.unwrap_or(Alignment::Left);
 
-        match self.options.alignment {
+        match alignment {
             Alignment::Left => {
                 // do nothing, layout already draws from left
             }
@@ -220,7 +177,7 @@ where
             position,
             self.style,
             TextStyleBuilder::new()
-                .alignment(self.options.alignment)
+                .alignment(alignment)
                 .baseline(Baseline::Top)
                 .build(),
         );
@@ -234,6 +191,8 @@ mod tests {
     use super::*;
     use crate::{
         prelude::*,
+        style::{resolve_style, Modifier, Selector, SelectorKind, StyleRule, Tag},
+        styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND},
         themes::hope_diamond::{self},
         widgets::linear_layout::LinearLayoutBuilder,
         SystemEvent,
@@ -246,15 +205,18 @@ mod tests {
 
     #[test]
     fn single_line_size() {
-        let display = MockDisplay::<Rgb888>::new();
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        const TEST_STYLE: Style<'static, Rgb888> = Style {
+            color: Some(Rgb888::WHITE),
+            font: Some(&FONT_10X20),
+            text_alignment: Some(Alignment::Center),
+            ..Style::default()
+        };
 
-        let label_size = Label::new(
-            "DISPLAYING BEE!",
-            LabelOptions::from(Alignment::Center),
-            &FONT_10X20,
-        )
-        .size(&mut ctx, Size::new(320, 320));
+        let display = MockDisplay::<Rgb888>::new();
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
+
+        let label_size =
+            Label::new("DISPLAYING BEE!").size(&mut ctx, Size::new(320, 320), &TEST_STYLE);
 
         assert_eq!(label_size.width, 150);
         assert_eq!(label_size.height, 20);
@@ -263,15 +225,16 @@ mod tests {
     #[test]
     fn multiline_size() {
         let display = MockDisplay::<Rgb888>::new();
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
+        let styleshit = resolve_style(
+            &[SelectorKind::Tag(Tag::Label)],
+            &ctx.stylesheet,
+            Modifier::None,
+        );
 
         let label_size = Label::new(
             "At the heart is ocelot-brain - basically OpenComputers\nbut untied from Minecraft and packaged as a Scala library.\nThis makes Ocelot Desktop the most accurate emulator ever made.",
-            LabelOptions::from(Alignment::Left),
-            &FONT_4X6,
-        )
-        .size(&mut ctx, Size::new(320, 320));
-
+        ).size(&mut ctx, Size::new(320, 320), &styleshit);
         assert_eq!(label_size.width, 252);
         assert_eq!(label_size.height, 18);
     }
@@ -279,10 +242,15 @@ mod tests {
     #[test]
     fn empty_label_size() {
         let display = MockDisplay::<Rgb888>::new();
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
+        const TEST_STYLE: Style<'static, Rgb888> = Style {
+            color: Some(Rgb888::WHITE),
+            font: Some(&FONT_10X20),
+            text_alignment: Some(Alignment::Left),
+            ..Style::default()
+        };
 
-        let size = Label::new("", LabelOptions::from(Alignment::Left), &FONT_10X20)
-            .size(&mut ctx, Size::new(320, 240));
+        let size = Label::new("").size(&mut ctx, Size::new(320, 240), &TEST_STYLE);
 
         assert_eq!(size.width, 0);
         assert_eq!(size.height, 0);
@@ -292,19 +260,27 @@ mod tests {
     fn center_alignment_draws_in_bounds() {
         let display = MockDisplay::<Rgb888>::new();
         let disp_size = display.size();
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let mut styles = HOPE_DIAMOND.to_vec();
+
+        styles.push(StyleRule::new(
+            Selector {
+                modifier: Modifier::None,
+                kind: SelectorKind::Id("label"),
+            },
+            Style {
+                font: Some(&FONT_10X20),
+                ..Style::default()
+            },
+        ));
+        let mut ctx = UiContext::new(display, styles, apply_default_debug_style());
 
         let mut ui = LinearLayoutBuilder::default()
             .horizontal_alignment(LayoutAlignment::Center)
             .vertical_alignment(LayoutAlignment::Center)
             .direction(LayoutDirection::Vertical);
 
-        ui.add_widget(Label::new(
-            "text",
-            LabelOptions::from(Alignment::Center),
-            &FONT_10X20,
-        ));
-        let mut ui = ui.finish();
+        ui.add_widget(Label::new("text"), &[SelectorKind::Id("label")]);
+        let mut ui = ui.finish(&[]);
 
         ui.size(&mut ctx, disp_size);
         ui.layout(&mut ctx, Rectangle::new(Point::zero(), disp_size));

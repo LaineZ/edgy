@@ -58,7 +58,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size, resolved_style: &Style<'a, C>) -> Size {
         hint
     }
 
@@ -66,7 +66,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent,
+        _event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         if self.points.is_empty() {
             return EventResult::Pass

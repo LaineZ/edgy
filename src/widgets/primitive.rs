@@ -20,7 +20,7 @@ where
     C: PixelColor + 'a,
     T: Drawable<Color = C> + Dimensions + 'a + Transform,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size, resolved_style: &Style<'a, C>) -> Size {
         self.primitive.bounding_box().size
     }
 

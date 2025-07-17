@@ -1,17 +1,39 @@
 //! Edgy stylesheet engine - it heavily inspired by CSS.
 use alloc::vec::Vec;
-use embedded_graphics::{mono_font::MonoFont, prelude::PixelColor};
+use edgy_style_derive::MergeStyle;
+use embedded_graphics::{
+    image::ImageRaw,
+    mono_font::{mapping, DecorationDimensions, MonoFont, MonoTextStyle},
+    prelude::{PixelColor, Size},
+    primitives::{PrimitiveStyle, Rectangle, StrokeAlignment},
+    text::{self},
+};
 
-use crate::Event;
+use crate::widgets::primitive::Primitive;
 
 pub type StyleSheet<'a, C> = Vec<StyleRule<'a, C>>;
 
-// TODO: Add more widget selectos
+pub(crate) const NULL_FONT: MonoFont = MonoFont {
+    image: ImageRaw::new(&[], 1),
+    character_size: Size::zero(),
+    character_spacing: 0,
+    baseline: 0,
+    strikethrough: DecorationDimensions::new(0, 0),
+    underline: DecorationDimensions::new(0, 0),
+    glyph_mapping: &mapping::ASCII,
+};
+
+// TODO: Add more widget selectors
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Tag {
     Button,
+    Battery,
     ToggleButton,
     Label,
+    Alert,
+    SevenSegment,
+    Gauge,
+    Image
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -54,41 +76,49 @@ impl<'a> Selector<'a> {
 }
 
 /// Stylesheet struct
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, MergeStyle)]
 pub struct Style<'a, C: PixelColor> {
     pub background_color: Option<C>,
+    pub stroke_color: Option<C>,
+    pub accent_color: Option<C>,
+    pub stroke_width: Option<u32>,
     pub color: Option<C>,
     pub font: Option<&'a MonoFont<'a>>,
     pub padding: Option<u32>,
+    pub line_height: Option<u32>,
+    pub text_alignment: Option<text::Alignment>,
 }
 
 impl<'a, C: PixelColor> Style<'a, C> {
     pub const fn default() -> Self {
         Self {
             background_color: None,
+            stroke_color: None,
+            stroke_width: None,
             color: None,
+            accent_color: None,
             font: None,
             padding: None,
+            line_height: None,
+            text_alignment: None,
         }
     }
 
-    pub fn merge(&mut self, other: Style<'a, C>) {
-        if other.background_color.is_some() {
-            self.background_color = other.background_color;
-        }
-        if other.color.is_some() {
-            self.color = other.color;
-        }
-
-        if other.font.is_some() {
-            self.font = other.font;
-        }
-
-        if other.padding.is_some() {
-            self.padding = other.padding;
-        }
+    pub fn primitive_style(&self) -> PrimitiveStyle<C> {
+        let mut style = PrimitiveStyle::new();
+        style.fill_color = self.background_color;
+        style.stroke_alignment = StrokeAlignment::Inside;
+        style.stroke_color = self.stroke_color;
+        style.stroke_width = self.stroke_width.unwrap_or_default();
+        style
+    }
+    
+    pub fn character_style(&self) -> MonoTextStyle<'a, C> {
+        MonoTextStyle::new(self.font.unwrap_or(&NULL_FONT), self.color.unwrap())
     }
 }
+
+#[derive(Clone)]
 pub struct StyleRule<'a, C: PixelColor> {
     pub selector: Selector<'a>,
     pub style: Style<'a, C>,
@@ -106,7 +136,7 @@ pub struct WidgetStyleContext<'a> {
     pub tag: &'a str,
 }
 
-pub fn resolve_style<'a, C: PixelColor + Default>(
+pub fn resolve_style<'a, C: PixelColor>(
     selectors: &[SelectorKind<'a>],
     rules: &[StyleRule<'a, C>],
     modifier: Modifier,

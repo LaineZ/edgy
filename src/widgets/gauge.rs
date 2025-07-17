@@ -4,7 +4,7 @@ use core::f32::consts::PI;
 use micromath::F32Ext;
 
 use super::{Widget, WidgetEvent};
-use crate::{EventResult, UiContext};
+use crate::{style::Style, EventResult, UiContext};
 use alloc::{string::ToString, vec::Vec};
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -91,7 +91,12 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        hint: Size,
+        _resolved_style: &Style<'a, C>,
+    ) -> Size {
         Size::new(hint.height, hint.height)
     }
 
@@ -100,21 +105,18 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
+        resolved_style: &Style<'a, C>,
     ) -> EventResult {
-        let style = context.theme.gauge_style;
-        let foreground_color = style
-            .foreground_color
-            .expect("Gauge must have a foreground color to draw");
-        let stroke_color = style.stroke_color.unwrap_or(foreground_color);
-        let accent_color = style.accent_color.unwrap_or(foreground_color);
-
-        let gauge_stroke_width = style.stroke_width.clamp(2, u32::MAX);
+        let foreground_color = resolved_style.color.unwrap();
+        let stroke_color = resolved_style.stroke_color.unwrap_or(foreground_color);
+        let accent_color = resolved_style.accent_color.unwrap_or(foreground_color);
+        let gauge_stroke_width = resolved_style.stroke_width.unwrap_or(2).clamp(2, u32::MAX);
 
         let circle = Circle::with_center(
             Point::new(rect.center().x, rect.center().y),
             rect.size.width - gauge_stroke_width,
         )
-        .into_styled(style.into());
+        .into_styled(resolved_style.primitive_style());
 
         let circle_size = circle.primitive.diameter;
         let center = circle.primitive.center();

@@ -10,7 +10,7 @@ use embedded_graphics::{
     mono_font::{iso_8859_16::FONT_4X6, MonoFont, MonoTextStyle},
     prelude::*,
     primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
-    text::{Alignment, Text},
+    text::Text,
 };
 use filler::{FillStrategy, Filler};
 use gauge::{Gauge, GaugeStyle};
@@ -24,11 +24,14 @@ use primitive::Primitive;
 use slider::Slider;
 use toggle_button::ToggleButton;
 
-use crate::{widgets::{label::LabelOptions}, Event, EventResult, SystemEvent, UiContext};
+use crate::{
+    style::{self, resolve_style, Modifier, SelectorKind, Style},
+    Event, EventResult, SystemEvent, UiContext,
+};
 
-pub mod alert;
+pub mod battery;
 pub mod button;
-pub mod debug;
+//pub mod debug;
 pub mod filler;
 pub mod gauge;
 pub mod grid_layout;
@@ -40,9 +43,7 @@ pub mod plot;
 pub mod primitive;
 pub mod root_layout;
 pub mod slider;
-pub mod battery;
 pub mod toggle_button;
-pub mod menu;
 
 /// Widget event arguments
 #[derive(Clone, Copy, Debug)]
@@ -51,6 +52,19 @@ pub struct WidgetEvent<'a> {
     pub is_focused: bool,
     pub id: usize,
     pub event: &'a Event,
+}
+
+impl<'a> WidgetEvent<'a> {
+    fn get_modifier(&self) -> Modifier {
+        match self.system_event {
+            SystemEvent::FocusTo(_) => Modifier::Focus,
+            SystemEvent::ActiveTo(_) | SystemEvent::Active(_) => Modifier::Active,
+            // TODO: Consider add new modifiers?
+            SystemEvent::Move(point) => Modifier::Focus,
+            SystemEvent::Drag(point) => Modifier::Focus,
+            _ => Modifier::None,
+        }
+    }
 }
 
 impl<'a> Default for WidgetEvent<'a> {
@@ -78,7 +92,12 @@ where
     }
 
     /// Returns the size the widget wants. use for auto-calculate in layouts. Default implementation occupies all available space
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        hint: Size,
+        resolved_style: &Style<'a, C>,
+    ) -> Size {
         hint
     }
 
@@ -101,6 +120,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
+        resolved_style: &Style<'a, C>,
     ) -> EventResult {
         EventResult::Pass
     }
@@ -114,6 +134,8 @@ where
 {
     pub(crate) widget: Box<dyn Widget<'a, D, C>>,
     pub(crate) computed_rect: Rectangle,
+    selectors: &'a [SelectorKind<'a>],
+    style: Style<'a, C>,
     requested_size: Size,
     pub(crate) id: usize,
 }
@@ -123,10 +145,12 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor,
 {
-    pub fn new(widget: Box<dyn Widget<'a, D, C>>) -> Self {
+    pub fn new(widget: Box<dyn Widget<'a, D, C>>, selectors: &'a [SelectorKind<'a>]) -> Self {
         Self {
             computed_rect: Rectangle::default(),
             requested_size: Size::default(),
+            style: Style::default(),
+            selectors,
             widget,
             id: 0,
         }
@@ -140,8 +164,10 @@ where
 {
     /// Gets a size for widget (for layout compulation)
     pub fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+        let style = resolve_style(self.selectors, &context.stylesheet, style::Modifier::None);
+
         if self.requested_size == Size::zero() {
-            self.requested_size = self.widget.size(context, hint);
+            self.requested_size = self.widget.size(context, hint, &style);
         }
 
         self.requested_size
@@ -153,7 +179,7 @@ where
             let id = crate::WIDGET_IDS.load(core::sync::atomic::Ordering::Relaxed) + 1;
             self.id = id;
             crate::WIDGET_IDS.store(id, core::sync::atomic::Ordering::Relaxed);
-        } 
+        }
     }
 
     /// Returns a minimum size of widget
@@ -246,11 +272,16 @@ where
             event: &event,
         };
 
-        let event_result = self.widget.draw(context, self.rect(), event_args);
+        let style = resolve_style(
+            self.selectors,
+            &context.stylesheet,
+            event_args.get_modifier(),
+        );
+        let event_result = self.widget.draw(context, self.rect(), event_args, &style);
 
         let dbg = context.debug_options.borrow();
         if dbg.enabled {
-            let text = MonoTextStyle::new(&FONT_4X6, context.theme.label_color);
+            let text = MonoTextStyle::new(&FONT_4X6, context.debug_style.label_color);
 
             if dbg.widget_ids {
                 if self.id > 0 {
@@ -267,7 +298,7 @@ where
             }
 
             if dbg.widget_sizes {
-                let text = MonoTextStyle::new(&FONT_4X6, context.theme.debug_rect_active);
+                let text = MonoTextStyle::new(&FONT_4X6, context.debug_style.label_color);
                 let _ = Text::new(
                     &format!(
                         "{}x{}",
@@ -286,7 +317,7 @@ where
                 let _ = embedded_graphics::prelude::Primitive::into_styled(
                     self.rect(),
                     PrimitiveStyleBuilder::new()
-                        .stroke_color(context.theme.debug_rect)
+                        .stroke_color(context.debug_style.debug_rect)
                         .stroke_width(1)
                         .build(),
                 )
@@ -297,7 +328,7 @@ where
                 let _ = embedded_graphics::prelude::Primitive::into_styled(
                     self.rect(),
                     PrimitiveStyleBuilder::new()
-                        .stroke_color(context.theme.debug_rect_active)
+                        .stroke_color(context.debug_style.debug_rect_active)
                         .stroke_width(1)
                         .build(),
                 )
@@ -321,44 +352,41 @@ where
     fn add_widget_obj(&mut self, widget: WidgetObject<'a, D, C>);
 
     /// Adds a widget in current layout
-    fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W) {
-        let mut object = WidgetObject::new(Box::new(widget));
+    fn add_widget<W: Widget<'a, D, C>>(&mut self, widget: W, selectors: &'a [SelectorKind<'a>]) {
+        let mut object = WidgetObject::new(Box::new(widget), selectors);
         object.assign_id();
         self.add_widget_obj(object);
     }
 
     /// Creates a [Label] widget
-    fn label<S: Into<String>>(&mut self, text: S, text_alignment: Alignment, font: &'a MonoFont) {
-        self.add_widget(Label::new(
-            text.into(),
-            LabelOptions::new().alignment(text_alignment),
-            font,
-        ))
+    fn label<S: Into<String>>(&mut self, text: S) {
+        self.add_widget(
+            Label::new(text.into()),
+            &[SelectorKind::Tag(style::Tag::Label)],
+        )
     }
 
     /// Creates a [SevenSegmentWidget] widget
     fn seven_segment<S: Into<String>>(&mut self, text: S, style: SevenSegmentStyle<C>) {
-        self.add_widget(SevenSegmentWidget::new(text.into(), style));
+        self.add_widget(SevenSegmentWidget::new(text.into(), style), &[SelectorKind::Tag(style::Tag::SevenSegment)]);
     }
 
     /// Creates a [Gauge] widget
     fn gauge(&mut self, label: &'a str, value: f32) {
-        self.add_widget(Gauge::new(value, label, GaugeStyle::default()));
+        self.add_widget(Gauge::new(value, label, GaugeStyle::default()), &[SelectorKind::Tag(style::Tag::Gauge)]);
     }
 
     /// Shorthand construct for [Button] widget
-    fn button<S: Into<String>>(
-        &mut self,
-        text: S,
-        font: &'a MonoFont,
-        callback: impl FnMut() + 'a,
-    ) {
-        self.add_widget(Button::new(text.into(), font, Box::new(callback)));
+    fn button<S: Into<String>>(&mut self, text: S, callback: impl FnMut() + 'a) {
+        self.add_widget(
+            Button::new(text.into(), Box::new(callback)),
+            &[SelectorKind::Tag(style::Tag::Button)],
+        );
     }
 
     /// Shorthand construct for [Image] widget
     fn image<I: ImageDrawable<Color = C>>(&mut self, image: &'a I) {
-        self.add_widget(Image::<'a, I>::new(image));
+        self.add_widget(Image::<'a, I>::new(image), &[SelectorKind::Tag(style::Tag::Image)]);
     }
 
     /// Shorthand construct for [ToggleButton] widget
@@ -473,5 +501,5 @@ where
         self.add_widget(Slider::new(value, Box::new(callback)));
     }
 
-    fn finish(self) -> WidgetObject<'a, D, C>;
+    fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C>;
 }

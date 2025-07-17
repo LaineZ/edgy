@@ -1,4 +1,4 @@
-use crate::UiContext;
+use crate::{style::Style, UiContext};
 
 use super::Widget;
 use embedded_graphics::prelude::*;
@@ -25,7 +25,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size, _resolved_style: &Style<'a, C>) -> Size {
         match self.fill {
             FillStrategy::Vertical => Size::new(0, hint.height),
             FillStrategy::Horizontal => Size::new(hint.width, 0),

@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-use crate::{themes::WidgetStyle, EventResult, SystemEvent, UiContext};
+use crate::{style::{SelectorKind, Style}, themes::WidgetStyle, EventResult, SystemEvent, UiContext};
 
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 
@@ -124,7 +124,7 @@ where
         self.children.push(widget);
     }
 
-    fn finish(self) -> WidgetObject<'a, D, C> {
+    fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C> {
         WidgetObject::new(Box::new(LinearLayout {
             direction: self.direction,
             children: self.children,
@@ -134,7 +134,7 @@ where
             gap: self.gap,
             min_size: self.min_size,
             max_size: self.max_size,
-        }))
+        }), selectors)
     }
 }
 
@@ -159,7 +159,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size, resolved_style: &Style<'a, C>) -> Size {
         let mut computed_size = Size::zero();
         let gap_total = self.gap * self.children.len().saturating_sub(1) as u32;
 
@@ -346,7 +346,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        event_args: WidgetEvent,
+        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let _ = rect
             .into_styled(self.style.into())
@@ -369,16 +369,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::themes::hope_diamond::{self};
-    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb565};
+    use crate::styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND};
+    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb888};
 
     #[test]
     fn linear_assume_zero_size() {
-        let display = MockDisplay::<Rgb565>::new();
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let display = MockDisplay::<Rgb888>::new();
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
 
         for lay_type in [LayoutDirection::Horizontal, LayoutDirection::Vertical] {
-            let mut layout = LinearLayoutBuilder::default().direction(lay_type).finish();
+            let mut layout = LinearLayoutBuilder::default().direction(lay_type).finish(&[]);
             let bb = ctx.draw_target.bounding_box().size;
             let size = layout.size(&mut ctx, bb);
             assert_eq!(size, Size::zero());

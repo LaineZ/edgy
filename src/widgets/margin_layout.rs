@@ -4,10 +4,12 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
 };
 
-use crate::{EventResult, UiContext};
+use crate::{
+    style::{SelectorKind, Style},
+    EventResult, UiContext,
+};
 
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
-
 
 /// Margin struct
 #[derive(Default, Debug, Copy, Clone)]
@@ -62,7 +64,6 @@ where
 {
     pub(crate) margin: Margin,
     pub(crate) child: Option<WidgetObject<'a, D, C>>,
-    pub(crate) style: PrimitiveStyle<C>,
 }
 
 impl<'a, D, C> MarginLayout<'a, D, C>
@@ -74,15 +75,6 @@ where
         Self {
             child: None,
             margin,
-            style: PrimitiveStyle::default(),
-        }
-    }
-
-    pub fn new_with_style(margin: Margin, style: PrimitiveStyle<C>) -> Self {
-        Self {
-            child: None,
-            margin,
-            style,
         }
     }
 }
@@ -100,12 +92,12 @@ where
         }
     }
 
-    fn finish(self) -> WidgetObject<'a, D, C> {
+    fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C> {
         if self.child.is_none() {
             panic!("MarginContainer must have a child before finishing!");
         }
 
-        WidgetObject::new(Box::new(self))
+        WidgetObject::new(Box::new(self), selectors)
     }
 }
 
@@ -114,7 +106,12 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut crate::UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(
+        &mut self,
+        context: &mut crate::UiContext<'a, D, C>,
+        hint: Size,
+        _resolved_style: &Style<'a, C>,
+    ) -> Size {
         let available_width = hint
             .width
             .saturating_sub((self.margin.left + self.margin.right) as u32);
@@ -160,8 +157,11 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
+        resolved_style: &Style<'a, C>,
     ) -> EventResult {
-        let _ = rect.into_styled(self.style).draw(&mut context.draw_target);
+        let _ = rect
+            .into_styled(resolved_style.primitive_style())
+            .draw(&mut context.draw_target);
         self.child
             .as_mut()
             .unwrap()

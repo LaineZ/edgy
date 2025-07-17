@@ -58,7 +58,7 @@ where
         });
     }
 
-    pub fn finish(self) -> WidgetObject<'a, D, C> {
+    pub fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C> {
         WidgetObject::new(Box::new(self))
     }
 }
@@ -68,7 +68,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size, resolved_style: &Style<'a, C>) -> Size {
         let mut size = Size::zero();
 
         for child in self.children.iter_mut() {
@@ -103,7 +103,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         _rect: Rectangle,
-        event_args: WidgetEvent,
+        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let mut event_result = EventResult::Pass;
 

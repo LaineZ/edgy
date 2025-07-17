@@ -1,5 +1,5 @@
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
-use crate::{EventResult, SystemEvent, UiContext};
+use crate::{style::{SelectorKind, Style}, EventResult, SystemEvent, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
@@ -62,13 +62,13 @@ where
         self.children.push(widget);
     }
 
-    fn finish(self) -> WidgetObject<'a, D, C> {
+    fn finish(self, selectors: &'a [SelectorKind]) -> WidgetObject<'a, D, C> {
         WidgetObject::new(Box::new(GridLayout {
             children: self.children,
             col_fracs: self.col_fracs,
             row_fracs: self.row_fracs,
             gap: self.gap,
-        }))
+        }), selectors)
     }
 }
 
@@ -160,7 +160,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         _rect: Rectangle,
-        event_args: WidgetEvent,
+        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let mut event_result = EventResult::Pass;
 

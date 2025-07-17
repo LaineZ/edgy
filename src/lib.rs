@@ -2,24 +2,24 @@
 //! edgy - no_std immediate-mode GUI library for microcontrollers. It uses ``embedded_graphics`` for
 //! rendering and some types like ``Color`` or ``Rectangle``. Library uses ``alloc`` for widget
 //! dynamic dispatch, threfore a allocator is required.
-use alloc::{boxed::Box, rc::Rc, string::String, vec::{self, Vec}};
+use alloc::rc::Rc;
 use core::{
     cell::RefCell,
-    marker::PhantomData,
     sync::atomic::{AtomicUsize, Ordering},
     u32,
 };
 pub use embedded_graphics;
-use themes::Theme;
 
-use embedded_graphics::{prelude::*, primitives::Rectangle};
+use embedded_graphics::prelude::*;
 use widgets::{
-    alert::Alert,
     root_layout::{Anchor, RootLayout},
     WidgetObject,
 };
 
-use crate::style::{Selector, Style, StyleRule, StyleSheet, Tag};
+use crate::{
+    style::StyleSheet,
+    styles::{apply_default_debug_style, DebugStyle},
+};
 
 // pub use embedded_graphics::primitives::Rectangle as Rectangle;
 // pub use embedded_graphics::geometry::Point as Point;
@@ -111,19 +111,17 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'static,
 {
-    /// ``DrawTarget`` basically is display for drawing
+    /// Basically, is display for drawing, must implement [DrawTarget] trait. Please note, [UiContext] consumes display object, so after if you want contact display directly you need use `ui_context.draw_target`
     pub draw_target: D,
-    /// Theme for widgets for this comtext
-    pub theme: Theme<C>,
+    /// Base [StyleSheet] for this context
     pub stylesheet: StyleSheet<'a, C>,
-    /// Event to pass in the library
+    /// Base [DebugStyle] for this context
+    pub debug_style: DebugStyle<C>,
     motion_event: SystemEvent,
     interaction_event: SystemEvent,
     debug_options: Rc<RefCell<DebugOptions>>,
-    alert_text: Rc<RefCell<String>>,
     elements_count: usize,
     pub(crate) focused_element: usize,
-    marker: PhantomData<&'a C>,
 }
 
 impl<'a, D, C> UiContext<'a, D, C>
@@ -132,18 +130,16 @@ where
     C: PixelColor,
 {
     /// Creates a new UI context with specified `DrawTaget` and `Theme`
-    pub fn new(draw_target: D, theme: Theme<C>) -> Self {
+    pub fn new(draw_target: D, stylesheet: StyleSheet<'a, C>, debug_style: DebugStyle<C>) -> Self {
         Self {
             elements_count: 0,
             draw_target,
-            theme,
-            stylesheet: Vec::new(),
+            stylesheet,
             motion_event: SystemEvent::Idle,
             interaction_event: SystemEvent::Idle,
             focused_element: 0,
+            debug_style,
             debug_options: Rc::new(RefCell::new(DebugOptions::default())),
-            alert_text: Rc::new(RefCell::new(String::new())),
-            marker: PhantomData,
         }
     }
 
@@ -184,33 +180,18 @@ where
         self.push_event(SystemEvent::ActiveTo(self.focused_element));
     }
 
-    pub fn dim_screen(&mut self) {
-        let modal_style = self.theme.modal_style;
-
-        let modal_background = modal_style
-            .background_color
-            .expect("Modal must have a background color for drawing");
-
+    pub fn dim_screen(&mut self, color: C) {
         let bounds = self.draw_target.bounding_box();
         let size = bounds.size;
+        // TODO: Optimize
         for x in 0..size.width {
             for y in 0..size.height {
                 if (x + y) % 2 == 0 {
-                    let _ = Pixel(Point::new(x as i32, y as i32), modal_background)
-                        .draw(&mut self.draw_target);
+                    let _ =
+                        Pixel(Point::new(x as i32, y as i32), color).draw(&mut self.draw_target);
                 }
             }
         }
-    }
-
-    pub fn alert<S: Into<String>>(&mut self, text: S) {
-        let mut borrow = self.alert_text.borrow_mut();
-        *borrow = text.into();
-    }
-
-    pub fn dismiss_alerts(&mut self) {
-        let mut borrow = self.alert_text.borrow_mut();
-        *borrow = String::new();
     }
 
     pub fn toggle_debug_mode(&mut self) {
@@ -228,12 +209,10 @@ where
         self.elements_count = WIDGET_IDS.load(Ordering::Relaxed);
         WIDGET_IDS.store(1, Ordering::Relaxed);
         let bounds = self.draw_target.bounding_box();
-
-        let alert_shown = !self.alert_text.borrow().is_empty();
         //let debug_options_enaled = self.debug_options.borrow().enabled;
 
         let mut root_layout = RootLayout::new();
-        root_layout.add_widget_obj(root, bounds, !alert_shown, Anchor::TopLeft);
+        root_layout.add_widget_obj(root, bounds, true, Anchor::TopLeft);
 
         // if debug_options_enaled {
         //     let debug_options = self.debug_options.clone();
@@ -241,27 +220,7 @@ where
         //     root_layout.add_widget_obj(debug_options_ui(debug_options, self.focused_element), Rectangle::new(debug_pos, Size::zero()), true, Anchor::TopLeft);
         // }
 
-        if alert_shown {
-            let alert_text = self.alert_text.clone();
-            let alert_msg = alert_text.borrow().clone();
-
-            let alert = Alert::new(
-                alert_msg,
-                self.theme.modal_style,
-                Box::new(move || {
-                    alert_text.take();
-                }),
-            );
-
-            root_layout.add_widget_obj(
-                WidgetObject::new(Box::new(alert)),
-                Rectangle::new(bounds.center(), Size::zero()),
-                true,
-                Anchor::Center,
-            );
-        }
-
-        let mut root_layout = root_layout.finish();
+        let mut root_layout = root_layout.finish(&[]);
         root_layout.size(self, bounds.size);
         root_layout.layout(self, bounds);
 

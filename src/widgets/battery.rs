@@ -1,8 +1,5 @@
 use crate::{
-    prelude::LayoutDirection,
-    themes::WidgetStyle,
-    widgets::{Widget, WidgetEvent},
-    EventResult, UiContext,
+    prelude::LayoutDirection, style::Style, themes::WidgetStyle, widgets::{Widget, WidgetEvent}, EventResult, UiContext
 };
 use embedded_graphics::{
     prelude::{DrawTarget, PixelColor, Point, Size},
@@ -50,7 +47,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size, resolved_style: &Style<'a, C>) -> Size {
         self.size
     }
 
@@ -66,7 +63,7 @@ where
         &mut self,
         context: &mut crate::UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent,
+        _event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         match self.style.direction {
             LayoutDirection::Horizontal => {
@@ -138,6 +135,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::style::{SelectorKind, Tag};
+    use crate::styles::apply_default_debug_style;
+    use crate::styles::hope_diamond::HOPE_DIAMOND;
     use crate::themes::WidgetStyle;
     use crate::widgets::battery::{Battery, BatteryStyle};
     use crate::widgets::linear_layout::LinearLayoutBuilder;
@@ -158,7 +158,7 @@ mod tests {
         let mut display = MockDisplay::<Rgb888>::new();
         let disp_size = display.size();
         display.set_allow_overdraw(true);
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
 
         let mut ui = LinearLayoutBuilder::default()
             .horizontal_alignment(LayoutAlignment::Start)
@@ -170,8 +170,8 @@ mod tests {
             false,
             Size::new(7, 3),
             BatteryStyle::new(BATTERY_STYLE, LayoutDirection::Horizontal),
-        ));
-        let mut ui = ui.finish();
+        ), &[SelectorKind::Tag(Tag::Battery)]);
+        let mut ui = ui.finish(&[]);
 
         ui.size(&mut ctx, disp_size);
         ui.layout(&mut ctx, Rectangle::new(Point::zero(), disp_size));
@@ -188,7 +188,7 @@ mod tests {
         let mut display = MockDisplay::<Rgb888>::new();
         let disp_size = display.size();
         display.set_allow_overdraw(true);
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
 
         let mut ui = LinearLayoutBuilder::default()
             .horizontal_alignment(LayoutAlignment::Start)
@@ -200,8 +200,8 @@ mod tests {
             false,
             Size::new(7, 3),
             BatteryStyle::new(BATTERY_STYLE, LayoutDirection::Horizontal),
-        ));
-        let mut ui = ui.finish();
+        ), &[SelectorKind::Tag(Tag::Battery)]);
+        let mut ui = ui.finish(&[]);
 
         ui.size(&mut ctx, disp_size);
         ui.layout(&mut ctx, Rectangle::new(Point::zero(), disp_size));

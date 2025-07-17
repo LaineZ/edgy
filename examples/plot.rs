@@ -23,7 +23,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::HOPE_DIAMOND.to_vec());
 
     let mut points = Vec::new();
     let mut offset = Point::zero();
@@ -89,6 +89,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         ui.plot(points.clone(), scale, offset);
 
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
-        ui_ctx.update(ui.finish());
+        ui_ctx.update(ui.finish(&[]));
     }
 }

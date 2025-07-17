@@ -25,9 +25,9 @@ where
         .vertical_alignment(LayoutAlignment::Center)
         .direction(LayoutDirection::Vertical);
 
-    ui.label("DISPLAYING BEE!", Alignment::Center, &FONT_10X20);
+    ui.label("DISPLAYING BEE!");
     ui.image(image);
-    ui.finish()
+    ui.finish(&[])
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
@@ -39,7 +39,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::HOPE_DIAMOND.to_vec(), apply_default_debug_style());
 
     let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("bee.bmp")).unwrap();
     println!(

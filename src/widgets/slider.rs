@@ -74,7 +74,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size, resolved_style: &Style<'a, C>) -> Size {
         let style = self.style.get_or_insert(context.theme.slider_style);
 
         Size::new(hint.width, style.track_height.max(style.handle_size.height) + 2)
@@ -93,7 +93,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        event_args: WidgetEvent,
+        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
     ) -> EventResult {
         let style = self.style.get_or_insert(context.theme.slider_style);
 
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn slider_size() {
         let display = MockDisplay::<Rgb565>::new();
-        let mut ctx = UiContext::new(display, hope_diamond::apply());
+        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec());
 
         let style = SliderStyle::<Rgb565>::new(
             DynamicStyle::default(),

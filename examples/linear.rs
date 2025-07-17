@@ -63,7 +63,7 @@ static STYLE: OnceLock<Theme<Rgb888>> = OnceLock::new();
 
 pub fn theme() -> Theme<Rgb888> {
     *STYLE.get_or_init(|| {
-        let mut theme = themes::hope_diamond::apply();
+        let mut theme = themes::HOPE_DIAMOND.to_vec();
         theme.label_color = FOREGROUND_COLOR;
         theme
     })
@@ -127,7 +127,7 @@ where
 
     })));
 
-    ui.finish()
+    ui.finish(&[])
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
@@ -139,7 +139,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(display, themes::hope_diamond::apply());
+    let mut ui_ctx = UiContext::new(display, themes::HOPE_DIAMOND.to_vec());
 
     loop {
         window.update(&mut ui_ctx.draw_target);

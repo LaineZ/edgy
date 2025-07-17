@@ -1,59 +1,25 @@
 use alloc::{boxed::Box, string::String};
 use embedded_graphics::{
-    mono_font::MonoFont,
     prelude::*,
     primitives::{PrimitiveStyle, Rectangle},
-    text::Alignment,
 };
 
 use super::{button::ButtonGeneric, Widget, WidgetEvent};
-use crate::{themes::DynamicStyle, Event, EventResult, UiContext};
+use crate::{style::Style, Event, EventResult, UiContext};
 
 /// Toggle button (Korry-like switches)
-pub struct ToggleButton<'a, C: PixelColor> {
-    base: ButtonGeneric<'a, C>,
+pub struct ToggleButton<'a> {
+    base: ButtonGeneric,
     text: String,
     state: bool,
     callback: Box<dyn FnMut(bool) + 'a>,
 }
 
-impl<'a, C> ToggleButton<'a, C>
-where
-    C: PixelColor + 'a,
-{
-    pub fn new_styled(
-        text: String,
-        style: ButtonGeneric<'a, C>,
-        state: bool,
-        callback: Box<dyn FnMut(bool) + 'a>,
-    ) -> Self {
-        Self {
-            base: style,
-            text,
-            state,
-            callback,
-        }
-    }
-
-    pub fn new(
-        text: String,
-        font: &'a MonoFont,
-        state: bool,
-        callback: Box<dyn FnMut(bool) + 'a>,
-    ) -> Self {
+impl<'a> ToggleButton<'a> {
+    pub fn new(text: String, state: bool, callback: Box<dyn FnMut(bool) + 'a>) -> Self {
         Self {
             // wtf
-            base: ButtonGeneric::new(
-                font,
-                Alignment::Center,
-                DynamicStyle {
-                    active: Default::default(),
-                    drag: Default::default(),
-                    focus: Default::default(),
-                    idle: Default::default(),
-                },
-                6
-            ),
+            base: ButtonGeneric::new(),
             text,
             state,
             callback,
@@ -61,18 +27,18 @@ where
     }
 }
 
-impl<'a, D, C> Widget<'a, D, C> for ToggleButton<'a, C>
+impl<'a, D, C> Widget<'a, D, C> for ToggleButton<'a>
 where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size) -> Size {
-        let style = self.base.style.style(&Event::Idle);
-        if style.foreground_color.is_none() && style.background_color.is_none() {
-            self.base.style = context.theme.button_style;
-        }
-
-        self.base.size(&self.text)
+    fn size(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        _hint: Size,
+        resolved_style: &Style<'a, C>,
+    ) -> Size {
+        self.base.size(&self.text, resolved_style)
     }
 
     fn is_interactive(&mut self) -> bool {
@@ -84,8 +50,9 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
+        resolved_style: &Style<'a, C>,
     ) -> EventResult {
-        let style = self.base.style.style(event_args.event);
+        let style = resolved_style.primitive_style();
 
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
@@ -97,7 +64,7 @@ where
             _ => EventResult::Pass,
         };
 
-        self.base.draw(context, rect, event_args.event, &self.text);
+        self.base.draw(context, rect, resolved_style, &self.text);
         let light_size = (rect.size.height / 8).clamp(1, 4);
         let rect_light = Rectangle::new(
             Point::new(
@@ -109,13 +76,12 @@ where
         if self.state {
             let _ = rect_light
                 .into_styled(PrimitiveStyle::with_fill(
-                    style
-                        .accent_color
-                        .expect("Toggle button must have a accent color for drawing"),
+                    resolved_style
+                        .accent_color.unwrap_or(style.stroke_color.unwrap())
                 ))
                 .draw(&mut context.draw_target);
         } else {
-            if let Some(foreground_color) = style.foreground_color {
+            if let Some(foreground_color) = resolved_style.color {
                 let _ = rect_light
                     .into_styled(PrimitiveStyle::with_fill(foreground_color))
                     .draw(&mut context.draw_target);
