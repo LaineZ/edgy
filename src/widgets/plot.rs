@@ -1,4 +1,4 @@
-use crate::{EventResult, UiContext};
+use crate::{style::Style, EventResult, UiContext};
 
 use super::{Widget, WidgetEvent};
 use alloc::vec::Vec;
@@ -66,7 +66,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent, resolved_style: &Style<'a, C>,
+        _event_args: WidgetEvent, 
     ) -> EventResult {
         if self.points.is_empty() {
             return EventResult::Pass

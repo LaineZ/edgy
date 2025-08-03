@@ -346,7 +346,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
+        event_args: WidgetEvent, 
     ) -> EventResult {
         let _ = rect
             .into_styled(self.style.into())

@@ -1,6 +1,6 @@
 use alloc::string::String;
 use embedded_graphics::{
-    mono_font::{MonoFont, MonoTextStyle, MonoTextStyleBuilder},
+    mono_font::{MonoTextStyle, MonoTextStyleBuilder},
     prelude::*,
     primitives::Rectangle,
     text::{renderer::TextRenderer, Alignment, Baseline, Text, TextStyleBuilder},
@@ -41,7 +41,7 @@ where
         &mut self,
         _context: &mut UiContext<'a, D, C>,
         _hint: Size,
-        _resolved_style: &Style<'a, C>,
+        _
     ) -> Size {
         let mut total_width = 0;
         let mut total_height = 0;
@@ -64,7 +64,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
-        _resolved_style: &Style<'a, C>,
+        _
     ) -> EventResult {
         let text = Text::with_baseline(&self.text, rect.top_left, self.style, Baseline::Top);
         let _ = text.draw(&mut context.draw_target);
@@ -99,7 +99,7 @@ where
         &mut self,
         _context: &mut UiContext<'a, D, C>,
         _hint: Size,
-        resolved_style: &Style<'a, C>,
+        
     ) -> Size {
         let font = resolved_style.font.unwrap();
         let text_style = MonoTextStyle::new(font, resolved_style.color.unwrap());
@@ -154,7 +154,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
-        resolved_style: &Style<'a, C>,
+        
     ) -> EventResult {
         let mut position = rect.top_left;
         let alignment = resolved_style.text_alignment.unwrap_or(Alignment::Left);
@@ -191,15 +191,14 @@ mod tests {
     use super::*;
     use crate::{
         prelude::*,
-        style::{resolve_style, Modifier, Selector, SelectorKind, StyleRule, Tag},
+        style::{resolve_style, Modifier, Selector, SelectorKind, Part, StyleRule, Tag},
         styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND},
-        themes::hope_diamond::{self},
         widgets::linear_layout::LinearLayoutBuilder,
         SystemEvent,
     };
     use embedded_graphics::{
         mock_display::MockDisplay,
-        mono_font::ascii::{FONT_10X20, FONT_4X6},
+        mono_font::ascii::FONT_10X20,
         pixelcolor::Rgb888,
     };
 
@@ -230,6 +229,7 @@ mod tests {
             &[SelectorKind::Tag(Tag::Label)],
             &ctx.stylesheet,
             Modifier::None,
+            Part::Main
         );
 
         let label_size = Label::new(
@@ -265,6 +265,7 @@ mod tests {
         styles.push(StyleRule::new(
             Selector {
                 modifier: Modifier::None,
+                part: Part::Main,
                 kind: SelectorKind::Id("label"),
             },
             Style {

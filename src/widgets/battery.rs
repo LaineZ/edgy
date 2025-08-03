@@ -1,5 +1,5 @@
 use crate::{
-    prelude::LayoutDirection, style::Style, themes::WidgetStyle, widgets::{Widget, WidgetEvent}, EventResult, UiContext
+    prelude::LayoutDirection, style::{SelectorKind, Style}, themes::WidgetStyle, widgets::{Widget, WidgetEvent}, EventResult, UiContext
 };
 use embedded_graphics::{
     prelude::{DrawTarget, PixelColor, Point, Size},
@@ -47,7 +47,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size, resolved_style: &Style<'a, C>) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size, selectors: &[SelectorKind<'a>]) -> Size {
         self.size
     }
 
@@ -63,7 +63,8 @@ where
         &mut self,
         context: &mut crate::UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent, resolved_style: &Style<'a, C>,
+        _event_args: WidgetEvent, 
+        selectors: &[SelectorKind<'a>]
     ) -> EventResult {
         match self.style.direction {
             LayoutDirection::Horizontal => {

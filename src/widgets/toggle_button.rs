@@ -36,7 +36,7 @@ where
         &mut self,
         _context: &mut UiContext<'a, D, C>,
         _hint: Size,
-        resolved_style: &Style<'a, C>,
+        
     ) -> Size {
         self.base.size(&self.text, resolved_style)
     }
@@ -50,7 +50,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
-        resolved_style: &Style<'a, C>,
+        
     ) -> EventResult {
         let style = resolved_style.primitive_style();
 

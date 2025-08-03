@@ -4,7 +4,7 @@ use core::f32::consts::PI;
 use micromath::F32Ext;
 
 use super::{Widget, WidgetEvent};
-use crate::{style::Style, EventResult, UiContext};
+use crate::{style::{Part, SelectorKind, Style}, EventResult, UiContext};
 use alloc::{string::ToString, vec::Vec};
 use embedded_graphics::{
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -95,7 +95,7 @@ where
         &mut self,
         _context: &mut UiContext<'a, D, C>,
         hint: Size,
-        _resolved_style: &Style<'a, C>,
+        _selectors: &[SelectorKind<'a>]
     ) -> Size {
         Size::new(hint.height, hint.height)
     }
@@ -105,8 +105,10 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
-        resolved_style: &Style<'a, C>,
+        selectors: &[SelectorKind<'a>]
     ) -> EventResult {
+        let resolved_style = context.resolve_style_static(selectors, Part::Main);
+
         let foreground_color = resolved_style.color.unwrap();
         let stroke_color = resolved_style.stroke_color.unwrap_or(foreground_color);
         let accent_color = resolved_style.accent_color.unwrap_or(foreground_color);

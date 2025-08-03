@@ -1,5 +1,5 @@
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
-use crate::{style::{SelectorKind, Style}, EventResult, SystemEvent, UiContext};
+use crate::{style::SelectorKind, EventResult, SystemEvent, UiContext};
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
@@ -160,7 +160,8 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         _rect: Rectangle,
-        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
+        event_args: WidgetEvent, 
+        _selectors: &[SelectorKind]
     ) -> EventResult {
         let mut event_result = EventResult::Pass;
 

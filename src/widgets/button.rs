@@ -7,8 +7,7 @@ use embedded_graphics::{
 };
 
 use crate::{
-    style::{Style, NULL_FONT},
-    themes::DynamicStyle,
+    style::{resolve_style, Modifier, Part, SelectorKind, Style, NULL_FONT},
     Event, EventResult, UiContext,
 };
 
@@ -27,7 +26,9 @@ impl ButtonGeneric {
         }
     }
 
-    pub fn size<'a, C: PixelColor>(&mut self, text: &str, resolved_style: &Style<'a, C>) -> Size {
+    pub fn size<'a, C: PixelColor, D: DrawTarget<Color = C>>(&mut self, text: &str, context: &mut UiContext<'a, D, C>, selectors: &[SelectorKind<'a>]) -> Size {
+        let resolved_style = context.resolve_style_static(selectors, Part::Main);
+
         let text_style: MonoTextStyle<'a, C> = resolved_style.character_style();
         self.text_size = text_style
             .measure_string(text, Point::zero(), embedded_graphics::text::Baseline::Top)
@@ -44,10 +45,13 @@ impl ButtonGeneric {
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        resolved_style: &Style<'a, C>,
         text: &str,
+        modifier: Modifier,
+        selectors: &[SelectorKind<'a>]
     ) {
         const TEXT_BASELINE: Baseline = Baseline::Middle;
+        let resolved_style = context.resolve_style(selectors, modifier, Part::Main);
+
         let converted_style = resolved_style.primitive_style();
         let character_style = resolved_style.character_style();
 
@@ -112,11 +116,11 @@ where
 {
     fn size(
         &mut self,
-        _context: &mut UiContext<'a, D, C>,
+        context: &mut UiContext<'a, D, C>,
         _hint: Size,
-        resolved_style: &Style<'a, C>,
+        selectors: &[SelectorKind<'a>],        
     ) -> Size {
-        self.base.size(&self.text, resolved_style)
+        self.base.size(&self.text, context, selectors)
     }
 
     fn is_interactive(&mut self) -> bool {
@@ -128,7 +132,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
-        resolved_style: &Style<'a, C>,
+        selectors: &[SelectorKind<'a>]
     ) -> EventResult {
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
@@ -140,7 +144,7 @@ where
             _ => EventResult::Pass,
         };
 
-        self.base.draw(context, rect, resolved_style, &self.text);
+        self.base.draw(context, rect, &self.text, event_args.get_modifier(), selectors);
         event_result
     }
 }

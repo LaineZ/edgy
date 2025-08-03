@@ -5,7 +5,7 @@ use embedded_graphics::{
 };
 
 use crate::{
-    style::{SelectorKind, Style},
+    style::{Part, SelectorKind, Style},
     EventResult, UiContext,
 };
 
@@ -110,7 +110,7 @@ where
         &mut self,
         context: &mut crate::UiContext<'a, D, C>,
         hint: Size,
-        _resolved_style: &Style<'a, C>,
+        _selectors: &[SelectorKind<'a>]
     ) -> Size {
         let available_width = hint
             .width
@@ -157,8 +157,10 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
-        resolved_style: &Style<'a, C>,
+        selectors: &[SelectorKind<'a>]
     ) -> EventResult {
+        let resolved_style = context.resolve_style_static(selectors, Part::Main);
+
         let _ = rect
             .into_styled(resolved_style.primitive_style())
             .draw(&mut context.draw_target);

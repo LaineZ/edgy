@@ -5,11 +5,9 @@ use embedded_graphics::{
     image::ImageRaw,
     mono_font::{mapping, DecorationDimensions, MonoFont, MonoTextStyle},
     prelude::{PixelColor, Size},
-    primitives::{PrimitiveStyle, Rectangle, StrokeAlignment},
+    primitives::{PrimitiveStyle, StrokeAlignment},
     text::{self},
 };
-
-use crate::widgets::primitive::Primitive;
 
 pub type StyleSheet<'a, C> = Vec<StyleRule<'a, C>>;
 
@@ -33,7 +31,17 @@ pub enum Tag {
     Alert,
     SevenSegment,
     Gauge,
-    Image
+    Image,
+}
+
+/// Selector for widget parts
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum Part {
+    Main,
+    SliderTrack,
+    SliderThumb,
+    /// This is custom selector type for widgets implemented outside the library
+    Custom(&'static str),
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -56,6 +64,7 @@ pub enum Modifier {
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Selector<'a> {
     pub kind: SelectorKind<'a>,
+    pub part: Part,
     pub modifier: Modifier,
 }
 
@@ -63,6 +72,7 @@ impl<'a> Selector<'a> {
     pub const fn new_tag(tag: Tag) -> Self {
         Self {
             kind: SelectorKind::Tag(tag),
+            part: Part::Main,
             modifier: Modifier::None,
         }
     }
@@ -70,6 +80,7 @@ impl<'a> Selector<'a> {
     pub const fn new_root() -> Self {
         Self {
             kind: SelectorKind::Root,
+            part: Part::Main,
             modifier: Modifier::None,
         }
     }
@@ -112,7 +123,7 @@ impl<'a, C: PixelColor> Style<'a, C> {
         style.stroke_width = self.stroke_width.unwrap_or_default();
         style
     }
-    
+
     pub fn character_style(&self) -> MonoTextStyle<'a, C> {
         MonoTextStyle::new(self.font.unwrap_or(&NULL_FONT), self.color.unwrap())
     }
@@ -140,6 +151,7 @@ pub fn resolve_style<'a, C: PixelColor>(
     selectors: &[SelectorKind<'a>],
     rules: &[StyleRule<'a, C>],
     modifier: Modifier,
+    part: Part,
 ) -> Style<'a, C> {
     let mut matched: Vec<(&Style<C>, u8)> = Vec::new();
 
@@ -157,14 +169,22 @@ pub fn resolve_style<'a, C: PixelColor>(
     for rule in rules {
         let base_matches = selectors.contains(&rule.selector.kind);
         let modifier_matches = rule.selector.modifier == modifier;
+        let part_matches = rule.selector.part == part;
 
-        if base_matches && (rule.selector.modifier == Modifier::None || modifier_matches) {
+        if base_matches
+            && (rule.selector.modifier == Modifier::None || modifier_matches)
+            && (rule.selector.part == Part::Main || part_matches)
+        {
             let specificity = match rule.selector.kind {
                 SelectorKind::Root => 0,
                 SelectorKind::Tag(_) => 1,
                 SelectorKind::Class(_) => 10,
                 SelectorKind::Id(_) => 100,
-            } + if rule.selector.modifier != Modifier::None {
+            } + if rule.selector.modifier != Modifier::None { // increase specifity for modifiers
+                1
+            } else {
+                0
+            } + if rule.selector.part != Part::Main { // increase specifity for parts
                 1
             } else {
                 0

@@ -17,7 +17,7 @@ use widgets::{
 };
 
 use crate::{
-    style::StyleSheet,
+    style::{resolve_style, Modifier, Part, SelectorKind, Style, StyleRule, StyleSheet},
     styles::{apply_default_debug_style, DebugStyle},
 };
 
@@ -202,6 +202,19 @@ where
 
     pub fn is_debug_enaled(&self) -> bool {
         self.debug_options.borrow().enabled
+    }
+
+    pub fn resolve_style(
+        &self,
+        selectors: &[SelectorKind<'a>],
+        modifier: Modifier,
+        part: Part,
+    ) -> Style<'a, C> {
+        resolve_style(selectors, &self.stylesheet, modifier, part)
+    }
+
+    pub fn resolve_style_static(&self, selectors: &[SelectorKind<'a>], part: Part) -> Style<'a, C> {
+        resolve_style(selectors, &self.stylesheet, Modifier::None, part)
     }
 
     /// Updates and draws the UI, probably you want run this in main loop

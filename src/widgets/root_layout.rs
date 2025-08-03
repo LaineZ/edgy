@@ -103,7 +103,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         _rect: Rectangle,
-        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
+        event_args: WidgetEvent, 
     ) -> EventResult {
         let mut event_result = EventResult::Pass;
 

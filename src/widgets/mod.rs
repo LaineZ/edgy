@@ -96,7 +96,7 @@ where
         &mut self,
         _context: &mut UiContext<'a, D, C>,
         hint: Size,
-        resolved_style: &Style<'a, C>,
+        selectors: &[SelectorKind<'a>],
     ) -> Size {
         hint
     }
@@ -120,7 +120,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
-        resolved_style: &Style<'a, C>,
+        selectors: &[SelectorKind<'a>],
     ) -> EventResult {
         EventResult::Pass
     }
@@ -164,10 +164,8 @@ where
 {
     /// Gets a size for widget (for layout compulation)
     pub fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size) -> Size {
-        let style = resolve_style(self.selectors, &context.stylesheet, style::Modifier::None);
-
         if self.requested_size == Size::zero() {
-            self.requested_size = self.widget.size(context, hint, &style);
+            self.requested_size = self.widget.size(context, hint, self.selectors);
         }
 
         self.requested_size
@@ -272,12 +270,9 @@ where
             event: &event,
         };
 
-        let style = resolve_style(
-            self.selectors,
-            &context.stylesheet,
-            event_args.get_modifier(),
-        );
-        let event_result = self.widget.draw(context, self.rect(), event_args, &style);
+        let event_result = self
+            .widget
+            .draw(context, self.rect(), event_args, self.selectors);
 
         let dbg = context.debug_options.borrow();
         if dbg.enabled {
@@ -368,12 +363,18 @@ where
 
     /// Creates a [SevenSegmentWidget] widget
     fn seven_segment<S: Into<String>>(&mut self, text: S, style: SevenSegmentStyle<C>) {
-        self.add_widget(SevenSegmentWidget::new(text.into(), style), &[SelectorKind::Tag(style::Tag::SevenSegment)]);
+        self.add_widget(
+            SevenSegmentWidget::new(text.into(), style),
+            &[SelectorKind::Tag(style::Tag::SevenSegment)],
+        );
     }
 
     /// Creates a [Gauge] widget
     fn gauge(&mut self, label: &'a str, value: f32) {
-        self.add_widget(Gauge::new(value, label, GaugeStyle::default()), &[SelectorKind::Tag(style::Tag::Gauge)]);
+        self.add_widget(
+            Gauge::new(value, label, GaugeStyle::default()),
+            &[SelectorKind::Tag(style::Tag::Gauge)],
+        );
     }
 
     /// Shorthand construct for [Button] widget
@@ -386,23 +387,23 @@ where
 
     /// Shorthand construct for [Image] widget
     fn image<I: ImageDrawable<Color = C>>(&mut self, image: &'a I) {
-        self.add_widget(Image::<'a, I>::new(image), &[SelectorKind::Tag(style::Tag::Image)]);
+        self.add_widget(
+            Image::<'a, I>::new(image),
+            &[SelectorKind::Tag(style::Tag::Image)],
+        );
     }
 
     /// Shorthand construct for [ToggleButton] widget
     fn toggle_button<S: Into<String>>(
         &mut self,
         text: S,
-        font: &'a MonoFont,
         state: bool,
         callback: impl FnMut(bool) + 'a,
     ) {
-        self.add_widget(ToggleButton::new(
-            text.into(),
-            font,
-            state,
-            Box::new(callback),
-        ));
+        self.add_widget(
+            ToggleButton::new(text.into(), state, Box::new(callback)),
+            &[SelectorKind::Tag(style::Tag::ToggleButton)],
+        );
     }
 
     /// Construct a [MarginLayout] widget

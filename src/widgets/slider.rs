@@ -93,7 +93,7 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        event_args: WidgetEvent, resolved_style: &Style<'a, C>,
+        event_args: WidgetEvent, 
     ) -> EventResult {
         let style = self.style.get_or_insert(context.theme.slider_style);
 

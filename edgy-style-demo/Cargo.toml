@@ -1,0 +1,8 @@
+[package]
+name = "edgy-style-demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+edgy-style-derive = {path = "../edgy-style-derive" }
+edgy = {path = "../" }

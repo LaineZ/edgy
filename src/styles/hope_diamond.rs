@@ -4,9 +4,7 @@ use embedded_graphics::{
     pixelcolor::Rgb888,
 };
 
-use crate::{
-    style::{Modifier, Selector, SelectorKind, Style, StyleRule, Tag}
-};
+use crate::style::{Modifier, Selector, SelectorKind, Part, Style, StyleRule, Tag};
 
 pub(crate) const HOPE_DIAMOND_COLOR_BACKGROUND: Rgb888 = Rgb888::new(21, 14, 16);
 pub(crate) const HOPE_DIAMOND_COLOR_BACKGROUND2: Rgb888 = Rgb888::new(39, 39, 57);
@@ -43,6 +41,7 @@ pub const HOPE_DIAMOND: [StyleRule<'static, Rgb888>; 4] = [
     StyleRule::new(
         Selector {
             modifier: Modifier::Active,
+            part: Part::Main,
             kind: SelectorKind::Tag(Tag::Button),
         },
         Style {
@@ -54,6 +53,7 @@ pub const HOPE_DIAMOND: [StyleRule<'static, Rgb888>; 4] = [
     StyleRule::new(
         Selector {
             modifier: Modifier::Focus,
+            part: Part::Main,
             kind: SelectorKind::Tag(Tag::Button),
         },
         Style {
