@@ -7,7 +7,7 @@ use embedded_graphics::{
 };
 
 use super::{Widget, WidgetEvent};
-use crate::{style::Style, EventResult, UiContext};
+use crate::{style::{SelectorKind, Style}, EventResult, UiContext};
 
 /// Re-export of type [SevenSegmentStyle] from [eg_seven_segment]
 pub use eg_seven_segment::SevenSegmentStyle;
@@ -41,7 +41,7 @@ where
         &mut self,
         _context: &mut UiContext<'a, D, C>,
         _hint: Size,
-        _
+        selectors: &[SelectorKind<'a>],
     ) -> Size {
         let mut total_width = 0;
         let mut total_height = 0;
@@ -64,7 +64,7 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         _event_args: WidgetEvent,
-        _
+        selectors: &[SelectorKind<'a>],
     ) -> EventResult {
         let text = Text::with_baseline(&self.text, rect.top_left, self.style, Baseline::Top);
         let _ = text.draw(&mut context.draw_target);
