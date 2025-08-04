@@ -2,7 +2,7 @@ use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 use super::{Widget, WidgetEvent, WidgetObject};
-use crate::{EventResult, SystemEvent, UiContext};
+use crate::{style::SelectorKind, EventResult, SystemEvent, UiContext};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Anchor {
@@ -59,7 +59,7 @@ where
     }
 
     pub fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C> {
-        WidgetObject::new(Box::new(self))
+        WidgetObject::new(Box::new(self), selectors)
     }
 }
 
@@ -68,7 +68,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size, resolved_style: &Style<'a, C>) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, _hint: Size, _selectors: &[SelectorKind<'a>]) -> Size {
         let mut size = Size::zero();
 
         for child in self.children.iter_mut() {
@@ -103,7 +103,8 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         _rect: Rectangle,
-        event_args: WidgetEvent, 
+        event_args: WidgetEvent,
+        _selectors: &[SelectorKind<'a>]
     ) -> EventResult {
         let mut event_result = EventResult::Pass;
 

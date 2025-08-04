@@ -1,6 +1,6 @@
 use embedded_graphics::{pixelcolor::Rgb888, prelude::PixelColor, primitives::PrimitiveStyle};
 
-use crate::{widgets::slider::SliderStyle, Event};
+use crate::{widgets::slider::SliderDimensions, Event};
 
 /// dynamic styles for widgets
 #[derive(Clone, Copy, Default)]
@@ -58,7 +58,7 @@ pub(crate) struct ColorTheme {
 pub struct Theme<C: PixelColor> {
     pub button_style: DynamicStyle<C>,
     pub layout_style: DynamicStyle<C>,
-    pub slider_style: SliderStyle<C>,
+    pub slider_style: SliderDimensions<C>,
     pub plot_style: WidgetStyle<C>,
     pub gauge_style: WidgetStyle<C>,
     pub modal_style: WidgetStyle<C>,

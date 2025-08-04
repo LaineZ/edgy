@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-use crate::{style::{SelectorKind, Style}, themes::WidgetStyle, EventResult, SystemEvent, UiContext};
+use crate::{style::{Part, Selector, SelectorKind, Style}, themes::WidgetStyle, EventResult, SystemEvent, UiContext};
 
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 
@@ -29,7 +29,6 @@ where
     pub horizontal_alignment: LayoutAlignment,
     pub vertical_alignment: LayoutAlignment,
     pub direction: LayoutDirection,
-    pub style: WidgetStyle<C>,
     pub min_size: Size,
     pub gap: u32,
     pub max_size: Size,
@@ -75,11 +74,6 @@ where
         self
     }
 
-    pub fn style(mut self, style: WidgetStyle<C>) -> Self {
-        self.style = style;
-        self
-    }
-
     pub fn vertical_alignment(mut self, alignment: LayoutAlignment) -> Self {
         self.vertical_alignment = alignment;
         self
@@ -106,7 +100,6 @@ where
             children: Vec::new(),
             horizontal_alignment: LayoutAlignment::Start,
             vertical_alignment: LayoutAlignment::Start,
-            style: WidgetStyle::default(),
             direction: LayoutDirection::Vertical,
             min_size: Size::zero(),
             gap: 0,
@@ -130,7 +123,6 @@ where
             children: self.children,
             horizontal_alignment: self.horizontal_alignment,
             vertical_alignment: self.vertical_alignment,
-            style: self.style,
             gap: self.gap,
             min_size: self.min_size,
             max_size: self.max_size,
@@ -148,7 +140,6 @@ where
     direction: LayoutDirection,
     horizontal_alignment: LayoutAlignment,
     vertical_alignment: LayoutAlignment,
-    style: WidgetStyle<C>,
     min_size: Size,
     gap: u32,
     max_size: Size,
@@ -159,7 +150,7 @@ where
     D: DrawTarget<Color = C> + 'a,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size, resolved_style: &Style<'a, C>) -> Size {
+    fn size(&mut self, context: &mut UiContext<'a, D, C>, hint: Size, selectors: &[SelectorKind<'a>]) -> Size {
         let mut computed_size = Size::zero();
         let gap_total = self.gap * self.children.len().saturating_sub(1) as u32;
 
@@ -347,9 +338,11 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent, 
+        selectors: &[SelectorKind<'a>]
     ) -> EventResult {
+        let resolved_style = context.resolve_style(selectors, event_args.get_modifier(), Part::Main); 
         let _ = rect
-            .into_styled(self.style.into())
+            .into_styled(resolved_style.primitive_style())
             .draw(&mut context.draw_target);
 
         let mut event_result = EventResult::Pass;

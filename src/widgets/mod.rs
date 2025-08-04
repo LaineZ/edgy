@@ -25,7 +25,7 @@ use slider::Slider;
 use toggle_button::ToggleButton;
 
 use crate::{
-    style::{self, resolve_style, Modifier, SelectorKind, Style},
+    style::{self, resolve_style, Modifier, SelectorKind, Style, Tag},
     Event, EventResult, SystemEvent, UiContext,
 };
 
@@ -411,27 +411,11 @@ where
         let mut builder = MarginLayout {
             margin,
             child: None,
-            style: PrimitiveStyle::default(),
         };
         fill(&mut builder);
-        self.add_widget_obj(builder.finish());
+        self.add_widget_obj(builder.finish(&[]));
     }
 
-    /// Construct a styled [MarginLayout] widget
-    fn margin_layout_styled(
-        &mut self,
-        margin: Margin,
-        style: PrimitiveStyle<C>,
-        fill: impl FnOnce(&mut MarginLayout<'a, D, C>),
-    ) {
-        let mut builder = MarginLayout {
-            margin,
-            child: None,
-            style,
-        };
-        fill(&mut builder);
-        self.add_widget_obj(builder.finish());
-    }
 
     /// Shorthand construct for [LinearLayout] widget. Creates a linear layout with in vertical direction
     fn vertical_linear_layout(
@@ -446,7 +430,7 @@ where
         }
         .alignment(alignment);
         fill(&mut builder);
-        self.add_widget_obj(builder.finish());
+        self.add_widget_obj(builder.finish(&[]));
     }
 
     /// Shorthand construct for [LinearLayout] widget. Creates a linear layout with in horizontal direction
@@ -462,7 +446,7 @@ where
         }
         .alignment(alignment);
         fill(&mut builder);
-        self.add_widget_obj(builder.finish());
+        self.add_widget_obj(builder.finish(&[]));
     }
 
     /// Shorthand construct for [GridLayout] widget.
@@ -479,27 +463,27 @@ where
             row_fracs: rows,
         };
         fill(&mut builder);
-        self.add_widget_obj(builder.finish());
+        self.add_widget_obj(builder.finish(&[]));
     }
 
     fn plot<V: Into<Vec<Point>>>(&mut self, points: V, scale: f32, offset: Point) {
         let mut plot = Plot::new(scale, offset);
         plot.points = points.into();
-        self.add_widget(plot);
+        self.add_widget(plot, &[SelectorKind::Tag(style::Tag::Plot)]);
     }
 
     fn filler(&mut self, fill: FillStrategy) {
-        self.add_widget(Filler::new(fill));
+        self.add_widget(Filler::new(fill), &[]);
     }
 
     /// Any embedded-graphics drawable (primitive)
     fn primitive<P: Drawable<Color = C> + Dimensions + Transform + 'a>(&mut self, primitive: P) {
-        self.add_widget(Primitive::new(primitive));
+        self.add_widget(Primitive::new(primitive), &[]);
     }
 
     /// Shorthand for the [Slider] widget
     fn slider(&mut self, value: f32, callback: impl FnMut(f32) + 'a) {
-        self.add_widget(Slider::new(value, Box::new(callback)));
+        self.add_widget(Slider::new(value, Box::new(callback)), &[SelectorKind::Tag(Tag::Slider)]);
     }
 
     fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C>;

@@ -1,4 +1,4 @@
-use crate::{style::Style, EventResult, UiContext};
+use crate::{style::{Part, SelectorKind, Style}, EventResult, UiContext};
 
 use super::{Widget, WidgetEvent};
 use alloc::vec::Vec;
@@ -7,7 +7,7 @@ use embedded_graphics::{
     primitives::{Line, Polyline, PrimitiveStyle, Rectangle},
 };
 
-/// Simple plotter X/Y widget
+/// Simple  X/Y plotter widget
 pub struct Plot {
     pub points: Vec<Point>,
     pub y_scale: f32,
@@ -58,7 +58,7 @@ where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size, resolved_style: &Style<'a, C>) -> Size {
+    fn size(&mut self, _context: &mut UiContext<'a, D, C>, hint: Size, _selectors: &[SelectorKind<'a>]) -> Size {
         hint
     }
 
@@ -66,22 +66,23 @@ where
         &mut self,
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent, 
+        event_args: WidgetEvent,
+        selectors: &[SelectorKind<'a>]
     ) -> EventResult {
         if self.points.is_empty() {
             return EventResult::Pass
         }
-        let style = context.theme.plot_style;
+        let resolved_style = context.resolve_style(selectors, event_args.get_modifier(), Part::Main);
+
+
         let grid_style = PrimitiveStyle::with_stroke(
-            style
-                .background_color
-                .expect("Plot widghet must have a background color for a drawing"),
+            resolved_style.stroke_color.expect("Plot must have stroke color for drawing"),
             1,
         );
         let axis_style = PrimitiveStyle::with_stroke(
-            style
-                .foreground_color
-                .expect("Plot widghet must have a foreground color for a drawing"),
+            resolved_style
+                .color
+                .expect("Plot widget must have a color for a drawing"),
             2,
         );
 
@@ -141,7 +142,7 @@ where
 
         let _ = Polyline::new(&self.points)
             .into_styled(PrimitiveStyle::with_stroke(
-                style
+                resolved_style
                     .accent_color
                     .expect("Plot widghet must have a accent color for a drawing"),
                 1,

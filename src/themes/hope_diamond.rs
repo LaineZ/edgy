@@ -3,7 +3,7 @@ use embedded_graphics::{
     prelude::{PixelColor, RgbColor, Size},
 };
 
-use crate::widgets::slider::SliderStyle;
+use crate::widgets::slider::SliderDimensions;
 
 use super::{ColorTheme, DynamicStyle, Theme, WidgetStyle};
 
@@ -33,7 +33,7 @@ pub fn apply<C: PixelColor + From<Rgb888> + Default>() -> Theme<C> {
             active: button_style.background_color(HOPE_DIAMOND_COLORS.background3.into()),
             drag: button_style.background_color(HOPE_DIAMOND_COLORS.background2.into()),
         },
-        slider_style: SliderStyle::new(
+        slider_style: SliderDimensions::new(
             button_style.into(),
             button_style.into(),
             1,

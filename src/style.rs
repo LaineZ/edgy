@@ -32,6 +32,8 @@ pub enum Tag {
     SevenSegment,
     Gauge,
     Image,
+    Plot,
+    Slider
 }
 
 /// Selector for widget parts
@@ -39,7 +41,7 @@ pub enum Tag {
 pub enum Part {
     Main,
     SliderTrack,
-    SliderThumb,
+    SliderHandle,
     /// This is custom selector type for widgets implemented outside the library
     Custom(&'static str),
 }
