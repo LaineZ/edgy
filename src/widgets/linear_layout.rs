@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
-use crate::{style::{Part, Selector, SelectorKind, Style}, themes::WidgetStyle, EventResult, SystemEvent, UiContext};
+use crate::{style::{Part, SelectorKind}, EventResult, SystemEvent, UiContext};
 
 use super::{UiBuilder, Widget, WidgetEvent, WidgetObject};
 

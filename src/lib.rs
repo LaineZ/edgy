@@ -28,7 +28,6 @@ use crate::{
 pub mod prelude;
 pub mod style;
 pub mod styles;
-pub mod themes;
 pub mod widgets;
 
 extern crate alloc;

@@ -1,13 +1,17 @@
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, DeriveInput};
+use quote::{format_ident, quote};
+use syn::{DeriveInput, parse_macro_input};
 
 #[proc_macro_derive(MergeStyle)]
 pub fn derive_merge_style(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
-    let fields = if let syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(ref fields), .. }) = input.data {
+    let fields = if let syn::Data::Struct(syn::DataStruct {
+        fields: syn::Fields::Named(ref fields),
+        ..
+    }) = input.data
+    {
         fields
     } else {
         panic!("MergeStyle only supports structs with named fields");
@@ -33,7 +37,6 @@ pub fn derive_merge_style(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-
 #[proc_macro]
 pub fn css(input: TokenStream) -> TokenStream {
     let input = input.to_string();
@@ -53,13 +56,13 @@ pub fn css(input: TokenStream) -> TokenStream {
         let style_code = parse_style_block(body);
 
         rules.push(quote! {
-            edgy::StyleRule::new(
-                #selector_code,
-                edgy::style::Style {
+            edgy::style::StyleRule {
+                selector: #selector_code,
+                style: edgy::style::Style {
                     #(#style_code,)*
                     ..edgy::style::Style::default()
                 }
-            )
+            }
         });
     }
 
@@ -73,10 +76,9 @@ pub fn css(input: TokenStream) -> TokenStream {
 
 fn parse_selector(sel: &str) -> proc_macro2::TokenStream {
     let sel = sel.trim();
-    let mut part = quote! { edgy::style::SelectorPart::Main };
-    let mut event_class = quote! { edgy::Event::Idle };
+    let mut part = quote! { edgy::style::Part::Main };
+    let mut modifier = quote! { edgy::style::Modifier::None };
 
-    // Разделяем по ::
     let (base_part, pseudo) = if let Some((a, b)) = sel.split_once("::") {
         (a.trim(), Some(b.trim()))
     } else {
@@ -88,38 +90,38 @@ fn parse_selector(sel: &str) -> proc_macro2::TokenStream {
     } else {
         (base_part, None)
     };
+
     if let Some(evt) = base_event {
         if evt == "focus" {
-            event_class = quote! { edgy::Event::Focus };
-        } else if evt == "hover" {
-            event_class = quote! { edgy::Event::Hover };
+            modifier = quote! { edgy::style::Modifier::Focus };
+        } else if evt == "active" {
+            modifier = quote! { edgy::style::Modifier::Active };
         }
     }
 
-    let (part_raw, part_event) = if let Some(pseudo_str) = pseudo {
-        if let Some((p, evt)) = pseudo_str.split_once(':') {
-            if evt == "focus" {
-                event_class = quote! { Event::Focus };
-            }
-            (p.trim(), Some(evt.trim()))
-        } else {
-            (pseudo_str, None)
-        }
-    } else {
-        ("", None)
-    };
+    if let Some(pseudo_str) = pseudo {
+        let (p, evt) = pseudo_str
+            .split_once(':')
+            .map(|(a, b)| (a.trim(), Some(b.trim())))
+            .unwrap_or((pseudo_str.trim(), None));
 
-    // Определение part
-    if !part_raw.is_empty() {
-        part = match part_raw {
-            "main" => quote! { SelectorPart::Main },
-            "slider-track" => quote! { SelectorPart::SliderTrack },
-            "slider-thumb" => quote! { SelectorPart::SliderThumb },
-            other => quote! { SelectorPart::Custom(#other) },
+        if let Some(evt) = evt {
+            if evt == "focus" {
+                modifier = quote! { edgy::style::Modifier::Focus };
+            }
+        }
+
+        part = match p {
+            "main" => quote! { edgy::style::Part::Main },
+            "slider-track" => quote! { edgy::style::Part::SliderTrack },
+            "slider-thumb" => quote! { edgy::style::Part::SliderThumb },
+            other => {
+                let part_str = syn::LitStr::new(other, proc_macro2::Span::call_site());
+                quote! { edgy::style::Part::Custom(#part_str) }
+            }
         };
     }
 
-    // Определение селектора (id / class / tag)
     let kind = if base_no_event.starts_with('#') {
         let id = &base_no_event[1..];
         quote! { edgy::style::SelectorKind::Id(#id) }
@@ -127,15 +129,15 @@ fn parse_selector(sel: &str) -> proc_macro2::TokenStream {
         let class = &base_no_event[1..];
         quote! { edgy::style::SelectorKind::Class(#class) }
     } else {
-        let tag = base_no_event;
-        quote! { edgy::style::SelectorKind::Tag(#tag) }
+        let tag_ident = syn::Ident::new(base_no_event, proc_macro2::Span::call_site());
+        quote! { edgy::style::SelectorKind::Tag(edgy::style::Tag::#tag_ident) }
     };
 
     quote! {
         edgy::style::Selector {
             kind: #kind,
             part: #part,
-            event_class: #event_class
+            modifier: #modifier,
         }
     }
 }
@@ -153,10 +155,15 @@ fn parse_style_block(block: &str) -> Vec<proc_macro2::TokenStream> {
             let key = kv.next()?.trim();
             let value = kv.next()?.trim();
 
+            let value_ts: proc_macro2::TokenStream = value.parse().ok()?;
+
             Some(match key {
-                "background_color" => quote! { background_color: Some(#value) },
-                "font" => quote! { font: Some(&#value) },
-                _ => quote! {}, // expand for more keys
+                "background_color" => quote! { background_color: Some(#value_ts) },
+                "font" => quote! { font: Some(#value_ts) },
+                _ => {
+                    let ident = format_ident!("{}", key);
+                    quote! { #ident: #value_ts }
+                }
             })
         })
         .collect()

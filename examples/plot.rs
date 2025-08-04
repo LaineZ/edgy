@@ -1,10 +1,8 @@
 use edgy::{
-    themes,
-    widgets::{
+    styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder,
-    },
-    UiContext,
+    }, UiContext
 };
 use embedded_graphics::{
     mono_font::ascii::FONT_4X6,
@@ -23,7 +21,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(display, themes::HOPE_DIAMOND.to_vec());
+    let mut ui_ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
 
     let mut points = Vec::new();
     let mut offset = Point::zero();
@@ -83,8 +81,6 @@ fn main() -> Result<(), core::convert::Infallible> {
                 offset.y,
                 scale * 100.0
             ),
-            Alignment::Center,
-            &FONT_4X6,
         );
         ui.plot(points.clone(), scale, offset);
 

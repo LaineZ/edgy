@@ -4,8 +4,11 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
 };
 
-use super::{button::ButtonGeneric, Widget, WidgetEvent};
-use crate::{style::Style, Event, EventResult, UiContext};
+use super::{Widget, WidgetEvent, button::ButtonGeneric};
+use crate::{
+    Event, EventResult, UiContext,
+    style::{Part, SelectorKind, Style},
+};
 
 /// Toggle button (Korry-like switches)
 pub struct ToggleButton<'a> {
@@ -18,7 +21,6 @@ pub struct ToggleButton<'a> {
 impl<'a> ToggleButton<'a> {
     pub fn new(text: String, state: bool, callback: Box<dyn FnMut(bool) + 'a>) -> Self {
         Self {
-            // wtf
             base: ButtonGeneric::new(),
             text,
             state,
@@ -34,11 +36,11 @@ where
 {
     fn size(
         &mut self,
-        _context: &mut UiContext<'a, D, C>,
+        context: &mut UiContext<'a, D, C>,
         _hint: Size,
-        
+        selectors: &[SelectorKind<'a>],
     ) -> Size {
-        self.base.size(&self.text, resolved_style)
+        self.base.size(&self.text, context, selectors)
     }
 
     fn is_interactive(&mut self) -> bool {
@@ -50,10 +52,8 @@ where
         context: &mut UiContext<'a, D, C>,
         rect: Rectangle,
         event_args: WidgetEvent,
-        
+        selectors: &[SelectorKind<'a>],
     ) -> EventResult {
-        let style = resolved_style.primitive_style();
-
         let event_result = match event_args.event {
             Event::Focus => EventResult::Stop,
             Event::Active(_) => {
@@ -64,7 +64,15 @@ where
             _ => EventResult::Pass,
         };
 
-        self.base.draw(context, rect, resolved_style, &self.text);
+        self.base.draw(
+            context,
+            rect,
+            &self.text,
+            event_args.get_modifier(),
+            selectors,
+        );
+
+        // TODO: Specify via stylesheet
         let light_size = (rect.size.height / 8).clamp(1, 4);
         let rect_light = Rectangle::new(
             Point::new(
@@ -73,20 +81,16 @@ where
             ),
             Size::new(rect.size.width - 2, light_size),
         );
-        if self.state {
-            let _ = rect_light
-                .into_styled(PrimitiveStyle::with_fill(
-                    resolved_style
-                        .accent_color.unwrap_or(style.stroke_color.unwrap())
-                ))
-                .draw(&mut context.draw_target);
+
+        let part = if self.state {
+            Part::ToggleButtonLightActive
         } else {
-            if let Some(foreground_color) = resolved_style.color {
-                let _ = rect_light
-                    .into_styled(PrimitiveStyle::with_fill(foreground_color))
-                    .draw(&mut context.draw_target);
-            }
-        }
+            Part::ToggleButtonLightInactive
+        };
+
+        let resolved_style = context.resolve_style(selectors, event_args.get_modifier(), part);
+        let style = resolved_style.primitive_style();
+        let _ = rect_light.into_styled(style).draw(&mut context.draw_target);
 
         event_result
     }

@@ -483,7 +483,7 @@ where
 
     /// Shorthand for the [Slider] widget
     fn slider(&mut self, value: f32, callback: impl FnMut(f32) + 'a) {
-        self.add_widget(Slider::new(value, Box::new(callback)), &[SelectorKind::Tag(Tag::Slider)]);
+        self.add_widget(Slider::new(value, slider::SliderDimensions::default(), Box::new(callback)), &[SelectorKind::Tag(Tag::Slider)]);
     }
 
     fn finish(self, selectors: &'a [SelectorKind<'a>]) -> WidgetObject<'a, D, C>;

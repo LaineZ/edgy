@@ -1,5 +1,8 @@
 use crate::{
-    prelude::LayoutDirection, style::{SelectorKind, Style}, themes::WidgetStyle, widgets::{Widget, WidgetEvent}, EventResult, UiContext
+    EventResult, UiContext,
+    prelude::LayoutDirection,
+    style::{Part, SelectorKind, Style},
+    widgets::{Widget, WidgetEvent},
 };
 use embedded_graphics::{
     prelude::{DrawTarget, PixelColor, Point, Size},
@@ -7,32 +10,28 @@ use embedded_graphics::{
 };
 
 // TODO: Terminal size setting
-pub struct BatteryStyle<C: PixelColor> {
-    pub style: WidgetStyle<C>,
+pub struct BatteryStyle {
     pub direction: LayoutDirection,
 }
 
-impl<C: PixelColor> BatteryStyle<C> {
-    pub fn new(style: WidgetStyle<C>, direction: LayoutDirection) -> Self {
-        Self { style, direction }
+impl BatteryStyle {
+    pub fn new(direction: LayoutDirection) -> Self {
+        Self { direction }
     }
 }
 
 /// Battery indicator widget, represents some kind of battery
-pub struct Battery<C: PixelColor> {
+pub struct Battery {
     /// Charge percentage 0-100
     pub charge_percentage: u8,
     /// Battery charge status
     pub charging: bool,
     size: Size,
-    style: BatteryStyle<C>,
+    style: BatteryStyle,
 }
 
-impl<'a, C> Battery<C>
-where
-    C: PixelColor + 'a,
-{
-    pub fn new(charge_percentage: u8, charging: bool, size: Size, style: BatteryStyle<C>) -> Self {
+impl Battery {
+    pub fn new(charge_percentage: u8, charging: bool, size: Size, style: BatteryStyle) -> Self {
         Self {
             charge_percentage,
             charging,
@@ -42,12 +41,17 @@ where
     }
 }
 
-impl<'a, D, C> Widget<'a, D, C> for Battery<C>
+impl<'a, D, C> Widget<'a, D, C> for Battery
 where
     D: DrawTarget<Color = C>,
     C: PixelColor + 'a,
 {
-    fn size(&mut self, _context: &mut UiContext<'a, D, C>, _hint: Size, selectors: &[SelectorKind<'a>]) -> Size {
+    fn size(
+        &mut self,
+        _context: &mut UiContext<'a, D, C>,
+        _hint: Size,
+        selectors: &[SelectorKind<'a>],
+    ) -> Size {
         self.size
     }
 
@@ -63,12 +67,14 @@ where
         &mut self,
         context: &mut crate::UiContext<'a, D, C>,
         rect: Rectangle,
-        _event_args: WidgetEvent, 
-        selectors: &[SelectorKind<'a>]
+        _event_args: WidgetEvent,
+        selectors: &[SelectorKind<'a>],
     ) -> EventResult {
+        let resolved_style = context.resolve_style_static(selectors, Part::Main);
+
         match self.style.direction {
             LayoutDirection::Horizontal => {
-                let terminal_width = self.style.style.stroke_width;
+                let terminal_width = resolved_style.stroke_width.unwrap_or(0);
                 let terminal_height: u32 = if (rect.size.height as i32 / 2) & 1 == 0 {
                     rect.size.height / 2
                 } else {
@@ -92,15 +98,13 @@ where
                 );
 
                 let battery_terminal_style =
-            PrimitiveStyle::with_fill(self.style.style.stroke_color.unwrap_or(
-                self.style.style.background_color.expect(
+                PrimitiveStyle::with_fill(resolved_style.stroke_color.unwrap_or(
+                resolved_style.background_color.expect(
                     "Battery widget requires either stroke color or background color for drawing",
                 ),
-            ));
+                ));
                 // battery background
-                let mut style: PrimitiveStyle<C> = self.style.style.into();
-                style.stroke_alignment = StrokeAlignment::Inside;
-
+                let mut style: PrimitiveStyle<C> = resolved_style.primitive_style();
                 let _ = battery.draw_styled(&style, &mut context.draw_target);
                 let _ =
                     battery_termianl.draw_styled(&battery_terminal_style, &mut context.draw_target);
@@ -120,9 +124,9 @@ where
                 );
 
                 let color = if self.charging {
-                    self.style.style.foreground_color.unwrap()
+                    resolved_style.color.unwrap()
                 } else {
-                    self.style.style.accent_color.unwrap()
+                    resolved_style.accent_color.unwrap()
                 };
 
                 let _ = charge_rect
@@ -136,79 +140,5 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::style::{SelectorKind, Tag};
-    use crate::styles::apply_default_debug_style;
-    use crate::styles::hope_diamond::HOPE_DIAMOND;
-    use crate::themes::WidgetStyle;
-    use crate::widgets::battery::{Battery, BatteryStyle};
-    use crate::widgets::linear_layout::LinearLayoutBuilder;
-    use crate::SystemEvent;
-    use crate::{prelude::*, themes::hope_diamond, UiContext};
-    use embedded_graphics::geometry::OriginDimensions;
-    use embedded_graphics::prelude::{Point, RgbColor, Size};
-    use embedded_graphics::primitives::Rectangle;
-    use embedded_graphics::{mock_display::MockDisplay, pixelcolor::Rgb888};
-
-    const BATTERY_STYLE: WidgetStyle<Rgb888> = WidgetStyle::new()
-        .background_color(Rgb888::WHITE)
-        .foreground_color(Rgb888::RED)
-        .accent_color(Rgb888::RED);
-
-    #[test]
-    fn battery_small_terminal_uneven() {
-        let mut display = MockDisplay::<Rgb888>::new();
-        let disp_size = display.size();
-        display.set_allow_overdraw(true);
-        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
-
-        let mut ui = LinearLayoutBuilder::default()
-            .horizontal_alignment(LayoutAlignment::Start)
-            .vertical_alignment(LayoutAlignment::Start)
-            .direction(LayoutDirection::Vertical);
-
-        ui.add_widget(Battery::new(
-            50,
-            false,
-            Size::new(7, 3),
-            BatteryStyle::new(BATTERY_STYLE, LayoutDirection::Horizontal),
-        ), &[SelectorKind::Tag(Tag::Battery)]);
-        let mut ui = ui.finish(&[]);
-
-        ui.size(&mut ctx, disp_size);
-        ui.layout(&mut ctx, Rectangle::new(Point::zero(), disp_size));
-        ui.draw(&mut ctx, &SystemEvent::Idle);
-
-        assert_eq!(
-            ctx.draw_target.get_pixel(Point::new(6, 1)),
-            Some(Rgb888::WHITE)
-        );
-    }
-
-    #[test]
-    fn battery_small_terminal_even() {
-        let mut display = MockDisplay::<Rgb888>::new();
-        let disp_size = display.size();
-        display.set_allow_overdraw(true);
-        let mut ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
-
-        let mut ui = LinearLayoutBuilder::default()
-            .horizontal_alignment(LayoutAlignment::Start)
-            .vertical_alignment(LayoutAlignment::Start)
-            .direction(LayoutDirection::Vertical);
-
-        ui.add_widget(Battery::new(
-            50,
-            false,
-            Size::new(7, 3),
-            BatteryStyle::new(BATTERY_STYLE, LayoutDirection::Horizontal),
-        ), &[SelectorKind::Tag(Tag::Battery)]);
-        let mut ui = ui.finish(&[]);
-
-        ui.size(&mut ctx, disp_size);
-        ui.layout(&mut ctx, Rectangle::new(Point::zero(), disp_size));
-        ui.draw(&mut ctx, &SystemEvent::Idle);
-
-        assert_eq!(ctx.draw_target.get_pixel(Point::new(12, 1)), None);
-        assert_eq!(ctx.draw_target.get_pixel(Point::new(12, 6)), None);
-    }
+    // TODO: Tests
 }

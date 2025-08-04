@@ -1,16 +1,12 @@
 use edgy::{
-    themes::{self},
-    widgets::{
+    styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder, WidgetObject,
-    },
-    UiContext,
+    }, UiContext
 };
 use embedded_graphics::{
-    mono_font::iso_8859_10::FONT_10X20,
     pixelcolor::Rgb888,
     prelude::*,
-    text::Alignment,
 };
 use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, SimulatorDisplay, Window};
 use tinybmp::Bmp;
@@ -39,8 +35,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         .build();
 
     let mut window = Window::new("a bit edgy ui", &output_settings);
-    let mut ui_ctx = UiContext::new(display, themes::HOPE_DIAMOND.to_vec(), apply_default_debug_style());
-
+    let mut ui_ctx = UiContext::new(display, HOPE_DIAMOND.to_vec(), apply_default_debug_style());
     let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("bee.bmp")).unwrap();
     println!(
         "bitmap: {} pixels: {}",

@@ -42,6 +42,8 @@ pub enum Part {
     Main,
     SliderTrack,
     SliderHandle,
+    ToggleButtonLightInactive,
+    ToggleButtonLightActive,
     /// This is custom selector type for widgets implemented outside the library
     Custom(&'static str),
 }
@@ -131,7 +133,7 @@ impl<'a, C: PixelColor> Style<'a, C> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StyleRule<'a, C: PixelColor> {
     pub selector: Selector<'a>,
     pub style: Style<'a, C>,
