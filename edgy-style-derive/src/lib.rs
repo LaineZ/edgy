@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
-use proc_macro2::Span;
-use quote::{format_ident, quote};
+use quote::quote;
+use simplecss::SelectorKindInfo;
 use syn::{DeriveInput, LitStr, parse_macro_input};
 
 #[proc_macro_derive(MergeStyle)]
@@ -45,14 +45,42 @@ pub fn css(input: TokenStream) -> TokenStream {
     let stylesheet = simplecss::StyleSheet::parse(&css);
 
     let rules = stylesheet.rules.iter().map(|rule| {
-        let selector_str = rule.selector.to_string();
-        let selector_mods = selector_str.split("::").collect::<Vec<&str>>();
-        let is_class = selector_str.starts_with(".");
-        let is_id = selector_str.starts_with("#");
-
-
-        let selector_ident = syn::Ident::new(&selector_str, proc_macro2::Span::call_site());
+        let pseudos = rule.selector.pseudo_classes();
         let mut color_format = None;
+
+        let kind = match rule.selector.kind().expect(&format!("{} parsing error", rule.selector.to_string())) {
+            SelectorKindInfo::Tag(tag) => {
+                let tag_ident = syn::Ident::new(tag, proc_macro2::Span::call_site());
+                quote! { edgy::style::SelectorKind::Tag(edgy::style::Tag::#tag_ident) }
+            }
+            SelectorKindInfo::Id(id) => {
+                let id_str = syn::LitStr::new(id, proc_macro2::Span::call_site());
+                quote! { edgy::style::SelectorKind::Id(#id_str) }
+            }
+            SelectorKindInfo::Class(class) => {
+                let class_str = syn::LitStr::new(class, proc_macro2::Span::call_site());
+                quote! { edgy::style::SelectorKind::Class(#class_str) }
+            }
+        };
+
+        let modifier = if let Some(pseudo) = pseudos.first() {
+            match *pseudo {
+                "hover" => quote! { edgy::style::Modifier::Hover },
+                "active" => quote! { edgy::style::Modifier::Active },
+                "focus" => quote! { edgy::style::Modifier::Focus },
+                _ => quote! { edgy::style::Modifier::None },
+            }
+        } else {
+            quote! { edgy::style::Modifier::None }
+        };
+
+        let selector_tokens = quote! {
+            edgy::style::Selector {
+                kind: #kind,
+                part: edgy::style::Part::Main,
+                modifier: #modifier,
+            }
+        };
 
         let declarations = rule.declarations.iter().filter_map(|declaration| {
             let property_str = &declaration.name;
@@ -76,8 +104,8 @@ pub fn css(input: TokenStream) -> TokenStream {
                         syn::Ident::new(&declaration.value, proc_macro2::Span::call_site());
                     quote! { #color_format_ident::#color_ident.into() }
                 }
-                "stroke_width" | "padding" | "line_height" => {
-                    let num: u32 = declaration.value.parse().unwrap();
+                "stroke_width" => {
+                    let num: u32 = declaration.value.parse().expect("Number literals must be valid u32 integers");
                     quote! { #num }
                 }
                 _ => panic!("Unknown property: {}", property_str),
@@ -89,8 +117,8 @@ pub fn css(input: TokenStream) -> TokenStream {
         });
 
         quote! {
-            StyleRule {
-                selector: edgy::style::Selector::new_tag(edgy::style::Tag::#selector_ident),
+            edgy::style::StyleRule {
+                selector: #selector_tokens,
                 style: edgy::style::Style {
                     #(#declarations)*
                     ..edgy::style::Style::default()

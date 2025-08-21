@@ -12,12 +12,19 @@ fn main() {
         r#"
         Button {
             color_format: Rgb888;
-            background_color: RED;
+            background_color: GREEN;
             stroke_width: 2;
         }
+        
 
-        Button::focus {
+        Button:focus {
+            color_format: Rgb888;
             background_color: BLUE:
+        }
+
+        .danger {
+            color_format: Rgb888;
+            background_color: RED:
         }
 
         Label {
@@ -32,6 +39,7 @@ fn main() {
     let rules = resolve_style(
         &[
             SelectorKind::Tag(edgy::style::Tag::Button),
+            SelectorKind::Class("danger")
         ],
         &rules,
         edgy::style::Modifier::Focus,
