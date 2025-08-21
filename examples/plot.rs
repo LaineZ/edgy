@@ -1,14 +1,11 @@
 use edgy::{
-    styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND}, widgets::{
+    style::StyleSheet, styles::{apply_default_debug_style, hope_diamond::HOPE_DIAMOND}, widgets::{
         linear_layout::{LayoutAlignment, LayoutDirection, LinearLayoutBuilder},
         UiBuilder,
     }, UiContext
 };
 use embedded_graphics::{
-    mono_font::ascii::FONT_4X6,
-    pixelcolor::Rgb888,
-    prelude::*,
-    text::Alignment,
+    mono_font::ascii::FONT_4X6, pixelcolor::Rgb888, prelude::*, text::Alignment,
 };
 use embedded_graphics_simulator::{sdl2::Keycode, OutputSettingsBuilder, SimulatorDisplay, Window};
 
@@ -75,13 +72,11 @@ fn main() -> Result<(), core::convert::Infallible> {
             .horizontal_alignment(LayoutAlignment::Stretch)
             .direction(LayoutDirection::Vertical);
 
-        ui.label(
-            format!(
-                "HORIZONTAL OFFSET: {} SCALE: {:.0}%",
-                offset.y,
-                scale * 100.0
-            ),
-        );
+        ui.label(format!(
+            "HORIZONTAL OFFSET: {} SCALE: {:.0}%",
+            offset.y,
+            scale * 100.0
+        ));
         ui.plot(points.clone(), scale, offset);
 
         ui_ctx.draw_target.clear(Rgb888::BLACK)?;
