@@ -1,0 +1,58 @@
+use std::path::PathBuf;
+
+use edgy_graphics::font::Glyph;
+use fontdue::Font;
+
+use crate::providers::FontRasterizerProvider;
+
+pub struct FontdueProvider {
+    font: fontdue::Font,
+    size: u8,
+    coverage: u8,
+}
+
+impl FontdueProvider {
+    pub fn new(path: PathBuf, size: u8, coverage: u8) -> Self {
+        let bytes = std::fs::read(path).unwrap();
+        let font = Font::from_bytes(bytes, fontdue::FontSettings::default()).unwrap();
+
+        Self {
+            font,
+            size,
+            coverage,
+        }
+    }
+}
+
+impl FontRasterizerProvider for FontdueProvider {
+    fn rasterize(&self, character: char) -> Vec<u8> {
+        let (metrics, bitmap) = self.font.rasterize(character, self.size as f32);
+
+        let mut glyph_bitmap = Vec::new();
+        glyph_bitmap.resize(metrics.width * metrics.height, 0);
+
+        for y in 0..metrics.height {
+            for x in 0..metrics.width {
+                let alpha = bitmap[y * metrics.width + x];
+                if alpha >= self.coverage {
+                    glyph_bitmap[y * metrics.width + x] = 1;
+                }
+            }
+        }
+
+        glyph_bitmap
+    }
+
+    fn get_glyph_data(&self, character: char, offset: usize) -> edgy_graphics::font::Glyph {
+        let (metrics, _) = self.font.rasterize(character, self.size as f32);
+        Glyph {
+            character,
+            advance_width: metrics.advance_width as u8,
+            height: metrics.height as u8,
+            width: metrics.width as u8,
+            offset: offset as u16,
+            x_offset: metrics.xmin as i8,
+            y_offset: metrics.ymin as i8,
+        }
+    }
+}

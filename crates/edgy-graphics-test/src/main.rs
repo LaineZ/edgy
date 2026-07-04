@@ -84,7 +84,7 @@ fn main() {
 
     // font
 
-    font::text(&mut fb, Point::new(10, 50), &ARIAL, "hello world", 5);
+    font::text(&mut fb, Point::new(10, 50), &ARIAL, "HELLO WORLD", 5);
 
     let mut img = RgbImage::new(fb.width() as u32, fb.height() as u32);
 
