@@ -20,7 +20,8 @@ impl BasicStyle {
 
     pub fn with_border(border_color: u8, border_width: u16) -> Self {
         Self {
-            border_color, border_width,
+            border_color,
+            border_width,
             ..Default::default()
         }
     }
@@ -63,32 +64,84 @@ fn stamp(fb: &mut FrameBuffer, position: Point, size: u16, color: u8) {
     }
 }
 
-fn plot8(
-    fb: &mut FrameBuffer,
-    center_position: Point,
-    position: Point,
-    color: u8,
-    thickness: u16,
-) {
-    stamp(fb, Point::new(center_position.x + position.x, center_position.y + position.y), thickness, color);
-    stamp(fb, Point::new(center_position.x - position.x, center_position.y + position.y), thickness, color);
-    stamp(fb, Point::new(center_position.x + position.x, center_position.y - position.y), thickness, color);
-    stamp(fb, Point::new(center_position.x - position.x, center_position.y - position.y), thickness, color);
+fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: u8, thickness: u16) {
+    stamp(
+        fb,
+        Point::new(
+            center_position.x + position.x,
+            center_position.y + position.y,
+        ),
+        thickness,
+        color,
+    );
+    stamp(
+        fb,
+        Point::new(
+            center_position.x - position.x,
+            center_position.y + position.y,
+        ),
+        thickness,
+        color,
+    );
+    stamp(
+        fb,
+        Point::new(
+            center_position.x + position.x,
+            center_position.y - position.y,
+        ),
+        thickness,
+        color,
+    );
+    stamp(
+        fb,
+        Point::new(
+            center_position.x - position.x,
+            center_position.y - position.y,
+        ),
+        thickness,
+        color,
+    );
 
-    stamp(fb, Point::new(center_position.x + position.y, center_position.y + position.x), thickness, color);
-    stamp(fb, Point::new(center_position.x - position.y, center_position.y + position.x), thickness, color);
-    stamp(fb, Point::new(center_position.x + position.y, center_position.y - position.x), thickness, color);
-    stamp(fb, Point::new(center_position.x - position.y, center_position.y - position.x), thickness, color);
+    stamp(
+        fb,
+        Point::new(
+            center_position.x + position.y,
+            center_position.y + position.x,
+        ),
+        thickness,
+        color,
+    );
+    stamp(
+        fb,
+        Point::new(
+            center_position.x - position.y,
+            center_position.y + position.x,
+        ),
+        thickness,
+        color,
+    );
+    stamp(
+        fb,
+        Point::new(
+            center_position.x + position.y,
+            center_position.y - position.x,
+        ),
+        thickness,
+        color,
+    );
+    stamp(
+        fb,
+        Point::new(
+            center_position.x - position.y,
+            center_position.y - position.x,
+        ),
+        thickness,
+        color,
+    );
 }
 
 #[inline(always)]
-fn hline(
-    fb: &mut FrameBuffer,
-    x0: i32,
-    x1: i32,
-    y: i32,
-    color: u8,
-) {
+fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: u8) {
     if y < 0 || y >= fb.height() as i32 {
         return;
     }
@@ -124,13 +177,7 @@ fn fill_circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: u8)
     }
 }
 
-fn circle_impl(
-    fb: &mut FrameBuffer,
-    center: Point,
-    radius: i32,
-    color: u8,
-    thickness: u16
-) {
+fn circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: u8, thickness: u16) {
     let mut x = radius;
     let mut y = 0;
     let mut d = 1 - radius;
