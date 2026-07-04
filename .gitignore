@@ -1,5 +1,0 @@
-/target
-*.dll
-*.lib
-*.pdb
-/examples/test.rs
