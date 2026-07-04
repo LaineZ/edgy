@@ -53,6 +53,10 @@ impl FrameBuffer {
     }
 
     pub fn set_pixel(&mut self, x: u16, y: u16, value: u8) {
+        if x > self.width() || y > self.height() {
+            return;
+        }
+        
         let pixel = y as usize * self.width as usize + x as usize;
         let ppb = self.format.pixels_per_byte() as usize;
         let bits = self.format as usize;

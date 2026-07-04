@@ -1,9 +1,5 @@
 use edgy_graphics::{
-    draw::{BasicStyle, circle, line, rect},
-    font,
-    fonts::UNSCII_FONT,
-    framebuffer::{FrameBuffer, FramebufferFormat},
-    geometry::{Point, Rectangle, Size},
+    draw::{BasicStyle, circle, line, rect}, font, fonts::{ARIAL}, framebuffer::{FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size},
 };
 use image::RgbImage;
 
@@ -88,7 +84,7 @@ fn main() {
 
     // font
 
-    font::text(&mut fb, Point::new(10, 10), &UNSCII_FONT, "!\"", 5);
+    font::text(&mut fb, Point::new(10, 50), &ARIAL, "hello world", 5);
 
     let mut img = RgbImage::new(fb.width() as u32, fb.height() as u32);
 

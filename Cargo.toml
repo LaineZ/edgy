@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
 
-members = [
+members = ["crates/edgy-font-generator",
     "crates/edgy-graphics", "crates/edgy-graphics-test",
 ]
