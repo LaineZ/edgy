@@ -1,4 +1,4 @@
-use crate::{framebuffer::FrameBuffer, geometry::Point};
+use crate::{draw::{BasicStyle, rect}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Glyph {
@@ -14,7 +14,18 @@ pub struct Glyph {
 pub struct Font<'a> {
     pub glyphs: &'a [Glyph],
     pub bitmap: &'a [u8],
+    pub line_height: u8,
+    pub ascent: u8,
+    pub descent: u8,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct TextLayout {
+    pub cursor: Point,
+    pub bounding_box: Rectangle,
+    pub lines: u16,
+}
+
 
 impl Font<'_> {
     pub fn glyph(&self, ch: char) -> Option<&Glyph> {
@@ -27,6 +38,13 @@ impl Font<'_> {
 
         &self.bitmap[glyph.offset as usize..][..size]
     }
+
+    pub fn replacement(&self) -> &Glyph {
+        self.glyph('�')
+            .or_else(|| self.glyph('?'))
+            .or_else(|| self.glyph(' '))
+            .expect("font has no replacement glyph")
+    }
 }
 
 #[inline(always)]
@@ -37,7 +55,7 @@ fn bit(bitmap: &[u8], stride: usize, x: u8, y: u8) -> bool {
     byte & mask != 0
 }
 
-fn draw_glyph(fb: &mut FrameBuffer, pos: Point, font: &Font, glyph: &Glyph, color: u8) {
+fn draw_glyph(fb: &mut FrameBuffer, pos: Point, font: &Font, glyph: &Glyph, color: u8) -> Rectangle {
     let stride = glyph.width.div_ceil(8) as usize;
     let size = stride * glyph.height as usize;
     let bitmap = &font.bitmap[glyph.offset as usize..][..size];
@@ -56,14 +74,48 @@ fn draw_glyph(fb: &mut FrameBuffer, pos: Point, font: &Font, glyph: &Glyph, colo
             }
         }
     }
+
+    Rectangle::new(Point::new(px, py), Size::new(glyph.width as u32, glyph.height as u32))
 }
 
-pub fn text<S: AsRef<str>>(fb: &mut FrameBuffer, position: Point, font: &Font, text: S, color: u8) {
+pub fn layout<F: FnMut(Point, &Glyph)>(font: &Font, position: Point, text: &str, mut f: F) -> TextLayout {
     let mut pos = position;
-    for ch in text.as_ref().chars() {
-        if let Some(glyph) = font.glyph(ch) {
-            draw_glyph(fb, pos, font, glyph, color);
-            pos.x += glyph.advance_width as i32;
+    let mut lines = 1;
+    let mut max_width = 0;
+
+    for ch in text.chars() {
+        match ch {
+            '\n' => {
+                max_width = max_width.max(pos.x - position.x);
+                
+                pos.x = position.x;
+                pos.y += font.line_height as i32;
+                lines += 1;
+            }
+            _ => {
+                let glyph = font.glyph(ch).unwrap_or(font.replacement());
+                
+                f(pos, glyph);
+                pos.x += glyph.advance_width as i32;
+            }   
         }
     }
+
+    max_width = max_width.max(pos.x - position.x);
+    
+    let bounding_box = Rectangle::new(
+        Point::new(position.x, position.y - font.ascent as i32),
+        Size::new(
+            max_width as u32,
+            lines as u32 * font.line_height as u32,
+        ),
+    );
+    
+    TextLayout { cursor: pos, bounding_box: bounding_box, lines }
+}
+
+pub fn text(fb: &mut FrameBuffer, position: Point, font: &Font, text: &str, color: u8) -> TextLayout {
+    layout(font, position, text.as_ref(), |pos, glyph| {
+        draw_glyph(fb, pos, font, glyph, color);
+    })
 }

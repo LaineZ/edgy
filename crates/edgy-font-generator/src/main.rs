@@ -56,6 +56,9 @@ fn main() {
             _ => panic!("Cannot infer font format..."),
         };
 
+    let metrics = provider.get_font_metrics();
+    println!("Font metrics: ascent: {} descent: {} line height: {}", metrics.ascent, metrics.descent, metrics.line_height);
+    
     let mut bitmap_data = Vec::new();
     let mut out = String::new();
     out.push_str("use edgy_graphics::font::{Font, Glyph};\n\n");
@@ -63,7 +66,15 @@ fn main() {
     let chars = args
         .characters
         .unwrap_or_else(|| (32u8..=126).map(char::from).collect());
-    let chars_vec: Vec<char> = chars.chars().collect();
+    let mut chars_vec: Vec<char> = chars.chars().collect();
+
+    if !chars_vec.contains(&' ') {
+        chars_vec.push(' ');
+    }
+
+    if !chars_vec.contains(&'�') {
+        chars_vec.push('�');
+    }
 
     writeln!(out, "const GLYPHS: [Glyph; {}] = [", chars_vec.len()).unwrap();
 
@@ -72,9 +83,9 @@ fn main() {
         let bitmap = provider.rasterize(char);
         let metrics = provider.get_glyph_data(char, offset);
         let stride = metrics.width.div_ceil(8) as usize;
-        
+
         bitmap_data.resize(offset + stride * metrics.height as usize, 0);
-        
+
         for y in 0..metrics.height as usize {
             for x in 0..metrics.width as usize {
                 if bitmap[y * metrics.width as usize + x] == 1 {
@@ -114,14 +125,21 @@ fn main() {
 
         out.push('\n');
     }
-
+    
     out.push_str("];\n\n");
     writeln!(
         out,
         "pub const {}: Font = Font {{
         glyphs: &GLYPHS,
-        bitmap: &FONT_BITMAP,\n}};\n",
-        stem.to_uppercase()
+        bitmap: &FONT_BITMAP,
+        line_height: {},
+        ascent: {},
+        descent: {},
+        \n}};\n",
+        stem.to_uppercase(),
+        metrics.line_height,
+        metrics.ascent,
+        metrics.descent
     )
     .unwrap();
 

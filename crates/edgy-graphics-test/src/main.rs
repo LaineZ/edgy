@@ -1,5 +1,5 @@
 use edgy_graphics::{
-    draw::{BasicStyle, circle, line, rect}, font, fonts::{ARIAL}, framebuffer::{FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size},
+    draw::{BasicStyle, circle, line, rect}, font, fonts::{unscii::UNSCII}, framebuffer::{FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size},
 };
 use image::RgbImage;
 
@@ -84,8 +84,10 @@ fn main() {
 
     // font
 
-    font::text(&mut fb, Point::new(10, 50), &ARIAL, "HELLO WORLD", 5);
-
+    let layout = font::text(&mut fb, Point::new(10, 50), &UNSCII, "pidor jopa\ngovno\npizda", 5);
+    let bbox = layout.bounding_box;
+    rect(&mut fb, bbox, BasicStyle::with_border(4, 1));
+    circle(&mut fb, layout.cursor, 2, BasicStyle::with_fill(5));
     let mut img = RgbImage::new(fb.width() as u32, fb.height() as u32);
 
     for y in 0..fb.height() {

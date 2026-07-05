@@ -4,7 +4,7 @@ use core::{
 };
 
 /// Integer 2D point in the space
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -169,7 +169,7 @@ impl DivAssign<i32> for Point {
     }
 }
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct Size {
     pub width: u32,
     pub height: u32,
@@ -295,7 +295,7 @@ const fn center_offset(size: Size) -> Size {
     size.saturating_sub(Size::new_equal(1)).div_u32(2)
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rectangle {
     /// Top left point of the rectangle.
     pub top_left: Point,
@@ -321,6 +321,25 @@ impl Rectangle {
         } else {
             None
         }
+    }
+
+    pub fn union(self, other: Rectangle) -> Rectangle {
+        let left = self.top_left.x.min(other.top_left.x);
+        let top = self.top_left.y.min(other.top_left.y);
+
+        let right = (self.top_left.x + self.size.width as i32)
+            .max(other.top_left.x + other.size.width as i32);
+
+        let bottom = (self.top_left.y + self.size.height as i32)
+            .max(other.top_left.y + other.size.height as i32);
+
+        Rectangle::new(
+            Point::new(left, top),
+            Size::new(
+                (right - left) as u32,
+                (bottom - top) as u32,
+            ),
+        )
     }
 
     pub fn with_corners(corner_1: Point, corner_2: Point) -> Self {

@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader, path::PathBuf};
 
-use crate::providers::FontRasterizerProvider;
-use bdf_reader::Font;
+use crate::providers::{FontRasterizerProvider, LineMetrics};
+use bdf_reader::{Font, Value::{self, Integer}};
 use edgy_graphics::font::Glyph;
 
 pub struct BdfProvider {
@@ -47,6 +47,24 @@ impl FontRasterizerProvider for BdfProvider {
             x_offset: bb.offset_x as i8,
             y_offset: bb.offset_y as i8,
             advance_width: dwidth.0 as u8,
+        }
+    }
+
+    fn get_font_metrics(&self) -> LineMetrics {
+        let ascent = match self.font.property("FONT_ASCENT") {
+            Some(Integer(n)) => *n,
+            _ => 0
+        };
+
+        let descent = match self.font.property("FONT_DESCENT") {
+            Some(Integer(n)) => *n,
+            _ => 0
+        };
+        
+        LineMetrics {
+            ascent: ascent as u8,
+            descent: descent as u8,
+            line_height: (ascent + descent) as u8
         }
     }
 }

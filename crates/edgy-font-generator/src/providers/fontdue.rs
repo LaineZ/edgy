@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use edgy_graphics::font::Glyph;
 use fontdue::Font;
 
-use crate::providers::FontRasterizerProvider;
+use crate::providers::{FontRasterizerProvider, LineMetrics};
 
 pub struct FontdueProvider {
     font: fontdue::Font,
@@ -47,12 +47,21 @@ impl FontRasterizerProvider for FontdueProvider {
         let (metrics, _) = self.font.rasterize(character, self.size as f32);
         Glyph {
             character,
-            advance_width: metrics.advance_width as u8,
+            advance_width: metrics.advance_width.round() as u8,
             height: metrics.height as u8,
             width: metrics.width as u8,
             offset: offset as u16,
             x_offset: metrics.xmin as i8,
             y_offset: metrics.ymin as i8,
+        }
+    }
+
+    fn get_font_metrics(&self) -> LineMetrics {
+        let font_metrics = self.font.horizontal_line_metrics(self.size as f32).unwrap();
+        LineMetrics {
+            ascent: font_metrics.ascent.round() as u8,
+            descent: font_metrics.descent.round() as u8,
+            line_height: font_metrics.new_line_size.round() as u8
         }
     }
 }
