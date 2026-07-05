@@ -1,10 +1,5 @@
 use edgy_graphics::{
-    draw::{BasicStyle, circle, line, rect},
-    font,
-    fonts::unscii::UNSCII,
-    framebuffer::{FrameBuffer, FramebufferFormat},
-    geometry::{Point, Rectangle, Size},
-    polygon::{PolygonData, fill_polygon},
+    draw::{BasicStyle, circle, line, rect}, font::{self, LayoutOptions}, fonts::unscii::UNSCII, framebuffer::{FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size}, polygon::{PolygonData, fill_polygon},
 };
 use image::RgbImage;
 
@@ -22,82 +17,88 @@ const PALETTE: [[u8; 3]; 8] = [
 fn main() {
     let mut fb = FrameBuffer::new(320, 240, FramebufferFormat::Bpp8);
 
-    // background
-    rect(
-        &mut fb,
-        Rectangle::new(Point::<i32>::zero(), Size::new(320, 240)),
-        BasicStyle::with_fill(0),
-    );
+    // // background
+    // rect(
+    //     &mut fb,
+    //     Rectangle::new(Point::<i32>::zero(), Size::new(320, 240)),
+    //     BasicStyle::with_fill(0),
+    // );
 
-    // grid
-    for x in (0..320).step_by(32) {
-        line(&mut fb, Point::new(x, 0), Point::new(x, 239), 1, 1);
-    }
+    // // grid
+    // for x in (0..320).step_by(32) {
+    //     line(&mut fb, Point::new(x, 0), Point::new(x, 239), 1, 1);
+    // }
 
-    for y in (0..240).step_by(32) {
-        line(&mut fb, Point::new(0, y), Point::new(319, y), 1, 1);
-    }
+    // for y in (0..240).step_by(32) {
+    //     line(&mut fb, Point::new(0, y), Point::new(319, y), 1, 1);
+    // }
 
-    // lines
-    for i in 0..16 {
-        line(
-            &mut fb,
-            Point::new(10, 10),
-            Point::new(160 + i * 8, 120),
-            2,
-            1,
-        );
-    }
+    // // lines
+    // for i in 0..16 {
+    //     line(
+    //         &mut fb,
+    //         Point::new(10, 10),
+    //         Point::new(160 + i * 8, 120),
+    //         2,
+    //         1,
+    //     );
+    // }
 
-    // thick lines
-    line(&mut fb, Point::new(20, 180), Point::new(300, 180), 3, 2);
-    line(&mut fb, Point::new(20, 190), Point::new(300, 220), 4, 4);
-    line(&mut fb, Point::new(20, 220), Point::new(300, 150), 5, 8);
+    // // thick lines
+    // line(&mut fb, Point::new(20, 180), Point::new(300, 180), 3, 2);
+    // line(&mut fb, Point::new(20, 190), Point::new(300, 220), 4, 4);
+    // line(&mut fb, Point::new(20, 220), Point::new(300, 150), 5, 8);
 
-    // rectangles
-    rect(
-        &mut fb,
-        Rectangle::new(Point::new(180, 20), Size::new(120, 80)),
-        BasicStyle::new(2, 6, 3),
-    );
+    // // rectangles
+    // rect(
+    //     &mut fb,
+    //     Rectangle::new(Point::new(180, 20), Size::new(120, 80)),
+    //     BasicStyle::new(2, 6, 3),
+    // );
 
-    rect(
-        &mut fb,
-        Rectangle::new(Point::new(200, 40), Size::new(40, 40)),
-        BasicStyle::with_fill(7),
-    );
+    // rect(
+    //     &mut fb,
+    //     Rectangle::new(Point::new(200, 40), Size::new(40, 40)),
+    //     BasicStyle::with_fill(7),
+    // );
 
-    // concentric circles
-    for r in (8..70).step_by(8) {
-        circle(
-            &mut fb,
-            Point::new(80, 120),
-            r,
-            BasicStyle::with_border((r / 8 % 7 + 1) as u8, 1),
-        );
-    }
+    // // concentric circles
+    // for r in (8..70).step_by(8) {
+    //     circle(
+    //         &mut fb,
+    //         Point::new(80, 120),
+    //         r,
+    //         BasicStyle::with_border((r / 8 % 7 + 1) as u8, 1),
+    //     );
+    // }
 
-    // thick circles
-    circle(
-        &mut fb,
-        Point::new(250, 160),
-        40,
-        BasicStyle::with_border(3, 6),
-    );
+    // // thick circles
+    // circle(
+    //     &mut fb,
+    //     Point::new(250, 160),
+    //     40,
+    //     BasicStyle::with_border(3, 6),
+    // );
 
-    circle(&mut fb, Point::new(250, 160), 20, BasicStyle::with_fill(5));
+    // circle(&mut fb, Point::new(250, 160), 20, BasicStyle::with_fill(5));
     // font
 
-    let layout = font::text(
-        &mut fb,
-        Point::new(10, 50),
-        &UNSCII,
-        "hello world\nthis is edgy graphics test!",
+
+    let rectangle = Rectangle::new(Point::new(10, 50), Size::new(64, 64));
+    let actual_rectangle = font::text_advanced(
+        &mut fb, rectangle, &UNSCII,
+        &LayoutOptions {
+          horizontal: font::HorizontalAlign::Right,
+          vertical: font::VerticalAlign::Bottom,
+          wrap: font::Wrap::Word
+        },
+        "привет мир как дела",
         5,
     );
-    let bbox = layout.bounding_box;
-    rect(&mut fb, bbox, BasicStyle::with_border(4, 1));
-    circle(&mut fb, layout.cursor, 2, BasicStyle::with_fill(5));
+
+    rect(&mut fb, rectangle, BasicStyle::with_border(4, 1));
+    rect(&mut fb, actual_rectangle.bounding_box, BasicStyle::with_border(5, 1));
+    
     let mut data = PolygonData::<128>::default();
 
     let cx = 220.0;
@@ -111,7 +112,8 @@ fn main() {
         let x = 16.0 * t.sin().powi(3);
         let y = 13.0 * t.cos() - 5.0 * (2.0 * t).cos() - 2.0 * (3.0 * t).cos() - (4.0 * t).cos();
 
-        data.points
+        let _ = data
+            .points
             .push(Point::new((cx + x * scale) as i32, (cy - y * scale) as i32));
     }
 

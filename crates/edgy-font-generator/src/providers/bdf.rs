@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::providers::{FontRasterizerProvider, LineMetrics};
-use bdf_reader::{Font, Value::{self, Integer}};
+use bdf_reader::{Font, Value::Integer};
 use edgy_graphics::font::Glyph;
 
 pub struct BdfProvider {

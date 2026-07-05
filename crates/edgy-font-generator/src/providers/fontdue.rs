@@ -27,28 +27,39 @@ impl FontdueProvider {
 impl FontRasterizerProvider for FontdueProvider {
     fn rasterize(&self, character: char) -> Vec<u8> {
         let (metrics, bitmap) = self.font.rasterize(character, self.size as f32);
-
-        let mut glyph_bitmap = Vec::new();
-        glyph_bitmap.resize(metrics.width * metrics.height, 0);
-
+        let font_metrics = self.font.horizontal_line_metrics(self.size as f32).unwrap();
+        
+        let ascent = font_metrics.ascent.ceil() as i32;
+        let descent = (-font_metrics.descent).ceil() as i32;
+        let height = ascent + descent;
+        let mut glyph_bitmap = vec![0; height as usize * metrics.width];
+        let y_offset = ascent - (metrics.height as i32 + metrics.ymin);
+        
         for y in 0..metrics.height {
+            let dst_y = y + y_offset as usize;
+        
             for x in 0..metrics.width {
                 let alpha = bitmap[y * metrics.width + x];
+        
                 if alpha >= self.coverage {
-                    glyph_bitmap[y * metrics.width + x] = 1;
+                    glyph_bitmap[dst_y * metrics.width + x] = 1;
                 }
             }
         }
-
         glyph_bitmap
     }
 
     fn get_glyph_data(&self, character: char, offset: usize) -> edgy_graphics::font::Glyph {
         let (metrics, _) = self.font.rasterize(character, self.size as f32);
+        let font_metrics = self.font.horizontal_line_metrics(self.size as f32).unwrap();
+
+        let ascent = font_metrics.ascent.ceil() as i32;
+        let descent = (-font_metrics.descent).ceil() as i32;
+        
         Glyph {
             character,
             advance_width: metrics.advance_width.round() as u8,
-            height: metrics.height as u8,
+            height: (ascent + descent) as u8,
             width: metrics.width as u8,
             offset: offset as u16,
             x_offset: metrics.xmin as i8,

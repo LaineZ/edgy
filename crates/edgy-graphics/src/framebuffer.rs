@@ -56,7 +56,7 @@ impl FrameBuffer {
         if x > self.width() || y > self.height() {
             return;
         }
-        
+
         let pixel = y as usize * self.width as usize + x as usize;
         let ppb = self.format.pixels_per_byte() as usize;
         let bits = self.format as usize;

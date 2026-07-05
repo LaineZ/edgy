@@ -43,7 +43,10 @@ impl Point<i32> {
 impl Point<Fixed> {
     /// Creates a point with X and Y equal to zero.
     pub fn zero() -> Self {
-        Point { x: Fixed::from_num(0), y: Fixed::from_num(0) }
+        Point {
+            x: Fixed::from_num(0),
+            y: Fixed::from_num(0),
+        }
     }
 }
 
@@ -345,10 +348,7 @@ impl Rectangle {
 
         Rectangle::new(
             Point::new(left, top),
-            Size::new(
-                (right - left) as u32,
-                (bottom - top) as u32,
-            ),
+            Size::new((right - left) as u32, (bottom - top) as u32),
         )
     }
 

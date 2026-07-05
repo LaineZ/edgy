@@ -10,7 +10,7 @@ struct Edge {
 pub struct PolygonData<const N: usize> {
     edges: heapless::Vec<(i32, Edge), N>,
     active_edges: heapless::Vec<Edge, N>,
-    pub points: heapless::Vec<Point, N>
+    pub points: heapless::Vec<Point, N>,
 }
 
 impl<const N: usize> PolygonData<N> {
@@ -20,11 +20,7 @@ impl<const N: usize> PolygonData<N> {
 }
 
 fn make_edge(a: Point, b: Point) -> Option<(i32, Edge)> {
-    let (top, bottom) = if a.y < b.y {
-        (a, b)
-    } else {
-        (b, a)
-    };
+    let (top, bottom) = if a.y < b.y { (a, b) } else { (b, a) };
 
     if top.y == bottom.y {
         return None;
@@ -37,17 +33,12 @@ fn make_edge(a: Point, b: Point) -> Option<(i32, Edge)> {
         Edge {
             y_max: bottom.y,
             x: Fixed::from_num(top.x),
-            dx: Fixed::from_num(bottom.x - top.x)
-                / Fixed::from_num(dy),
+            dx: Fixed::from_num(bottom.x - top.x) / Fixed::from_num(dy),
         },
     ))
 }
 
-pub fn fill_polygon<const N: usize>(
-    fb: &mut FrameBuffer,
-    store: &mut PolygonData<N>,
-    color: u8,
-) {
+pub fn fill_polygon<const N: usize>(fb: &mut FrameBuffer, store: &mut PolygonData<N>, color: u8) {
     if store.points.len() < 3 {
         return;
     }
@@ -58,11 +49,8 @@ pub fn fill_polygon<const N: usize>(
     let min_y = store.points.iter().map(|p| p.y).min().unwrap();
     let max_y = store.points.iter().map(|p| p.y).max().unwrap();
 
-    for i in 0..store.points.len() { 
-        if let Some(edge) = make_edge(
-            store.points[i],
-            store.points[(i + 1) % store.points.len()],
-        ) {
+    for i in 0..store.points.len() {
+        if let Some(edge) = make_edge(store.points[i], store.points[(i + 1) % store.points.len()]) {
             let _ = store.edges.push(edge);
         }
     }
@@ -83,7 +71,7 @@ pub fn fill_polygon<const N: usize>(
         store.active_edges.retain(|e| e.y_max > y);
 
         // sort by x
-        store.active_edges.sort_by(|a, b| a.x.cmp(&b.x));
+        store.active_edges.sort_by_key(|a| a.x);
 
         // draw
         for pair in store.active_edges.chunks_exact(2) {
