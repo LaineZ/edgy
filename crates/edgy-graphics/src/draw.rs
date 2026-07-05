@@ -141,7 +141,7 @@ fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: u
 }
 
 #[inline(always)]
-fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: u8) {
+pub(crate) fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: u8) {
     if y < 0 || y >= fb.height() as i32 {
         return;
     }

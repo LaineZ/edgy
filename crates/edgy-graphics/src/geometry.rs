@@ -3,19 +3,22 @@ use core::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
+use crate::Fixed;
+
 /// Integer 2D point in the space
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
-pub struct Point {
-    pub x: i32,
-    pub y: i32,
+pub struct Point<T = i32> {
+    pub x: T,
+    pub y: T,
 }
 
-impl Point {
-    /// Creates a point from  X and Y coordinates.
-    pub const fn new(x: i32, y: i32) -> Self {
+impl<T> Point<T> {
+    pub const fn new(x: T, y: T) -> Self {
         Point { x, y }
     }
+}
 
+impl Point<i32> {
     /// Creates a point with X and Y equal to zero.
     pub const fn zero() -> Self {
         Point { x: 0, y: 0 }
@@ -34,6 +37,13 @@ impl Point {
         debug_assert!(height >= 0, "height is too large");
 
         Point::new(self.x - width, self.y - height)
+    }
+}
+
+impl Point<Fixed> {
+    /// Creates a point with X and Y equal to zero.
+    pub fn zero() -> Self {
+        Point { x: Fixed::from_num(0), y: Fixed::from_num(0) }
     }
 }
 
@@ -308,7 +318,7 @@ impl Rectangle {
     }
 
     pub const fn zero() -> Rectangle {
-        Rectangle::new(Point::zero(), Size::zero())
+        Rectangle::new(Point::<i32>::zero(), Size::zero())
     }
 
     pub fn center(&self) -> Point {

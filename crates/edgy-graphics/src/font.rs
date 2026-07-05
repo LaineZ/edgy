@@ -1,4 +1,4 @@
-use crate::{draw::{BasicStyle, rect}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}};
+use crate::{framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Glyph {
