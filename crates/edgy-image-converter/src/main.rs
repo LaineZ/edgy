@@ -1,6 +1,8 @@
 use std::io::Write as IoWrite;
 use std::{fs::File, path::PathBuf};
 
+use edgy_graphics::{PixelFormat, framebuffer};
+use edgy_graphics::geometry::Size;
 use owo_colors::OwoColorize;
 use std::fmt::Write;
 use clap::{Parser, ValueEnum};
@@ -50,6 +52,28 @@ struct Args {
 #[derive(Default)]
 struct Palette {
     colors: Vec<Rgb<u8>>,
+}
+
+impl Palette {
+    fn from_file(path: &PathBuf) -> anyhow::Result<Self> {
+        let string = std::fs::read_to_string(path)?;
+
+        let mut colors = Vec::new();
+        for split in string.split("\n") {
+            let hex = split.trim();
+            let color = u32::from_str_radix(hex.trim_start_matches("0x"), 16)?;
+            let [b, g, r, _] = color.to_le_bytes();
+            colors.push(Rgb::from([r, g, b]));
+        } 
+        
+        Ok(Self {
+            colors
+        })
+    }
+
+    fn get_bpp(&self) -> PixelFormat {
+        PixelFormat::from_palette_size(self.colors.len()).unwrap_or(PixelFormat::Bpp8)
+    }
 }
 
 impl ColorMap for Palette {
@@ -177,21 +201,38 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
     let mut enable_compression = args.compress;
     out.push_str("use edgy_graphics::image::Image;\n");
     out.push_str("use edgy_graphics::PixelFormat;\n\n");
+
+    println!("{} {}", "Image:".bold(), args.input.display());
+
+    let size = Size::new(image.width(), image.height());
+    let mut format = PixelFormat::Bpp1;
+    let mut framebuffer: FrameBuffer;
     
     if let Some(palette_path) = args.palette {
-        unimplemented!()
-    } else {
-        println!("{} {}", "Image:".bold(), args.input.display());
-        
+        let palette = Palette::from_file(&palette_path)?;
+        format = palette.get_bpp();
+        let mut image_buffer = ImageBuffer::from(image);
+        if args.dither {
+            imageops::dither(&mut image_buffer, &palette);   
+        }
+
+        framebuffer = FrameBuffer::new(size.width as u16, size.height as u16, format);
+
+        for (x, y, pixel) in image_buffer.enumerate_pixels() {
+            let color = Rgb::<u8>::from(pixel.0);
+            let index = palette.index_of(&color);
+            framebuffer.set_pixel(x as u16, y as u16, index as u8);
+        }
+    } else {        
         // 1 bit
         let grayscale = image.to_luma8();
         let mut grayscale_buffer = ImageBuffer::from(grayscale);
         if args.dither {
             imageops::dither(&mut grayscale_buffer, &BiLevel);   
         }
-        let mut framebuffer = FrameBuffer::new(
-            image.width() as u16,
-            image.height() as u16,
+        framebuffer = FrameBuffer::new(
+            size.width as u16,
+            size.height as u16,
             edgy_graphics::PixelFormat::Bpp1,
         );
         
@@ -200,20 +241,20 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
                 framebuffer.set_pixel(x as u16, y as u16, 1);
             }
         }
+    }
 
-        let data_size = &framebuffer.data.len();
-        if !args.compress {
-            generate_const_data(&mut out, &framebuffer.data);   
+    let data_size = &framebuffer.data.len();
+    if !args.compress {
+        generate_const_data(&mut out, &framebuffer.data);   
+    } else {
+        println!("Compressing: {data_size} bytes...");
+        if let Some(compressed_data) = compress(&framebuffer.data) {
+            generate_const_data(&mut out, &compressed_data);
+            println!("Compressed size {} bytes", &compressed_data.len());
         } else {
-            println!("Compressing: {data_size} bytes...");
-            if let Some(compressed_data) = compress(&framebuffer.data) {
-                generate_const_data(&mut out, &compressed_data);
-                println!("Compressed size {} bytes", &compressed_data.len());
-            } else {
-                eprintln!("{}", "Compression is retarded - writting with disabled compression...".bold().yellow());
-                enable_compression = false;
-                generate_const_data(&mut out, &framebuffer.data);   
-            }
+            eprintln!("{}", "Compression is retarded - writting with disabled compression...".bold().yellow());
+            enable_compression = false;
+            generate_const_data(&mut out, &framebuffer.data);   
         }
     }
 
@@ -221,10 +262,10 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
         bitmap: &BITMAP,
         width: {},
         height: {},
-        format: PixelFormat::Bpp1,
+        format: PixelFormat::{:?},
         compress: {}
 }};", 
-    stem.to_uppercase(), image.width(), image.height(), enable_compression.to_string())?;
+    stem.to_uppercase(), size.width, size.height, format, enable_compression.to_string())?;
 
     let mut file = File::create(args.output.clone()).unwrap();
     file.write_all(&out.as_bytes()).unwrap();

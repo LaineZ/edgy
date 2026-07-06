@@ -1,3 +1,5 @@
+#![no_std]
+
 extern crate alloc;
 
 pub mod draw;
@@ -21,6 +23,16 @@ pub enum PixelFormat {
 }
 
 impl PixelFormat {
+    pub const fn from_palette_size(size: usize) -> Option<Self> {
+        match size {
+            2 => Some(Self::Bpp1),
+            4 => Some(Self::Bpp2),
+            16 => Some(Self::Bpp4),
+            256 => Some(Self::Bpp8),
+            _ => None,
+        }
+    }
+    
     pub const fn pixels_per_byte(self) -> u8 {
         8 / self as u8
     }

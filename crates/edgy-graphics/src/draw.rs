@@ -352,23 +352,44 @@ pub fn text_advanced(
     })
 }
 
-pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
-    if !image.compress {
-        for x in 0..image.width {
-            for y in 0..image.height {
-                fb.set_pixel(
-                    (position.x + x as i32) as u16,
-                    (position.y + y as i32) as u16,
-                    image.get_pixel(x, y),
-                );
+fn blit_bytes(
+    fb: &mut FrameBuffer,
+    position: Point,
+    image: &Image,
+    pixel: &mut usize,
+    data: &[u8],
+) {
+    for byte in data {
+        for i in 0..image.format.pixels_per_byte() {
+            if *pixel >= image.width as usize * image.height as usize {
+                return;
             }
-        }   
+
+            let value = image.format.unpack(*byte, i);
+
+            let x = *pixel % image.width as usize;
+            let y = *pixel / image.width as usize;
+
+            fb.set_pixel(
+                (position.x + x as i32) as u16,
+                (position.y + y as i32) as u16,
+                value,
+            );
+
+            *pixel += 1;
+        }
+    }
+}
+
+pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
+    let mut pixel = 0usize;
+    if !image.compress {
+        blit_bytes(fb, position, image, &mut pixel, image.bitmap);
     } else {
-        let mut pixel = 0usize;
         let mut decoder = HeatshrinkDecoder::new(32, 8, 4).unwrap();
         let mut input = image.bitmap;
         let mut buf: [u8; 32] = [0; 32];
-        let mut decoded = 0;
+        
         loop {
             if !input.is_empty() {
                 match decoder.sink(input) {
@@ -384,34 +405,10 @@ pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
             loop {
                 match decoder.poll(&mut buf) {
                     HSDPollRes::More(n) => {
-                        for byte in &buf[..n] {
-                            for i in 0..image.format.pixels_per_byte() {
-                                if pixel >= image.width as usize * image.height as usize { break; }
-                                let value = image.format.unpack(*byte, i);
-                                let x = pixel % image.width as usize; 
-                                let y = pixel / image.width as usize;
-
-                                fb.set_pixel( (position.x + x as i32) as u16, (position.y + y as i32) as u16, value);
-
-                                pixel += 1;
-                            }
-                        }
-                        decoded += n;
+                        blit_bytes(fb, position, image, &mut pixel, &buf[..n]);
                     }
                     HSDPollRes::Empty(n) => {
-                        for byte in &buf[..n] {
-                            for i in 0..image.format.pixels_per_byte() {
-                                if pixel >= image.width as usize * image.height as usize { break; }
-                                let value = image.format.unpack(*byte, i);
-                                let x = pixel % image.width as usize; 
-                                let y = pixel / image.width as usize;
-
-                                fb.set_pixel( (position.x + x as i32) as u16, (position.y + y as i32) as u16, value);
-
-                                pixel += 1;
-                            }
-                        }
-                        decoded += n;
+                        blit_bytes(fb, position, image, &mut pixel, &buf[..n]);
                         break;
                     }
                     
@@ -427,7 +424,5 @@ pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
                 }
             }
         }
-
-        println!("{}", decoded);
     }
 }

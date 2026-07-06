@@ -1,26 +1,17 @@
 #![allow(dead_code)]
 
 use edgy_graphics::{
-    PixelFormat, draw::{self, BasicStyle}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, parse_palette_rgb565, parse_palette_rgb888, polygon::{PolygonData, fill_polygon},
+    PixelFormat, draw::{self, BasicStyle}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, parse_palette_rgb888, polygon::{PolygonData, fill_polygon},
 };
-use image::{Frame, RgbImage};
+use image::{RgbImage};
 
 use crate::fonts::unscii::UNSCII;
 
 pub mod fonts;
 pub mod cube;
+pub mod test;
+pub mod test_ega;
 pub mod cube_raw;
-
-const PALETTE: [[u8; 3]; 8] = [
-    [30, 30, 30],    // 0
-    [255, 255, 255], // 1
-    [255, 0, 0],     // 2
-    [0, 255, 0],     // 3
-    [0, 128, 255],   // 4
-    [255, 255, 0],   // 5
-    [255, 0, 255],   // 6
-    [0, 255, 255],   // 7
-];
 
 fn basic_test(fb: &mut FrameBuffer) {
     // background
@@ -92,6 +83,7 @@ fn basic_test(fb: &mut FrameBuffer) {
 fn image_test(fb: &mut FrameBuffer) {
     draw::image(fb, Point::new(0, 0), &cube_raw::CUBE_RAW);
     draw::image(fb, Point::new(130, 0), &cube::CUBE);
+    draw::image(fb, Point::new(0, 0), &test_ega::TEST_EGA);
 }
 
 fn clipping_test(fb: &mut FrameBuffer) {
@@ -151,7 +143,7 @@ fn polygon_test(fb: &mut FrameBuffer) {
     }
 }
 
-const COLORS: [u16; 256] = parse_palette_rgb565::<256>(include_str!("vga13h.hex"));
+const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
 
 fn main() {
     let mut fb = FrameBuffer::new(320, 240, PixelFormat::Bpp8);
@@ -165,8 +157,10 @@ fn main() {
     
     for y in 0..fb.height() {
         for x in 0..fb.width() {
-            let c = PALETTE[fb.get_pixel(x, y) as usize];
-            img.put_pixel(x as u32, y as u32, image::Rgb(c));
+            let color = COLORS[fb.get_pixel(x, y) as usize];
+            let [b, g, r, _] = color.to_le_bytes();
+
+            img.put_pixel(x as u32, y as u32, image::Rgb([r, g, b]));
         }
     }
     img.save("graphics_test.png").unwrap();
