@@ -7,7 +7,7 @@ pub mod fontdue;
 pub struct LineMetrics {
     pub line_height: u8,
     pub ascent: u8,
-    pub descent: u8
+    pub descent: u8,
 }
 
 pub trait FontRasterizerProvider {

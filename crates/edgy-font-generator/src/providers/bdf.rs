@@ -53,18 +53,18 @@ impl FontRasterizerProvider for BdfProvider {
     fn get_font_metrics(&self) -> LineMetrics {
         let ascent = match self.font.property("FONT_ASCENT") {
             Some(Integer(n)) => *n,
-            _ => 0
+            _ => 0,
         };
 
         let descent = match self.font.property("FONT_DESCENT") {
             Some(Integer(n)) => *n,
-            _ => 0
+            _ => 0,
         };
-        
+
         LineMetrics {
             ascent: ascent as u8,
             descent: descent as u8,
-            line_height: (ascent + descent) as u8
+            line_height: (ascent + descent) as u8,
         }
     }
 }

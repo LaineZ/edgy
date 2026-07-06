@@ -1,6 +1,8 @@
 use crate::{
+    font::Font,
     framebuffer::FrameBuffer,
     geometry::{Point, Rectangle},
+    text::{LayoutOptions, TextLayout},
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -315,4 +317,34 @@ pub fn circle(fb: &mut FrameBuffer, center: Point, radius: i32, style: BasicStyl
     if style.border_width > 0 {
         circle_impl(fb, center, radius, style.border_color, style.border_width);
     }
+}
+
+/// Draws text using a simple layout.
+pub fn text(
+    fb: &mut FrameBuffer,
+    position: Point,
+    font: &Font,
+    text: &str,
+    color: u8,
+) -> TextLayout {
+    crate::text::layout(font, position, text, |pos, glyph| {
+        crate::text::draw_glyph(fb, pos, font, glyph, color);
+    })
+}
+
+/// Draws text using advanced layout options.
+///
+/// Unlike [`text`], this function performs heap allocations while processing
+/// the text. If you only need to draw a simple string, prefer [`text`].
+pub fn text_advanced(
+    fb: &mut FrameBuffer,
+    bounds: Rectangle,
+    options: &LayoutOptions,
+    font: &Font,
+    text: &str,
+    color: u8,
+) -> TextLayout {
+    crate::text::layout_bounds(font, bounds, text, options, |pos, glyph| {
+        crate::text::draw_glyph(fb, pos, font, glyph, color);
+    })
 }

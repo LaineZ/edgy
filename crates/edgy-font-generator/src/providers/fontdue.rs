@@ -28,19 +28,19 @@ impl FontRasterizerProvider for FontdueProvider {
     fn rasterize(&self, character: char) -> Vec<u8> {
         let (metrics, bitmap) = self.font.rasterize(character, self.size as f32);
         let font_metrics = self.font.horizontal_line_metrics(self.size as f32).unwrap();
-        
+
         let ascent = font_metrics.ascent.ceil() as i32;
         let descent = (-font_metrics.descent).ceil() as i32;
         let height = ascent + descent;
         let mut glyph_bitmap = vec![0; height as usize * metrics.width];
         let y_offset = ascent - (metrics.height as i32 + metrics.ymin);
-        
+
         for y in 0..metrics.height {
             let dst_y = y + y_offset as usize;
-        
+
             for x in 0..metrics.width {
                 let alpha = bitmap[y * metrics.width + x];
-        
+
                 if alpha >= self.coverage {
                     glyph_bitmap[dst_y * metrics.width + x] = 1;
                 }
@@ -55,7 +55,7 @@ impl FontRasterizerProvider for FontdueProvider {
 
         let ascent = font_metrics.ascent.ceil() as i32;
         let descent = (-font_metrics.descent).ceil() as i32;
-        
+
         Glyph {
             character,
             advance_width: metrics.advance_width.round() as u8,
@@ -72,7 +72,7 @@ impl FontRasterizerProvider for FontdueProvider {
         LineMetrics {
             ascent: font_metrics.ascent.round() as u8,
             descent: font_metrics.descent.round() as u8,
-            line_height: font_metrics.new_line_size.round() as u8
+            line_height: font_metrics.new_line_size.round() as u8,
         }
     }
 }

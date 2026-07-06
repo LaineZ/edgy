@@ -57,8 +57,11 @@ fn main() {
         };
 
     let metrics = provider.get_font_metrics();
-    println!("Font metrics: ascent: {} descent: {} line height: {}", metrics.ascent, metrics.descent, metrics.line_height);
-    
+    println!(
+        "Font metrics: ascent: {} descent: {} line height: {}",
+        metrics.ascent, metrics.descent, metrics.line_height
+    );
+
     let mut bitmap_data = Vec::new();
     let mut out = String::new();
     out.push_str("use edgy_graphics::font::{Font, Glyph};\n\n");
@@ -125,7 +128,7 @@ fn main() {
 
         out.push('\n');
     }
-    
+
     out.push_str("];\n\n");
     writeln!(
         out,

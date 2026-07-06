@@ -1,7 +1,11 @@
 use edgy_graphics::{
-    draw::{BasicStyle, circle, line, rect}, font::{self, LayoutOptions}, fonts::unscii::UNSCII, framebuffer::{FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size}, polygon::{PolygonData, fill_polygon},
+    draw::{self, BasicStyle}, framebuffer::{self, FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size}, polygon::{PolygonData, fill_polygon}, text,
 };
 use image::RgbImage;
+
+use crate::fonts::unscii::UNSCII;
+
+pub mod fonts;
 
 const PALETTE: [[u8; 3]; 8] = [
     [30, 30, 30],    // 0
@@ -14,91 +18,105 @@ const PALETTE: [[u8; 3]; 8] = [
     [0, 255, 255],   // 7
 ];
 
-fn main() {
-    let mut fb = FrameBuffer::new(320, 240, FramebufferFormat::Bpp8);
-
-    // // background
-    // rect(
-    //     &mut fb,
-    //     Rectangle::new(Point::<i32>::zero(), Size::new(320, 240)),
-    //     BasicStyle::with_fill(0),
-    // );
-
-    // // grid
-    // for x in (0..320).step_by(32) {
-    //     line(&mut fb, Point::new(x, 0), Point::new(x, 239), 1, 1);
-    // }
-
-    // for y in (0..240).step_by(32) {
-    //     line(&mut fb, Point::new(0, y), Point::new(319, y), 1, 1);
-    // }
-
-    // // lines
-    // for i in 0..16 {
-    //     line(
-    //         &mut fb,
-    //         Point::new(10, 10),
-    //         Point::new(160 + i * 8, 120),
-    //         2,
-    //         1,
-    //     );
-    // }
-
-    // // thick lines
-    // line(&mut fb, Point::new(20, 180), Point::new(300, 180), 3, 2);
-    // line(&mut fb, Point::new(20, 190), Point::new(300, 220), 4, 4);
-    // line(&mut fb, Point::new(20, 220), Point::new(300, 150), 5, 8);
-
-    // // rectangles
-    // rect(
-    //     &mut fb,
-    //     Rectangle::new(Point::new(180, 20), Size::new(120, 80)),
-    //     BasicStyle::new(2, 6, 3),
-    // );
-
-    // rect(
-    //     &mut fb,
-    //     Rectangle::new(Point::new(200, 40), Size::new(40, 40)),
-    //     BasicStyle::with_fill(7),
-    // );
-
-    // // concentric circles
-    // for r in (8..70).step_by(8) {
-    //     circle(
-    //         &mut fb,
-    //         Point::new(80, 120),
-    //         r,
-    //         BasicStyle::with_border((r / 8 % 7 + 1) as u8, 1),
-    //     );
-    // }
-
-    // // thick circles
-    // circle(
-    //     &mut fb,
-    //     Point::new(250, 160),
-    //     40,
-    //     BasicStyle::with_border(3, 6),
-    // );
-
-    // circle(&mut fb, Point::new(250, 160), 20, BasicStyle::with_fill(5));
-    // font
-
-
-    let rectangle = Rectangle::new(Point::new(10, 50), Size::new(64, 64));
-    let actual_rectangle = font::text_advanced(
-        &mut fb, rectangle, &UNSCII,
-        &LayoutOptions {
-          horizontal: font::HorizontalAlign::Right,
-          vertical: font::VerticalAlign::Bottom,
-          wrap: font::Wrap::Word
-        },
-        "привет мир как дела",
-        5,
+fn basic_test(fb: &mut FrameBuffer) {
+    // background
+    draw::rect(
+        fb,
+        Rectangle::new(Point::<i32>::zero(), Size::new(320, 240)),
+        BasicStyle::with_fill(0),
     );
 
-    rect(&mut fb, rectangle, BasicStyle::with_border(4, 1));
-    rect(&mut fb, actual_rectangle.bounding_box, BasicStyle::with_border(5, 1));
+    // grid
+    for x in (0..320).step_by(32) {
+        draw::line(fb, Point::new(x, 0), Point::new(x, 239), 1, 1);
+    }
+
+    for y in (0..240).step_by(32) {
+        draw::line(fb, Point::new(0, y), Point::new(319, y), 1, 1);
+    }
+
+    // lines
+    for i in 0..16 {
+        draw::line(
+            fb,
+            Point::new(10, 10),
+            Point::new(160 + i * 8, 120),
+            2,
+            1,
+        );
+    }
+
+    // thick lines
+    draw::line(fb, Point::new(20, 180), Point::new(300, 180), 3, 2);
+    draw::line(fb, Point::new(20, 190), Point::new(300, 220), 4, 4);
+    draw::line(fb, Point::new(20, 220), Point::new(300, 150), 5, 8);
+
+    // rectangles
+    draw::rect(
+        fb,
+        Rectangle::new(Point::new(180, 20), Size::new(120, 80)),
+        BasicStyle::new(2, 6, 3),
+    );
+
+    draw::rect(
+        fb,
+        Rectangle::new(Point::new(200, 40), Size::new(40, 40)),
+        BasicStyle::with_fill(7),
+    );
+
+    // concentric circles
+    for r in (8..70).step_by(8) {
+        draw::circle(
+            fb,
+            Point::new(80, 120),
+            r,
+            BasicStyle::with_border((r / 8 % 7 + 1) as u8, 1),
+        );
+    }
+
+    // thick circles
+    draw::circle(
+        fb,
+        Point::new(250, 160),
+        40,
+        BasicStyle::with_border(3, 6),
+    );
+
+    draw::circle(fb, Point::new(250, 160), 20, BasicStyle::with_fill(5));
+}
+
+fn clipping_test(fb: &mut FrameBuffer) {
+    let clipping = Rectangle::new(
+        Point::new(10, 50),
+        Size::new(120, 80),
+    );
     
+    let scroll_y = 100;
+    
+    fb.with_clip(clipping, |fb| {
+        for i in 0..1000 {
+            let y = clipping.top_left.y + (i as i32 * 16) - scroll_y;
+    
+            let item = Rectangle::new(
+                Point::new(clipping.top_left.x, y),
+                Size::new(clipping.size.width, 16),
+            );
+    
+            draw::rect(fb, item, BasicStyle::with_fill(1));
+            draw::rect(fb, item, BasicStyle::with_border(4, 1));
+    
+            draw::text(
+                fb,
+                item.top_left + Point::new(4, 0),
+                &UNSCII,
+                &format!("Item {}", i),
+                7,
+            );
+        }
+    });
+}
+
+fn polygon_test(fb: &mut FrameBuffer) {
     let mut data = PolygonData::<128>::default();
 
     let cx = 220.0;
@@ -117,14 +135,19 @@ fn main() {
             .push(Point::new((cx + x * scale) as i32, (cy - y * scale) as i32));
     }
 
-    fill_polygon(&mut fb, &mut data, 2);
+    fill_polygon(fb, &mut data, 2);
 
-    // for point in data.points {
-    //     circle(&mut fb, point, 1, BasicStyle::with_fill(4));
-    // }
+    for point in data.points {
+        draw::circle(fb, point, 1, BasicStyle::with_fill(4));
+    }
+}
 
+fn main() {
+    let mut fb = FrameBuffer::new(320, 240, FramebufferFormat::Bpp8);
     let mut img = RgbImage::new(fb.width() as u32, fb.height() as u32);
 
+    basic_test(&mut fb);
+    
     for y in 0..fb.height() {
         for x in 0..fb.width() {
             let c = PALETTE[fb.get_pixel(x, y) as usize];

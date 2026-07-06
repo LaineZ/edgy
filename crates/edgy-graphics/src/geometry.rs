@@ -1,6 +1,7 @@
+// Adapted from embedded-graphics with minor modifications.
+
 use core::{
-    cmp::min,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+    cmp::min, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, RangeInclusive, Sub, SubAssign},
 };
 
 use crate::Fixed;
@@ -37,6 +38,31 @@ impl Point<i32> {
         debug_assert!(height >= 0, "height is too large");
 
         Point::new(self.x - width, self.y - height)
+    }
+
+    
+    /// Returns the componentwise minimum of two `Point`s
+    pub fn component_min(self, other: Self) -> Self {
+        Self::new(self.x.min(other.x), self.y.min(other.y))
+    }
+
+    /// Returns the componentwise maximum of two `Point`s
+    pub fn component_max(self, other: Self) -> Self {
+        Self::new(self.x.max(other.x), self.y.max(other.y))
+    }
+
+    /// Returns the componentwise multiplication of two `Point`s.
+    pub const fn component_mul(self, other: Self) -> Self {
+        Self::new(self.x * other.x, self.y * other.y)
+    }
+
+    /// Returns the componentwise division of two `Point`s.
+    ///
+    /// # Panics
+    ///
+    /// Panics if one of the components of `other` equals zero.
+    pub const fn component_div(self, other: Self) -> Self {
+        Self::new(self.x / other.x, self.y / other.y)
     }
 }
 
@@ -308,6 +334,13 @@ const fn center_offset(size: Size) -> Size {
     size.saturating_sub(Size::new_equal(1)).div_u32(2)
 }
 
+fn overlaps(first: RangeInclusive<i32>, second: RangeInclusive<i32>) -> bool {
+    second.contains(first.start())
+        || second.contains(first.end())
+        || first.start() < second.start() && first.end() > second.end()
+}
+
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rectangle {
     /// Top left point of the rectangle.
@@ -367,5 +400,50 @@ impl Rectangle {
             top_left: center.sub_size(center_offset(size)),
             size,
         }
+    }
+
+    /// Return whether the rectangle contains a given point.
+    pub fn contains(&self, point: Point) -> bool {
+        if point.x >= self.top_left.x && point.y >= self.top_left.y {
+            self.bottom_right()
+                .is_some_and(|bottom_right| point.x <= bottom_right.x && point.y <= bottom_right.y)
+        } else {
+            false
+        }
+    }
+
+    pub fn intersection(&self, other: &Rectangle) -> Rectangle {
+        match (other.bottom_right(), self.bottom_right()) {
+            (Some(other_bottom_right), Some(self_bottom_right)) => {
+                if overlaps(
+                    self.top_left.x..=self_bottom_right.x,
+                    other.top_left.x..=other_bottom_right.x,
+                ) && overlaps(
+                    self.top_left.y..=self_bottom_right.y,
+                    other.top_left.y..=other_bottom_right.y,
+                ) {
+                    return Rectangle::with_corners(
+                        self.top_left.component_max(other.top_left),
+                        self_bottom_right.component_min(other_bottom_right),
+                    );
+                }
+            }
+            (Some(_other_bottom_right), None) => {
+                // Check if zero sized self is inside other
+                if other.contains(self.top_left) {
+                    return *self;
+                }
+            }
+            (None, Some(_self_bottom_right)) => {
+                // Check if zero sized other is inside self
+                if self.contains(other.top_left) {
+                    return *other;
+                }
+            }
+            (None, None) => (),
+        };
+
+        // No overlap present
+        Rectangle::zero()
     }
 }

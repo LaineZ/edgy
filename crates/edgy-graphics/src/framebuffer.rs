@@ -1,6 +1,8 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crate::geometry::{Point, Rectangle, Size};
+
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum FramebufferFormat {
@@ -25,6 +27,7 @@ pub struct FrameBuffer {
     width: u16,
     height: u16,
     data: Vec<u8>,
+    clip: Rectangle,
 }
 
 impl FrameBuffer {
@@ -38,6 +41,7 @@ impl FrameBuffer {
             width,
             height,
             data: vec![0; bytes],
+            clip: Rectangle::new(Point::<i32>::zero(), Size::new(width as u32, height as u32)),
         }
     }
 
@@ -54,6 +58,10 @@ impl FrameBuffer {
 
     pub fn set_pixel(&mut self, x: u16, y: u16, value: u8) {
         if x > self.width() || y > self.height() {
+            return;
+        }
+
+        if !self.clip.contains(Point::new(x as i32, y as i32)) {
             return;
         }
 
@@ -80,6 +88,14 @@ impl FrameBuffer {
 
     pub fn height(&self) -> u16 {
         self.height
+    }
+
+    pub fn with_clip<R>(&mut self, clip: Rectangle, f: impl FnOnce(&mut Self) -> R) -> R {
+        let old = self.clip;
+        self.clip = self.clip.intersection(&clip);
+        let r = f(self);
+        self.clip = old;
+        r
     }
 }
 
