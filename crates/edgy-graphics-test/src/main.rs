@@ -1,11 +1,15 @@
+#![allow(dead_code)]
+
 use edgy_graphics::{
-    draw::{self, BasicStyle}, framebuffer::{self, FrameBuffer, FramebufferFormat}, geometry::{Point, Rectangle, Size}, polygon::{PolygonData, fill_polygon}, text,
+    PixelFormat, draw::{self, BasicStyle}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, parse_palette_rgb565, parse_palette_rgb888, polygon::{PolygonData, fill_polygon},
 };
-use image::RgbImage;
+use image::{Frame, RgbImage};
 
 use crate::fonts::unscii::UNSCII;
 
 pub mod fonts;
+pub mod cube;
+pub mod cube_raw;
 
 const PALETTE: [[u8; 3]; 8] = [
     [30, 30, 30],    // 0
@@ -85,6 +89,11 @@ fn basic_test(fb: &mut FrameBuffer) {
     draw::circle(fb, Point::new(250, 160), 20, BasicStyle::with_fill(5));
 }
 
+fn image_test(fb: &mut FrameBuffer) {
+    draw::image(fb, Point::new(0, 0), &cube_raw::CUBE_RAW);
+    draw::image(fb, Point::new(130, 0), &cube::CUBE);
+}
+
 fn clipping_test(fb: &mut FrameBuffer) {
     let clipping = Rectangle::new(
         Point::new(10, 50),
@@ -142,11 +151,17 @@ fn polygon_test(fb: &mut FrameBuffer) {
     }
 }
 
+const COLORS: [u16; 256] = parse_palette_rgb565::<256>(include_str!("vga13h.hex"));
+
 fn main() {
-    let mut fb = FrameBuffer::new(320, 240, FramebufferFormat::Bpp8);
+    let mut fb = FrameBuffer::new(320, 240, PixelFormat::Bpp8);
     let mut img = RgbImage::new(fb.width() as u32, fb.height() as u32);
 
-    basic_test(&mut fb);
+    for color in COLORS {
+        println!("{:#08x}", color);
+    }
+    
+    image_test(&mut fb);
     
     for y in 0..fb.height() {
         for x in 0..fb.width() {

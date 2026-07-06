@@ -368,6 +368,7 @@ dependencies = [
 name = "edgy-graphics"
 version = "0.1.0"
 dependencies = [
+ "embedded-heatshrink",
  "fixed",
  "heapless",
 ]
@@ -381,10 +382,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "edgy-image-converter"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "edgy-graphics",
+ "embedded-heatshrink",
+ "image",
+ "owo-colors",
+]
+
+[[package]]
 name = "either"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
+
+[[package]]
+name = "embedded-heatshrink"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae6a665026572afe1cea2ab7ad3eb527a2ffb4bb21b7844982278ab5a4de9cb1"
 
 [[package]]
 name = "equator"
@@ -795,6 +814,12 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "owo-colors"
+version = "4.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d211803b9b6b570f68772237e415a029d5a50c65d382910b879fb19d3271f94d"
 
 [[package]]
 name = "paste"

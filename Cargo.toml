@@ -2,5 +2,5 @@
 resolver = "2"
 
 members = ["crates/edgy-font-generator",
-    "crates/edgy-graphics", "crates/edgy-graphics-test",
+    "crates/edgy-graphics", "crates/edgy-graphics-test", "crates/edgy-image-converter",
 ]

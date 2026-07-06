@@ -48,11 +48,8 @@ fn main() {
                 args.size,
                 args.alpha_threashold,
             )),
-
             Some("bdf") => Box::new(BdfProvider::new(args.input.clone())),
-
             Some(ext) => panic!("Unsupported font format: {ext}"),
-
             _ => panic!("Cannot infer font format..."),
         };
 

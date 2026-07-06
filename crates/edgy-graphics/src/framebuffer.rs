@@ -1,37 +1,21 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::geometry::{Point, Rectangle, Size};
-
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-pub enum FramebufferFormat {
-    Bpp1 = 1,
-    Bpp2 = 2,
-    Bpp4 = 4,
-    Bpp8 = 8,
-}
-
-impl FramebufferFormat {
-    pub const fn pixels_per_byte(self) -> u8 {
-        8 / self as u8
-    }
-
-    pub const fn mask(self) -> u8 {
-        ((1u16 << self as u8) - 1) as u8
-    }
-}
+use crate::{
+    PixelFormat,
+    geometry::{Point, Rectangle, Size},
+};
 
 pub struct FrameBuffer {
-    format: FramebufferFormat,
+    format: PixelFormat,
     width: u16,
     height: u16,
-    data: Vec<u8>,
+    pub data: Vec<u8>,
     clip: Rectangle,
 }
 
 impl FrameBuffer {
-    pub fn new(width: u16, height: u16, format: FramebufferFormat) -> Self {
+    pub fn new(width: u16, height: u16, format: PixelFormat) -> Self {
         let pixels = width as usize * height as usize;
         let ppb = format.pixels_per_byte();
         let bytes = pixels.div_ceil(ppb.into());
@@ -105,7 +89,7 @@ mod tests {
 
     #[test]
     fn bpp1() {
-        let mut fb = FrameBuffer::new(8, 1, FramebufferFormat::Bpp1);
+        let mut fb = FrameBuffer::new(8, 1, PixelFormat::Bpp1);
 
         fb.set_pixel(0, 0, 1);
         fb.set_pixel(1, 0, 0);
@@ -120,7 +104,7 @@ mod tests {
 
     #[test]
     fn bpp2() {
-        let mut fb = FrameBuffer::new(4, 1, FramebufferFormat::Bpp2);
+        let mut fb = FrameBuffer::new(4, 1, PixelFormat::Bpp2);
 
         fb.set_pixel(0, 0, 0);
         fb.set_pixel(1, 0, 1);
@@ -135,7 +119,7 @@ mod tests {
 
     #[test]
     fn bpp4() {
-        let mut fb = FrameBuffer::new(2, 1, FramebufferFormat::Bpp4);
+        let mut fb = FrameBuffer::new(2, 1, PixelFormat::Bpp4);
 
         fb.set_pixel(0, 0, 0xA);
         fb.set_pixel(1, 0, 0x5);
@@ -146,7 +130,7 @@ mod tests {
 
     #[test]
     fn bpp8() {
-        let mut fb = FrameBuffer::new(4, 1, FramebufferFormat::Bpp8);
+        let mut fb = FrameBuffer::new(4, 1, PixelFormat::Bpp8);
 
         fb.set_pixel(0, 0, 10);
         fb.set_pixel(1, 0, 20);
@@ -161,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_razyob() {
-        let mut fb = FrameBuffer::new(8, 1, FramebufferFormat::Bpp1);
+        let mut fb = FrameBuffer::new(8, 1, PixelFormat::Bpp1);
 
         for x in 0..8 {
             fb.set_pixel(x, 0, 0);

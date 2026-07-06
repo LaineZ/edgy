@@ -1,7 +1,10 @@
+use embedded_heatshrink::{HSDFinishRes, HSDPollRes, HSDSinkRes, HeatshrinkDecoder};
+
 use crate::{
     font::Font,
     framebuffer::FrameBuffer,
     geometry::{Point, Rectangle},
+    image::Image,
     text::{LayoutOptions, TextLayout},
 };
 
@@ -347,4 +350,84 @@ pub fn text_advanced(
     crate::text::layout_bounds(font, bounds, text, options, |pos, glyph| {
         crate::text::draw_glyph(fb, pos, font, glyph, color);
     })
+}
+
+pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
+    if !image.compress {
+        for x in 0..image.width {
+            for y in 0..image.height {
+                fb.set_pixel(
+                    (position.x + x as i32) as u16,
+                    (position.y + y as i32) as u16,
+                    image.get_pixel(x, y),
+                );
+            }
+        }   
+    } else {
+        let mut pixel = 0usize;
+        let mut decoder = HeatshrinkDecoder::new(32, 8, 4).unwrap();
+        let mut input = image.bitmap;
+        let mut buf: [u8; 32] = [0; 32];
+        let mut decoded = 0;
+        loop {
+            if !input.is_empty() {
+                match decoder.sink(input) {
+                    HSDSinkRes::Ok(n) => {
+                        input = &input[n..];
+                    }
+                    HSDSinkRes::Full => {
+                    }
+                    e => panic!("{e:?}"),
+                }
+            }
+
+            loop {
+                match decoder.poll(&mut buf) {
+                    HSDPollRes::More(n) => {
+                        for byte in &buf[..n] {
+                            for i in 0..image.format.pixels_per_byte() {
+                                if pixel >= image.width as usize * image.height as usize { break; }
+                                let value = image.format.unpack(*byte, i);
+                                let x = pixel % image.width as usize; 
+                                let y = pixel / image.width as usize;
+
+                                fb.set_pixel( (position.x + x as i32) as u16, (position.y + y as i32) as u16, value);
+
+                                pixel += 1;
+                            }
+                        }
+                        decoded += n;
+                    }
+                    HSDPollRes::Empty(n) => {
+                        for byte in &buf[..n] {
+                            for i in 0..image.format.pixels_per_byte() {
+                                if pixel >= image.width as usize * image.height as usize { break; }
+                                let value = image.format.unpack(*byte, i);
+                                let x = pixel % image.width as usize; 
+                                let y = pixel / image.width as usize;
+
+                                fb.set_pixel( (position.x + x as i32) as u16, (position.y + y as i32) as u16, value);
+
+                                pixel += 1;
+                            }
+                        }
+                        decoded += n;
+                        break;
+                    }
+                    
+                    e => panic!("{e:?}"),
+                }
+            }
+
+
+            if input.is_empty() {
+                match decoder.finish() {
+                    HSDFinishRes::Done => break,
+                    _ => {}
+                }
+            }
+        }
+
+        println!("{}", decoded);
+    }
 }

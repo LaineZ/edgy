@@ -1,7 +1,8 @@
 // Adapted from embedded-graphics with minor modifications.
 
 use core::{
-    cmp::min, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, RangeInclusive, Sub, SubAssign},
+    cmp::min,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, RangeInclusive, Sub, SubAssign},
 };
 
 use crate::Fixed;
@@ -40,7 +41,6 @@ impl Point<i32> {
         Point::new(self.x - width, self.y - height)
     }
 
-    
     /// Returns the componentwise minimum of two `Point`s
     pub fn component_min(self, other: Self) -> Self {
         Self::new(self.x.min(other.x), self.y.min(other.y))
@@ -339,7 +339,6 @@ fn overlaps(first: RangeInclusive<i32>, second: RangeInclusive<i32>) -> bool {
         || second.contains(first.end())
         || first.start() < second.start() && first.end() > second.end()
 }
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rectangle {
