@@ -8,10 +8,7 @@ use image::{RgbImage};
 use crate::fonts::unscii::UNSCII;
 
 pub mod fonts;
-pub mod cube;
-pub mod test;
-pub mod test_ega;
-pub mod cube_raw;
+pub mod transparent_gradient;
 
 fn basic_test(fb: &mut FrameBuffer) {
     // background
@@ -81,9 +78,7 @@ fn basic_test(fb: &mut FrameBuffer) {
 }
 
 fn image_test(fb: &mut FrameBuffer) {
-    draw::image(fb, Point::new(0, 0), &cube_raw::CUBE_RAW);
-    draw::image(fb, Point::new(130, 0), &cube::CUBE);
-    draw::image(fb, Point::new(0, 0), &test_ega::TEST_EGA);
+    draw::image(fb, Point::new(0, 0), &transparent_gradient::TRANSPARENT_GRADIENT);
 }
 
 fn clipping_test(fb: &mut FrameBuffer) {

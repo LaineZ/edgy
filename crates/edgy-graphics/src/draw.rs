@@ -369,12 +369,16 @@ fn blit_bytes(
 
             let x = *pixel % image.width as usize;
             let y = *pixel / image.width as usize;
-
-            fb.set_pixel(
-                (position.x + x as i32) as u16,
-                (position.y + y as i32) as u16,
-                value,
-            );
+            
+            let transparent = image.is_transparent(x as u16, y as u16);
+            
+            if !transparent {
+                fb.set_pixel(
+                    (position.x + x as i32) as u16,
+                    (position.y + y as i32) as u16,
+                    value,
+                );   
+            }
 
             *pixel += 1;
         }

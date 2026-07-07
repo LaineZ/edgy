@@ -1,8 +1,9 @@
 use std::io::Write as IoWrite;
 use std::{fs::File, path::PathBuf};
 
-use edgy_graphics::{PixelFormat, framebuffer};
+use edgy_graphics::PixelFormat;
 use edgy_graphics::geometry::Size;
+use image::GenericImageView;
 use owo_colors::OwoColorize;
 use std::fmt::Write;
 use clap::{Parser, ValueEnum};
@@ -44,6 +45,9 @@ struct Args {
     /// Enable image dithering
     #[arg(short, long, default_value_t = false)]
     dither: bool,
+    /// Enable transparency saving
+    #[arg(short, long, default_value_t = false)]
+    transparency: bool,
     /// Exclude palette indexes from using when converting image.
     #[arg(long, value_delimiter = ' ')]
     exclude_indexes: Vec<u8>,
@@ -171,8 +175,8 @@ fn main() {
     }
 }
 
-fn generate_const_data(out: &mut String, data: &[u8]) {
-    writeln!(out, "const BITMAP: [u8; {}] = [", data.len()).unwrap();
+fn generate_const_data(out: &mut String, const_name: &str, data: &[u8]) {
+    writeln!(out, "const {}: [u8; {}] = [", const_name, data.len()).unwrap();
     for chunk in data.chunks(32) {
         out.push_str("    ");
         for b in chunk {
@@ -206,7 +210,23 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
 
     let size = Size::new(image.width(), image.height());
     let mut format = PixelFormat::Bpp1;
-    let mut framebuffer: FrameBuffer;
+    let mut image_output_framebuffer: FrameBuffer;
+    let mut alpha_value = "None";
+
+    if args.transparency && image.has_alpha() {
+         let mut alpha_output_framebuffer: FrameBuffer = FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp1);   
+        
+        for x in 0..size.width {
+            for y in 0..size.height {
+                let pixel = image.get_pixel(x, y);
+                alpha_output_framebuffer.set_pixel(x as u16, y as u16, u8::from(pixel[0] >= 128));
+            }
+        }
+        
+        let data = &alpha_output_framebuffer.data;
+        generate_const_data(&mut out, "ALPHA", data);
+        alpha_value = "Some(&ALPHA)";
+    }
     
     if let Some(palette_path) = args.palette {
         let palette = Palette::from_file(&palette_path)?;
@@ -216,21 +236,24 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
             imageops::dither(&mut image_buffer, &palette);   
         }
 
-        framebuffer = FrameBuffer::new(size.width as u16, size.height as u16, format);
+        image_output_framebuffer = FrameBuffer::new(size.width as u16, size.height as u16, format);
 
         for (x, y, pixel) in image_buffer.enumerate_pixels() {
             let color = Rgb::<u8>::from(pixel.0);
             let index = palette.index_of(&color);
-            framebuffer.set_pixel(x as u16, y as u16, index as u8);
+            image_output_framebuffer.set_pixel(x as u16, y as u16, index as u8);
         }
     } else {        
         // 1 bit
         let grayscale = image.to_luma8();
+        let grayscale_alpha = image.to_luma_alpha8();
+        
         let mut grayscale_buffer = ImageBuffer::from(grayscale);
         if args.dither {
             imageops::dither(&mut grayscale_buffer, &BiLevel);   
         }
-        framebuffer = FrameBuffer::new(
+        
+        image_output_framebuffer = FrameBuffer::new(
             size.width as u16,
             size.height as u16,
             edgy_graphics::PixelFormat::Bpp1,
@@ -238,23 +261,23 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
         
         for (x, y, pixel) in grayscale_buffer.enumerate_pixels() {
             if pixel[0] >= 128 {
-                framebuffer.set_pixel(x as u16, y as u16, 1);
+                image_output_framebuffer.set_pixel(x as u16, y as u16, 1);
             }
         }
     }
 
-    let data_size = &framebuffer.data.len();
+    let data_size = &image_output_framebuffer.data.len();
     if !args.compress {
-        generate_const_data(&mut out, &framebuffer.data);   
+        generate_const_data(&mut out, "BITMAP", &image_output_framebuffer.data);   
     } else {
         println!("Compressing: {data_size} bytes...");
-        if let Some(compressed_data) = compress(&framebuffer.data) {
-            generate_const_data(&mut out, &compressed_data);
+        if let Some(compressed_data) = compress(&image_output_framebuffer.data) {
+            generate_const_data(&mut out, "BITMAP", &compressed_data);
             println!("Compressed size {} bytes", &compressed_data.len());
         } else {
             eprintln!("{}", "Compression is retarded - writting with disabled compression...".bold().yellow());
             enable_compression = false;
-            generate_const_data(&mut out, &framebuffer.data);   
+            generate_const_data(&mut out, "BITMAP", &image_output_framebuffer.data);   
         }
     }
 
@@ -263,9 +286,10 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
         width: {},
         height: {},
         format: PixelFormat::{:?},
+        alpha: {},
         compress: {}
 }};", 
-    stem.to_uppercase(), size.width, size.height, format, enable_compression.to_string())?;
+    stem.to_uppercase(), size.width, size.height, format, alpha_value, enable_compression.to_string())?;
 
     let mut file = File::create(args.output.clone()).unwrap();
     file.write_all(&out.as_bytes()).unwrap();
