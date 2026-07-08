@@ -246,7 +246,6 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
     } else {        
         // 1 bit
         let grayscale = image.to_luma8();
-        let grayscale_alpha = image.to_luma_alpha8();
         
         let mut grayscale_buffer = ImageBuffer::from(grayscale);
         if args.dither {

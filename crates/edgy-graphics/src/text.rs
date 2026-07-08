@@ -34,10 +34,21 @@ pub enum Wrap {
     Word,
 }
 
+#[derive(Clone, Copy)]
 pub struct LayoutOptions {
     pub wrap: Wrap,
     pub horizontal: HorizontalAlign,
     pub vertical: VerticalAlign,
+}
+
+impl Default for LayoutOptions {
+    fn default() -> Self {
+        Self {
+            wrap: Wrap::None,
+            horizontal: HorizontalAlign::Left,
+            vertical: VerticalAlign::Top,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -260,6 +271,7 @@ where
 
     // Alignment
     let text_height = lines.len() as i32 * font.line_height as i32;
+    let text_width = lines.iter().map(|l| l.width).max().unwrap_or(0);
 
     let y_offset = match options.vertical {
         VerticalAlign::Top => 0,
@@ -290,6 +302,6 @@ where
     TextLayout {
         cursor,
         lines: lines.len() as u16,
-        bounding_box: bounds,
+        bounding_box: Rectangle::new(bounds.top_left, Size::new(text_width as u32, text_height as u32)),
     }
 }

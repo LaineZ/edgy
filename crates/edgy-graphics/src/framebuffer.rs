@@ -41,7 +41,7 @@ impl FrameBuffer {
     }
 
     pub fn set_pixel(&mut self, x: u16, y: u16, value: u8) {
-        if x > self.width() || y > self.height() {
+        if x >= self.width() || y >= self.height() {
             return;
         }
 
@@ -62,6 +62,17 @@ impl FrameBuffer {
         self.data[byte] |= (value & self.format.mask()) << shift;
     }
 
+    pub fn resize(&mut self, new_size: Size) {
+        self.width = new_size.width as u16;
+        self.height = new_size.height as u16;
+        self.clip = Rectangle::new(Point::<i32>::zero(), new_size);
+
+        let pixels = self.width as usize * self.height as usize;
+        let ppb = self.format.pixels_per_byte();
+        let bytes = pixels.div_ceil(ppb.into());
+        self.data = vec![0; bytes];
+    }
+
     pub fn clear(&mut self) {
         self.data.fill(0);
     }
@@ -72,6 +83,10 @@ impl FrameBuffer {
 
     pub fn height(&self) -> u16 {
         self.height
+    }
+
+    pub fn bounding_box(&self) -> Rectangle {
+        Rectangle::new(Point::<i32>::zero(), Size::new(self.width as u32, self.height as u32))
     }
 
     pub fn with_clip<R>(&mut self, clip: Rectangle, f: impl FnOnce(&mut Self) -> R) -> R {

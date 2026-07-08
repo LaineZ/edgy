@@ -1,0 +1,9 @@
+[package]
+name = "edgy-desktop"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+softbuffer = "0.4.8"
+winit = "0.30.13"
+edgy-ui = { path = "../edgy-ui" }
