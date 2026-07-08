@@ -1,9 +1,7 @@
-#![feature(duration_millis_float)]
-
 use std::time::{Duration, Instant};
 
 use edgy_desktop::{SoftbufferWindow, WindowProperties, fonts::unscii::UNSCII};
-use edgy_ui::{edgy_graphics::parse_palette_rgb888, widgets::{WidgetObject, label::TypographyLabel}};
+use edgy_ui::{edgy_graphics::parse_palette_rgb888, widgets::{label::{typography_label}}};
 
 
 const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
@@ -25,14 +23,7 @@ fn main() {
 
         ctx.framebuffer.clear();
 
-        let root = WidgetObject::new(Box::new(
-            TypographyLabel::new(
-                UNSCII,
-                format!("FPS {}", fps),
-                1
-            )
-        ));
-
+        let root = typography_label(&UNSCII, format!("FPS: {}", fps), 1);
         ctx.update(root);
     }).unwrap();
 }

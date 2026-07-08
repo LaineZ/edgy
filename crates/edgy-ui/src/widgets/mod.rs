@@ -1,13 +1,20 @@
-use alloc::boxed::Box;
-use edgy_graphics::geometry::{Rectangle, Size};
+use edgy_graphics::{framebuffer::{self, FrameBuffer}, geometry::{Rectangle, Size}};
 
-use crate::UiContext;
+use crate::{Event, UiContext};
 
 pub mod root_layout;
 pub mod label;
 
-#[allow(unused_variables)]
-pub trait Widget<'a, M>: 'a {
+pub trait Behavior {
+    type State;
+
+    fn handle(&mut self, event: Event);
+    fn state(&self) -> Self::State;
+}
+
+pub trait View {
+    type State;
+
     /// Returns the size the widget wants. use for auto-calculate in layouts. Default implementation occupies all available space
     fn measure(&mut self, hint: Size) -> Size {
         hint
@@ -26,39 +33,60 @@ pub trait Widget<'a, M>: 'a {
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
     fn layout(&mut self, _rect: Rectangle) {}
 
-    /// Widget drawing logic
-    fn draw(&mut self, ui: &mut UiContext<M>, rect: Rectangle);
+    fn draw(
+        &self,
+        framebuffer: &mut FrameBuffer,
+        rect: Rectangle,
+        state: &Self::State
+    );
 }
 
-
-pub struct WidgetObject<'a, M> {
-    pub widget: Box<dyn Widget<'a, M>>,
+pub struct WidgetObject<B, V>
+where
+    B: Behavior,
+    V: View<State = B::State>,
+{
+    behavior: B,
+    view: V,
 }
 
-impl<'a, M: 'a> WidgetObject<'a, M> {
-    pub fn new(widget: Box<dyn Widget<'a, M>>) -> Self {
+impl<B, V> WidgetObject<B, V> where B: Behavior, V: View<State = B::State> {
+    pub fn new(behavior: B, view: V) -> Self {
        Self {
-           widget
+           behavior, view
        } 
     }
     
     pub fn measure(&mut self, hint: Size) -> Size {
-        self.widget.measure(hint)
+        self.view.measure(hint)
     }
 
     pub fn min_size(&mut self) -> Size {
-        self.widget.min_size()
+        self.view.min_size()
     }
 
     pub fn max_size(&mut self) -> Size {
-        self.widget.min_size()
+        self.view.min_size()
     }
 
     pub fn layout(&mut self, rect: Rectangle) {
-        self.widget.layout(rect);
+        self.view.layout(rect);
     }
 
-    pub fn draw(&mut self, ui: &mut crate::UiContext<M>, rect: Rectangle) {
-        self.widget.draw(ui, rect);
+    pub fn draw(&self, fb: &mut FrameBuffer, rect: Rectangle) {
+        self.view.draw(fb, rect, &self.behavior.state());
+    }
+}
+
+/// No behavior for widget
+pub struct NullBehavior;
+
+impl Behavior for NullBehavior {
+    type State = ();
+
+    fn handle(&mut self, _event: Event) {}
+
+    fn state(&self) -> Self::State {
+        ()
     }
 }

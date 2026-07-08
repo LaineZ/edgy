@@ -6,11 +6,13 @@ use alloc::vec::Vec;
 use edgy_graphics::{framebuffer::FrameBuffer};
 pub use edgy_graphics; 
 
-use crate::widgets::{Widget, WidgetObject, root_layout::{Anchor, RootLayout}};
+use crate::widgets::{Behavior, View, WidgetObject, root_layout::{Anchor, RootLayout}};
 
 pub mod widgets;
 
-pub type NodeId = usize;
+pub enum Event {
+    
+}
 
 pub trait EdgyApplication {
     type State;
@@ -32,7 +34,7 @@ pub struct UiContext<M> {
     pub framebuffer: FrameBuffer,
 }
 
-impl<'a, M: 'a> UiContext<M> {
+impl<'a, M> UiContext<M> {
     pub fn new(framebuffer: FrameBuffer) -> Self {
         Self {
             messages: Vec::new(),
@@ -40,7 +42,7 @@ impl<'a, M: 'a> UiContext<M> {
         }
     }
 
-    pub fn update(&mut self, root: WidgetObject<'a, M>) {
+    pub fn update<B, V>(&mut self, root: WidgetObject<B, V>) where B: Behavior, V: View<State = B::State>, {
         let bounds = self.framebuffer.bounding_box();
 
 
@@ -48,6 +50,6 @@ impl<'a, M: 'a> UiContext<M> {
         root_layout.add(root, bounds, Anchor::TopLeft);
         root_layout.measure(bounds.size);
         root_layout.layout(bounds);
-        root_layout.draw(self, bounds);
+        root_layout.draw(&mut self.framebuffer, bounds, &());
     }
 }

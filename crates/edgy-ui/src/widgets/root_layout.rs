@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
-use edgy_graphics::geometry::{Rectangle, Size};
+use edgy_graphics::{framebuffer::FrameBuffer, geometry::{Rectangle, Size}};
 
-use crate::widgets::{Widget, WidgetObject};
+use crate::widgets::{Behavior, View, WidgetObject};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Anchor {
@@ -9,30 +9,32 @@ pub enum Anchor {
     Center,
 }
 
-struct WidgetAndPosition<'a, M>
+struct WidgetAndPosition<B: Behavior, V: View<State = B::State>>
 {
-    widget_object: WidgetObject<'a, M>,
+    widget_object: WidgetObject<B, V>,
     dimensions: Rectangle,
     anchor: Anchor,
 }
 
-pub struct RootLayout<'a, M> {
-    children: Vec<WidgetAndPosition<'a, M>>
+pub struct RootLayout<B: Behavior, V: View<State = B::State>> {
+    children: Vec<WidgetAndPosition<B, V>>
 }
 
-impl<'a, M> RootLayout<'a, M> {
+impl<B, V> RootLayout<B, V> where B: Behavior, V: View<State = B::State> {
     pub fn new() -> Self {
         Self {
             children: Vec::new()
         }
     }
 
-    pub fn add(&mut self, widget: WidgetObject<'a, M>, bounds: Rectangle, anchor: Anchor) {
+    pub fn add(&mut self, widget: WidgetObject<B, V>, bounds: Rectangle, anchor: Anchor) {
         self.children.push(WidgetAndPosition { widget_object: widget, dimensions: bounds, anchor });
     }
 }
 
-impl<'a, M: 'a> Widget<'a, M> for RootLayout<'a, M> {
+impl<B, V> View for RootLayout<B, V> where B: Behavior, V: View<State = B::State>  {
+    type State = ();
+    
     fn measure(&mut self, _hint: Size) -> Size {
         let mut size = Size::zero();
 
@@ -47,7 +49,6 @@ impl<'a, M: 'a> Widget<'a, M> for RootLayout<'a, M> {
         size
     }
 
-    
     fn layout(&mut self, rect: Rectangle) { 
         for child in self.children.iter_mut() {
             match child.anchor {
@@ -65,9 +66,9 @@ impl<'a, M: 'a> Widget<'a, M> for RootLayout<'a, M> {
         }
     }
 
-    fn draw(&mut self, ui: &mut crate::UiContext<M>, rect: Rectangle) {
-        for child in self.children.iter_mut() {
-            child.widget_object.draw(ui, rect);
+    fn draw(&self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &()) {
+        for child in self.children.iter() {
+            child.widget_object.draw(framebuffer, rect);
         }
     }
 } 
