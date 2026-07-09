@@ -20,12 +20,12 @@ pub struct TypographyLabel<'a, S> {
 }
 
 impl<'a, S> TypographyLabel<'a, S> {
-    pub fn new<ST: Into<String>>(font: &'a Font<'a>, text: ST, color: u8) -> Self {
+    pub fn new<ST: Into<String>>(font: &'a Font<'a>, text: ST, options: LayoutOptions, color: u8) -> Self {
         Self {
             text: text.into(),
             font,
             color,
-            options: LayoutOptions::default(),
+            options,
             _state: PhantomData::<S>::default(),
         }
     }
@@ -60,7 +60,8 @@ impl<'a, S> View for TypographyLabel<'a, S> {
 pub fn typography_label<'a>(
     font: &'a Font<'a>,
     text: String,
+    options: LayoutOptions,
     color: u8,
 ) -> WidgetObject<NullBehavior, TypographyLabel<'a, ()>> {
-    WidgetObject::new(NullBehavior, TypographyLabel::new(font, text, color))
+    WidgetObject::new(NullBehavior, TypographyLabel::new(font, text, options, color))
 }

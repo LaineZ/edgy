@@ -4,7 +4,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use edgy_graphics::{framebuffer::FrameBuffer, geometry::Rectangle};
-pub use edgy_graphics; 
+pub use edgy_graphics as graphics;
 
 use crate::widgets::{Behavior, View, WidgetObject, root_layout::{Anchor, RootLayout}};
 

@@ -75,7 +75,7 @@ fn main() {
     if !chars_vec.contains(&'�') {
         chars_vec.push('�');
     }
-
+    chars_vec.sort();
     writeln!(out, "const GLYPHS: [Glyph; {}] = [", chars_vec.len()).unwrap();
 
     for char in chars_vec {
@@ -108,8 +108,8 @@ fn main() {
         ).unwrap();
 
         println!(
-            "{}: offset={}, {}x{} advance width: {}",
-            char, offset, metrics.width, metrics.height, metrics.advance_width
+            "{}: offset={}, {}x{} advance width: {} codepoint: {}",
+            char, offset, metrics.width, metrics.height, metrics.advance_width, char as u32
         );
     }
     out.push_str("];\n\n");

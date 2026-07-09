@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, rc::Rc, time::Instant};
 
-use edgy_ui::{UiContext, edgy_graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::Size}};
+use edgy_ui::{UiContext, graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::Size}};
 use softbuffer::Surface;
 use winit::{application::ApplicationHandler, dpi::PhysicalSize, error::EventLoopError, event::WindowEvent, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::{Window, WindowId}};
 

@@ -1,4 +1,4 @@
-use edgy_ui::edgy_graphics::font::{Font, Glyph};
+use edgy_ui::graphics::font::{Font, Glyph};
 
 const GLYPHS: [Glyph; 130] = [
     Glyph { character: 'a', offset: 0, width: 6, height: 16, x_offset: 1, y_offset: 3, advance_width: 8 },

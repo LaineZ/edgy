@@ -59,7 +59,7 @@ struct Line<'a> {
 
 impl Font<'_> {
     pub fn glyph(&self, ch: char) -> Option<&Glyph> {
-        self.glyphs.iter().find(|g| g.character == ch)
+        self.glyphs.binary_search_by_key(&ch, |g| g.character).ok().map(|i| &self.glyphs[i])
     }
 
     pub fn bitmap<'a>(&'a self, glyph: &Glyph) -> &'a [u8] {
