@@ -1,23 +1,11 @@
+use alloc::{boxed::Box, vec::Vec};
 use edgy_graphics::{framebuffer::{self, FrameBuffer}, geometry::{Rectangle, Size}};
 
 use crate::{Event, UiContext};
 
 pub mod root_layout;
 pub mod label;
-
-pub trait Widget {
-    fn measure(&mut self, hint: Size) -> Size;
-
-    fn layout(&mut self, rect: Rectangle);
-
-    fn draw(
-        &mut self,
-        framebuffer: &mut FrameBuffer,
-        rect: Rectangle,
-    );
-
-    fn handle(&mut self, event: Event);
-}
+pub mod linear_layout;
 
 pub trait Behavior {
     type State;
@@ -55,6 +43,15 @@ pub trait View {
     );
 }
 
+pub trait Widget {
+    fn measure(&mut self, hint: Size) -> Size;
+    fn layout(&mut self, rect: Rectangle);
+    fn draw(&mut self, fb: &mut FrameBuffer);
+    fn handle(&mut self, event: Event);
+    fn rect(&self) -> Rectangle;
+    fn set_rect(&mut self, rect: Rectangle);
+}
+
 pub struct WidgetObject<B, V>
 where
     B: Behavior,
@@ -62,12 +59,14 @@ where
 {
     behavior: B,
     view: V,
+    computed_rect: Rectangle,
 }
 
 impl<B, V> WidgetObject<B, V> where B: Behavior, V: View<State = B::State> {
     pub fn new(behavior: B, view: V) -> Self {
        Self {
-           behavior, view
+           behavior, view,
+           computed_rect: Rectangle::zero(),
        } 
     }
 }
@@ -83,23 +82,32 @@ where
     }
 
     fn layout(&mut self, rect: Rectangle) {
+        self.set_rect(rect);
         self.view.layout(rect, &self.behavior.state());
     }
 
     fn draw(
         &mut self,
         fb: &mut FrameBuffer,
-        rect: Rectangle,
     ) {
+        let state = self.behavior.state();
         self.view.draw(
             fb,
-            rect,
-            &self.behavior.state(),
+            self.rect(),
+            &state,
         );
     }
 
     fn handle(&mut self, event: Event) {
         self.behavior.handle(event);
+    }
+
+    fn set_rect(&mut self, rect: Rectangle) {
+        self.computed_rect = rect;
+    }
+
+    fn rect(&self) -> Rectangle {
+        self.computed_rect
     }
 }
 
@@ -114,4 +122,17 @@ impl Behavior for NullBehavior {
     fn state(&self) -> &Self::State {
         &()
     }
+}
+
+pub struct Ui<'a> {
+    children: &'a mut Vec<Box<dyn Widget>>,
+}
+
+impl<'a> Ui<'a> {
+    pub fn add(&mut self, widget: Box<dyn Widget>)
+    {
+        self.children.push(widget);
+    }
+
+    // TODO: Add more widgets here
 }

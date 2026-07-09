@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use alloc::string::String;
+use alloc::{boxed::Box, string::String};
 use edgy_graphics::{
     draw,
     font::Font,

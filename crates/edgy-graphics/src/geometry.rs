@@ -4,6 +4,7 @@ use core::{
     cmp::min,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, RangeInclusive, Sub, SubAssign},
 };
+use std::ops::Index;
 
 use crate::Fixed;
 
@@ -208,7 +209,7 @@ impl DivAssign<i32> for Point {
     }
 }
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct Size {
     pub width: u32,
     pub height: u32,
