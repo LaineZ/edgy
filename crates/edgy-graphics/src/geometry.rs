@@ -401,6 +401,10 @@ impl Rectangle {
         }
     }
 
+    pub fn top_right(&self) -> Point {
+        Point::new(self.size.width as i32, self.top_left.y)
+    }
+
     /// Return whether the rectangle contains a given point.
     pub fn contains(&self, point: Point) -> bool {
         if point.x >= self.top_left.x && point.y >= self.top_left.y {

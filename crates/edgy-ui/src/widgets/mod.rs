@@ -5,11 +5,25 @@ use crate::{Event, UiContext};
 pub mod root_layout;
 pub mod label;
 
+pub trait Widget {
+    fn measure(&mut self, hint: Size) -> Size;
+
+    fn layout(&mut self, rect: Rectangle);
+
+    fn draw(
+        &self,
+        framebuffer: &mut FrameBuffer,
+        rect: Rectangle,
+    );
+
+    fn handle(&mut self, event: Event);
+}
+
 pub trait Behavior {
     type State;
 
     fn handle(&mut self, event: Event);
-    fn state(&self) -> Self::State;
+    fn state(&self) -> &Self::State;
 }
 
 pub trait View {
@@ -31,7 +45,7 @@ pub trait View {
     }
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
-    fn layout(&mut self, _rect: Rectangle) {}
+    fn layout(&mut self, _rect: Rectangle, state: &Self::State) {}
 
     fn draw(
         &self,
@@ -56,25 +70,36 @@ impl<B, V> WidgetObject<B, V> where B: Behavior, V: View<State = B::State> {
            behavior, view
        } 
     }
-    
-    pub fn measure(&mut self, hint: Size) -> Size {
+}
+
+
+impl<B, V> Widget for WidgetObject<B, V>
+where
+    B: Behavior,
+    V: View<State = B::State>,
+{
+    fn measure(&mut self, hint: Size) -> Size {
         self.view.measure(hint)
     }
 
-    pub fn min_size(&mut self) -> Size {
-        self.view.min_size()
+    fn layout(&mut self, rect: Rectangle) {
+        self.view.layout(rect, &self.behavior.state());
     }
 
-    pub fn max_size(&mut self) -> Size {
-        self.view.min_size()
+    fn draw(
+        &self,
+        fb: &mut FrameBuffer,
+        rect: Rectangle,
+    ) {
+        self.view.draw(
+            fb,
+            rect,
+            &self.behavior.state(),
+        );
     }
 
-    pub fn layout(&mut self, rect: Rectangle) {
-        self.view.layout(rect);
-    }
-
-    pub fn draw(&self, fb: &mut FrameBuffer, rect: Rectangle) {
-        self.view.draw(fb, rect, &self.behavior.state());
+    fn handle(&mut self, event: Event) {
+        self.behavior.handle(event);
     }
 }
 
@@ -86,7 +111,7 @@ impl Behavior for NullBehavior {
 
     fn handle(&mut self, _event: Event) {}
 
-    fn state(&self) -> Self::State {
-        ()
+    fn state(&self) -> &Self::State {
+        &()
     }
 }

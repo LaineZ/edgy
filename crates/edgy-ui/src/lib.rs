@@ -49,7 +49,7 @@ impl<'a, M> UiContext<M> {
         let mut root_layout = RootLayout::new();
         root_layout.add(root, bounds, Anchor::TopLeft);
         root_layout.measure(bounds.size);
-        root_layout.layout(bounds);
+        root_layout.layout(bounds, &());
         root_layout.draw(&mut self.framebuffer, bounds, &());
     }
 }

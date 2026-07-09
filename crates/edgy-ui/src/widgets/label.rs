@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use alloc::string::String;
 use edgy_graphics::{
     draw,
@@ -9,26 +11,28 @@ use edgy_graphics::{
 
 use crate::widgets::{NullBehavior, View, WidgetObject};
 
-pub struct TypographyLabel<'a> {
+pub struct TypographyLabel<'a, S> {
     pub text: String,
     pub font: &'a Font<'a>,
     pub options: LayoutOptions,
     pub color: u8,
+    _state: PhantomData<S>
 }
 
-impl<'a> TypographyLabel<'a> {
-    pub fn new<S: Into<String>>(font: &'a Font<'a>, text: S, color: u8) -> Self {
+impl<'a, S> TypographyLabel<'a, S> {
+    pub fn new<ST: Into<String>>(font: &'a Font<'a>, text: ST, color: u8) -> Self {
         Self {
             text: text.into(),
             font,
             color,
             options: LayoutOptions::default(),
+            _state: PhantomData::<S>::default(),
         }
     }
 }
 
-impl<'a> View for TypographyLabel<'a> {
-    type State = ();
+impl<'a, S> View for TypographyLabel<'a, S> {
+    type State = S;
     fn measure(&mut self, hint: Size) -> Size {
         let bounds = text::layout_bounds(
             &self.font,
@@ -41,7 +45,7 @@ impl<'a> View for TypographyLabel<'a> {
         bounds.bounding_box.size
     }
 
-    fn draw(&self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &()) {
+    fn draw(&self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &Self::State) {
         draw::text_advanced(
             framebuffer,
             rect,
@@ -57,6 +61,6 @@ pub fn typography_label<'a>(
     font: &'a Font<'a>,
     text: String,
     color: u8,
-) -> WidgetObject<NullBehavior, TypographyLabel<'a>> {
+) -> WidgetObject<NullBehavior, TypographyLabel<'a, ()>> {
     WidgetObject::new(NullBehavior, TypographyLabel::new(font, text, color))
 }
