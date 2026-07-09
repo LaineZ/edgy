@@ -3,7 +3,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use edgy_graphics::{framebuffer::FrameBuffer};
+use edgy_graphics::{framebuffer::FrameBuffer, geometry::Rectangle};
 pub use edgy_graphics; 
 
 use crate::widgets::{Behavior, View, WidgetObject, root_layout::{Anchor, RootLayout}};
@@ -43,12 +43,13 @@ impl<'a, M> UiContext<M> {
     }
 
     pub fn update<B, V>(&mut self, root: WidgetObject<B, V>) where B: Behavior, V: View<State = B::State>, {
-        let bounds = self.framebuffer.bounding_box();
+        let fb_bounds = self.framebuffer.bounding_box();
 
 
         let mut root_layout = RootLayout::new();
-        root_layout.add(root, bounds, Anchor::TopLeft);
-        root_layout.measure(bounds.size);
+        root_layout.add(root, fb_bounds, Anchor::TopLeft);
+        let size = root_layout.measure(fb_bounds.size);
+        let bounds = Rectangle::new(fb_bounds.top_left, size);
         root_layout.layout(bounds, &());
         root_layout.draw(&mut self.framebuffer, bounds, &());
     }

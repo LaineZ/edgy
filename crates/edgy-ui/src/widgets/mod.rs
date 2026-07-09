@@ -11,7 +11,7 @@ pub trait Widget {
     fn layout(&mut self, rect: Rectangle);
 
     fn draw(
-        &self,
+        &mut self,
         framebuffer: &mut FrameBuffer,
         rect: Rectangle,
     );
@@ -48,7 +48,7 @@ pub trait View {
     fn layout(&mut self, _rect: Rectangle, state: &Self::State) {}
 
     fn draw(
-        &self,
+        &mut self,
         framebuffer: &mut FrameBuffer,
         rect: Rectangle,
         state: &Self::State
@@ -87,7 +87,7 @@ where
     }
 
     fn draw(
-        &self,
+        &mut self,
         fb: &mut FrameBuffer,
         rect: Rectangle,
     ) {

@@ -45,7 +45,7 @@ impl<'a, S> View for TypographyLabel<'a, S> {
         bounds.bounding_box.size
     }
 
-    fn draw(&self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &Self::State) {
+    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &Self::State) {
         draw::text_advanced(
             framebuffer,
             rect,

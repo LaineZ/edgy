@@ -75,8 +75,8 @@ impl<'a> View for RootLayout<'a> {
         }
     }
 
-    fn draw(&self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &()) {
-        for child in self.children.iter() {
+    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &()) {
+        for child in self.children.iter_mut() {
             child.widget.draw(framebuffer, rect);
         }
     }
