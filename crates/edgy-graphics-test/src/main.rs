@@ -1,9 +1,14 @@
 #![allow(dead_code)]
 
 use edgy_graphics::{
-    PixelFormat, draw::{self, BasicStyle}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, parse_palette_rgb888, polygon::{PolygonData, fill_polygon},
+    PixelFormat,
+    draw::{self, BasicStyle},
+    framebuffer::FrameBuffer,
+    geometry::{Point, Rectangle, Size},
+    parse_palette_rgb888,
+    polygon::{PolygonData, fill_polygon},
 };
-use image::{RgbImage};
+use image::RgbImage;
 
 use crate::fonts::unscii::UNSCII;
 
@@ -29,13 +34,7 @@ fn basic_test(fb: &mut FrameBuffer) {
 
     // lines
     for i in 0..16 {
-        draw::line(
-            fb,
-            Point::new(10, 10),
-            Point::new(160 + i * 8, 120),
-            2,
-            1,
-        );
+        draw::line(fb, Point::new(10, 10), Point::new(160 + i * 8, 120), 2, 1);
     }
 
     // thick lines
@@ -67,40 +66,36 @@ fn basic_test(fb: &mut FrameBuffer) {
     }
 
     // thick circles
-    draw::circle(
-        fb,
-        Point::new(250, 160),
-        40,
-        BasicStyle::with_border(3, 6),
-    );
+    draw::circle(fb, Point::new(250, 160), 40, BasicStyle::with_border(3, 6));
 
     draw::circle(fb, Point::new(250, 160), 20, BasicStyle::with_fill(5));
 }
 
 fn image_test(fb: &mut FrameBuffer) {
-    draw::image(fb, Point::new(0, 0), &transparent_gradient::TRANSPARENT_GRADIENT);
+    draw::image(
+        fb,
+        Point::new(0, 0),
+        &transparent_gradient::TRANSPARENT_GRADIENT,
+    );
 }
 
 fn clipping_test(fb: &mut FrameBuffer) {
-    let clipping = Rectangle::new(
-        Point::new(10, 50),
-        Size::new(120, 80),
-    );
-    
+    let clipping = Rectangle::new(Point::new(10, 50), Size::new(120, 80));
+
     let scroll_y = 100;
-    
+
     fb.with_clip(clipping, |fb| {
         for i in 0..1000 {
             let y = clipping.top_left.y + (i as i32 * 16) - scroll_y;
-    
+
             let item = Rectangle::new(
                 Point::new(clipping.top_left.x, y),
                 Size::new(clipping.size.width, 16),
             );
-    
+
             draw::rect(fb, item, BasicStyle::with_fill(1));
             draw::rect(fb, item, BasicStyle::with_border(4, 1));
-    
+
             draw::text(
                 fb,
                 item.top_left + Point::new(4, 0),
@@ -147,9 +142,9 @@ fn main() {
     for color in COLORS {
         println!("{:#08x}", color);
     }
-    
+
     image_test(&mut fb);
-    
+
     for y in 0..fb.height() {
         for x in 0..fb.width() {
             let color = COLORS[fb.get_pixel(x, y) as usize];

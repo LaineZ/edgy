@@ -59,7 +59,7 @@ impl<'a> View for RootLayout<'a> {
         size
     }
 
-    fn layout(&mut self, rect: Rectangle, _state: &()) -> Rectangle {
+    fn layout(&mut self, rect: Rectangle, _state: &()) {
         for child in self.children.iter_mut() {
             match child.anchor {
                 Anchor::TopLeft => {
@@ -73,8 +73,6 @@ impl<'a> View for RootLayout<'a> {
                 }
             }
         }
-
-        rect
     }
 
     fn draw(&mut self, framebuffer: &mut FrameBuffer, _rect: Rectangle, _state: &()) {

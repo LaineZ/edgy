@@ -38,7 +38,11 @@ fn make_edge(a: Point, b: Point) -> Option<(i32, Edge)> {
     ))
 }
 
-pub fn fill_polygon<const N: usize>(fb: &mut FrameBuffer, store: &mut PolygonData<N>, color: Color) {
+pub fn fill_polygon<const N: usize>(
+    fb: &mut FrameBuffer,
+    store: &mut PolygonData<N>,
+    color: Color,
+) {
     if store.points.len() < 3 {
         return;
     }

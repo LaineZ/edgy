@@ -103,11 +103,7 @@ impl<'a, S> View for LinearLayout<S> {
         }
     }
 
-    fn layout(
-        &mut self,
-        rect: edgy_graphics::geometry::Rectangle,
-        state: &Self::State,
-    ) -> Rectangle {
+    fn layout(&mut self, rect: edgy_graphics::geometry::Rectangle, state: &Self::State) {
         let total_gap = self.gap * self.children.len().saturating_sub(1) as u32;
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
@@ -241,7 +237,6 @@ impl<'a, S> View for LinearLayout<S> {
                 }
             }
         }
-        rect
     }
 
     fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, state: &Self::State) {

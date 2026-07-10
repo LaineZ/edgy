@@ -86,7 +86,10 @@ impl FrameBuffer {
     }
 
     pub fn bounding_box(&self) -> Rectangle {
-        Rectangle::new(Point::<i32>::zero(), Size::new(self.width as u32, self.height as u32))
+        Rectangle::new(
+            Point::<i32>::zero(),
+            Size::new(self.width as u32, self.height as u32),
+        )
     }
 
     pub fn with_clip<R>(&mut self, clip: Rectangle, f: impl FnOnce(&mut Self) -> R) -> R {

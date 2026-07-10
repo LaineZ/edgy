@@ -1,11 +1,15 @@
 use alloc::{boxed::Box, vec::Vec};
-use edgy_graphics::{framebuffer::FrameBuffer, geometry::{Rectangle, Size}};
+use edgy_graphics::{
+    draw::{self, BasicStyle},
+    framebuffer::FrameBuffer,
+    geometry::{Rectangle, Size},
+};
 
 use crate::Event;
 
-pub mod root_layout;
 pub mod label;
 pub mod linear_layout;
+pub mod root_layout;
 
 pub trait Behavior {
     type State;
@@ -33,16 +37,9 @@ pub trait View {
     }
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
-    fn layout(&mut self, _rect: Rectangle, _state: &Self::State) -> Rectangle {
-        _rect
-    }
+    fn layout(&mut self, _rect: Rectangle, _state: &Self::State) {}
 
-    fn draw(
-        &mut self,
-        framebuffer: &mut FrameBuffer,
-        rect: Rectangle,
-        state: &Self::State
-    );
+    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, state: &Self::State);
 }
 
 pub trait Widget {
@@ -64,15 +61,19 @@ where
     computed_rect: Rectangle,
 }
 
-impl<B, V> WidgetObject<B, V> where B: Behavior, V: View<State = B::State> {
+impl<B, V> WidgetObject<B, V>
+where
+    B: Behavior,
+    V: View<State = B::State>,
+{
     pub fn new(behavior: B, view: V) -> Self {
-       Self {
-           behavior, view,
-           computed_rect: Rectangle::zero(),
-       } 
+        Self {
+            behavior,
+            view,
+            computed_rect: Rectangle::zero(),
+        }
     }
 }
-
 
 impl<B, V> Widget for WidgetObject<B, V>
 where
@@ -84,20 +85,15 @@ where
     }
 
     fn layout(&mut self, rect: Rectangle) {
-        let modified_rect = self.view.layout(rect, &self.behavior.state());
-        self.set_rect(modified_rect);
+        self.view.layout(rect, &self.behavior.state());
+        self.set_rect(rect);
     }
 
-    fn draw(
-        &mut self,
-        fb: &mut FrameBuffer,
-    ) {
+    fn draw(&mut self, fb: &mut FrameBuffer) {
         let state = self.behavior.state();
-        self.view.draw(
-            fb,
-            self.rect(),
-            &state,
-        );
+        self.view.draw(fb, self.rect(), &state);
+
+        draw::rect(fb, self.computed_rect, BasicStyle::with_border(40, 1));
     }
 
     fn handle(&mut self, event: Event) {
@@ -137,8 +133,7 @@ pub struct Ui<'a> {
 }
 
 impl<'a> Ui<'a> {
-    pub fn add<W: Into<Box<dyn Widget>>>(&mut self, widget: W)
-    {
+    pub fn add<W: Into<Box<dyn Widget>>>(&mut self, widget: W) {
         self.children.push(widget.into());
     }
 

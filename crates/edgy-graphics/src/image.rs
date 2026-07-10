@@ -12,11 +12,11 @@ pub struct Image<'a> {
 impl<'a> Image<'a> {
     pub fn is_transparent(&self, x: u16, y: u16) -> bool {
         if x >= self.width || y >= self.height {
-            return false
+            return false;
         }
-        
+
         let pixel = y as usize * self.width as usize + x as usize;
-        
+
         let ppb = PixelFormat::Bpp1.pixels_per_byte() as usize;
         let bits = PixelFormat::Bpp1 as usize;
 
@@ -24,7 +24,7 @@ impl<'a> Image<'a> {
         let shift = (ppb - 1 - pixel % ppb) * bits;
 
         if let Some(alpha) = self.alpha {
-            ((alpha[byte] >> shift) & PixelFormat::Bpp1.mask()) == 0   
+            ((alpha[byte] >> shift) & PixelFormat::Bpp1.mask()) == 0
         } else {
             false
         }

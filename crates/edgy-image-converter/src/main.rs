@@ -1,17 +1,18 @@
 use std::io::Write as IoWrite;
 use std::{fs::File, path::PathBuf};
 
+use clap::{Parser, ValueEnum};
 use edgy_graphics::PixelFormat;
+use edgy_graphics::framebuffer::FrameBuffer;
 use edgy_graphics::geometry::Size;
+use embedded_heatshrink::{HSEFinishRes, HSEPollRes, HSESinkRes, HeatshrinkEncoder};
 use image::GenericImageView;
+use image::{
+    ImageBuffer, ImageReader, Rgb,
+    imageops::{self, BiLevel, ColorMap},
+};
 use owo_colors::OwoColorize;
 use std::fmt::Write;
-use clap::{Parser, ValueEnum};
-use edgy_graphics::framebuffer::FrameBuffer;
-use embedded_heatshrink::{HSEFinishRes, HSEPollRes, HSESinkRes, HeatshrinkEncoder};
-use image::{ImageBuffer, ImageReader, Rgb,
-    imageops::{self, BiLevel, ColorMap,},
-};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum ImageConvertType {
@@ -68,11 +69,9 @@ impl Palette {
             let color = u32::from_str_radix(hex.trim_start_matches("0x"), 16)?;
             let [b, g, r, _] = color.to_le_bytes();
             colors.push(Rgb::from([r, g, b]));
-        } 
-        
-        Ok(Self {
-            colors
-        })
+        }
+
+        Ok(Self { colors })
     }
 
     fn get_bpp(&self) -> PixelFormat {
@@ -121,7 +120,7 @@ fn compress(data: &[u8]) -> Option<Vec<u8>> {
             HSESinkRes::Ok(n) => input = &input[n..],
             _ => return None,
         }
-        
+
         loop {
             match encoder.poll(&mut tmp) {
                 HSEPollRes::More(n) => {
@@ -194,13 +193,13 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
         .map_err(|op| anyhow::anyhow!("Failed to decode input image: {}", op))?;
 
     let stem = args.output.file_stem().unwrap().to_string_lossy();
-    
+
     if !stem.chars().all(|c| c.is_ascii_alphabetic() || c == '_') {
         return Err(anyhow::anyhow!(
             "Invalid output file name. File name can contain only ASCII letters and `_` characters"
-        ))
+        ));
     }
-    
+
     let mut out = String::new();
     let mut enable_compression = args.compress;
     out.push_str("use edgy_graphics::image::Image;\n");
@@ -214,26 +213,27 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
     let mut alpha_value = "None";
 
     if args.transparency && image.has_alpha() {
-         let mut alpha_output_framebuffer: FrameBuffer = FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp1);   
-        
+        let mut alpha_output_framebuffer: FrameBuffer =
+            FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp1);
+
         for x in 0..size.width {
             for y in 0..size.height {
                 let pixel = image.get_pixel(x, y);
                 alpha_output_framebuffer.set_pixel(x as u16, y as u16, u8::from(pixel[0] >= 128));
             }
         }
-        
+
         let data = &alpha_output_framebuffer.data;
         generate_const_data(&mut out, "ALPHA", data);
         alpha_value = "Some(&ALPHA)";
     }
-    
+
     if let Some(palette_path) = args.palette {
         let palette = Palette::from_file(&palette_path)?;
         format = palette.get_bpp();
         let mut image_buffer = ImageBuffer::from(image);
         if args.dither {
-            imageops::dither(&mut image_buffer, &palette);   
+            imageops::dither(&mut image_buffer, &palette);
         }
 
         image_output_framebuffer = FrameBuffer::new(size.width as u16, size.height as u16, format);
@@ -243,21 +243,21 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
             let index = palette.index_of(&color);
             image_output_framebuffer.set_pixel(x as u16, y as u16, index as u8);
         }
-    } else {        
+    } else {
         // 1 bit
         let grayscale = image.to_luma8();
-        
+
         let mut grayscale_buffer = ImageBuffer::from(grayscale);
         if args.dither {
-            imageops::dither(&mut grayscale_buffer, &BiLevel);   
+            imageops::dither(&mut grayscale_buffer, &BiLevel);
         }
-        
+
         image_output_framebuffer = FrameBuffer::new(
             size.width as u16,
             size.height as u16,
             edgy_graphics::PixelFormat::Bpp1,
         );
-        
+
         for (x, y, pixel) in grayscale_buffer.enumerate_pixels() {
             if pixel[0] >= 128 {
                 image_output_framebuffer.set_pixel(x as u16, y as u16, 1);
@@ -267,31 +267,48 @@ fn main_inner(args: Args) -> anyhow::Result<()> {
 
     let data_size = &image_output_framebuffer.data.len();
     if !args.compress {
-        generate_const_data(&mut out, "BITMAP", &image_output_framebuffer.data);   
+        generate_const_data(&mut out, "BITMAP", &image_output_framebuffer.data);
     } else {
         println!("Compressing: {data_size} bytes...");
         if let Some(compressed_data) = compress(&image_output_framebuffer.data) {
             generate_const_data(&mut out, "BITMAP", &compressed_data);
             println!("Compressed size {} bytes", &compressed_data.len());
         } else {
-            eprintln!("{}", "Compression is retarded - writting with disabled compression...".bold().yellow());
+            eprintln!(
+                "{}",
+                "Compression is retarded - writting with disabled compression..."
+                    .bold()
+                    .yellow()
+            );
             enable_compression = false;
-            generate_const_data(&mut out, "BITMAP", &image_output_framebuffer.data);   
+            generate_const_data(&mut out, "BITMAP", &image_output_framebuffer.data);
         }
     }
 
-    writeln!(out, "pub const {}: Image = Image {{ 
+    writeln!(
+        out,
+        "pub const {}: Image = Image {{ 
         bitmap: &BITMAP,
         width: {},
         height: {},
         format: PixelFormat::{:?},
         alpha: {},
         compress: {}
-}};", 
-    stem.to_uppercase(), size.width, size.height, format, alpha_value, enable_compression.to_string())?;
+}};",
+        stem.to_uppercase(),
+        size.width,
+        size.height,
+        format,
+        alpha_value,
+        enable_compression.to_string()
+    )?;
 
     let mut file = File::create(args.output.clone()).unwrap();
     file.write_all(&out.as_bytes()).unwrap();
-    println!("{} Done! output file written to: {}", '✓'.green(), args.output.display().bold());
+    println!(
+        "{} Done! output file written to: {}",
+        '✓'.green(),
+        args.output.display().bold()
+    );
     Ok(())
 }

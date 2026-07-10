@@ -33,7 +33,7 @@ impl PixelFormat {
             _ => None,
         }
     }
-    
+
     pub const fn pixels_per_byte(self) -> u8 {
         8 / self as u8
     }

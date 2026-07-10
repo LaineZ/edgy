@@ -1,7 +1,12 @@
 use embedded_heatshrink::{HSDFinishRes, HSDPollRes, HSDSinkRes, HeatshrinkDecoder};
 
 use crate::{
-    Color, font::Font, framebuffer::FrameBuffer, geometry::{Point, Rectangle}, image::Image, text::{LayoutOptions, TextLayout},
+    Color,
+    font::Font,
+    framebuffer::FrameBuffer,
+    geometry::{Point, Rectangle},
+    image::Image,
+    text::{LayoutOptions, TextLayout},
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -65,7 +70,13 @@ fn stamp(fb: &mut FrameBuffer, position: Point, size: u16, color: Color) {
     }
 }
 
-fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: Color, thickness: u16) {
+fn plot8(
+    fb: &mut FrameBuffer,
+    center_position: Point,
+    position: Point,
+    color: Color,
+    thickness: u16,
+) {
     stamp(
         fb,
         Point::new(
@@ -143,10 +154,6 @@ fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: C
 
 #[inline(always)]
 pub(crate) fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: Color) {
-    if y < 0 || y >= fb.height() as i32 {
-        return;
-    }
-
     let x0 = x0.max(0);
     let x1 = x1.min(fb.width() as i32 - 1);
 
@@ -292,9 +299,7 @@ fn fill_rect_impl(fb: &mut FrameBuffer, rect: Rectangle, color: Color) {
     let y1 = (rect.top_left.y + rect.size.height as i32).min(fb.height() as i32);
 
     for y in y0..y1 {
-        for x in x0..x1 {
-            fb.set_pixel(x as u16, y as u16, color);
-        }
+        hline(fb, x0, x1, y, color);
     }
 }
 
@@ -365,15 +370,15 @@ fn blit_bytes(
 
             let x = *pixel % image.width as usize;
             let y = *pixel / image.width as usize;
-            
+
             let transparent = image.is_transparent(x as u16, y as u16);
-            
+
             if !transparent {
                 fb.set_pixel(
                     (position.x + x as i32) as u16,
                     (position.y + y as i32) as u16,
                     value,
-                );   
+                );
             }
 
             *pixel += 1;
@@ -389,15 +394,14 @@ pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
         let mut decoder = HeatshrinkDecoder::new(32, 8, 4).unwrap();
         let mut input = image.bitmap;
         let mut buf: [u8; 32] = [0; 32];
-        
+
         loop {
             if !input.is_empty() {
                 match decoder.sink(input) {
                     HSDSinkRes::Ok(n) => {
                         input = &input[n..];
                     }
-                    HSDSinkRes::Full => {
-                    }
+                    HSDSinkRes::Full => {}
                     e => panic!("{e:?}"),
                 }
             }
@@ -411,11 +415,10 @@ pub fn image(fb: &mut FrameBuffer, position: Point, image: &Image) {
                         blit_bytes(fb, position, image, &mut pixel, &buf[..n]);
                         break;
                     }
-                    
+
                     e => panic!("{e:?}"),
                 }
             }
-
 
             if input.is_empty() {
                 match decoder.finish() {

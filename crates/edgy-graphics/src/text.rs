@@ -1,7 +1,10 @@
 use alloc::vec::Vec;
 
 use crate::{
-    Color, font::{Font, Glyph}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size},
+    Color,
+    font::{Font, Glyph},
+    framebuffer::FrameBuffer,
+    geometry::{Point, Rectangle, Size},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -57,7 +60,10 @@ struct Line<'a> {
 
 impl Font<'_> {
     pub fn glyph(&self, ch: char) -> Option<&Glyph> {
-        self.glyphs.binary_search_by_key(&ch, |g| g.character).ok().map(|i| &self.glyphs[i])
+        self.glyphs
+            .binary_search_by_key(&ch, |g| g.character)
+            .ok()
+            .map(|i| &self.glyphs[i])
     }
 
     pub fn bitmap<'a>(&'a self, glyph: &Glyph) -> &'a [u8] {
@@ -300,6 +306,9 @@ where
     TextLayout {
         cursor,
         lines: lines.len() as u16,
-        bounding_box: Rectangle::new(bounds.top_left, Size::new(text_width as u32, text_height as u32)),
+        bounding_box: Rectangle::new(
+            bounds.top_left,
+            Size::new(text_width as u32, text_height as u32),
+        ),
     }
 }

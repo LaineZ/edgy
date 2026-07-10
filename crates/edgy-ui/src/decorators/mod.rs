@@ -1,5 +1,7 @@
 use edgy_graphics::{
-    draw::{self, BasicStyle}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size},
+    draw::{self, BasicStyle},
+    framebuffer::FrameBuffer,
+    geometry::{Point, Rectangle, Size},
 };
 
 /// Margin struct
@@ -67,7 +69,7 @@ impl<V: View> View for Background<V> {
         self.inner.measure(hint)
     }
 
-    fn layout(&mut self, rect: Rectangle, state: &Self::State) -> Rectangle {
+    fn layout(&mut self, rect: Rectangle, state: &Self::State) {
         self.inner.layout(rect, state)
     }
 
@@ -80,11 +82,16 @@ impl<V: View> View for Background<V> {
 pub struct Margin<V> {
     inner: V,
     margin: MarginSize,
+    rect: Rectangle,
 }
 
 impl<V> Margin<V> {
     pub fn new(inner: V, margin: MarginSize) -> Self {
-        Self { inner, margin }
+        Self {
+            inner,
+            margin,
+            rect: Rectangle::zero(),
+        }
     }
 }
 
@@ -108,8 +115,8 @@ impl<V: View> View for Margin<V> {
         )
     }
 
-    fn layout(&mut self, rect: Rectangle, state: &Self::State) -> Rectangle {
-        let margin_rect = Rectangle {
+    fn layout(&mut self, rect: Rectangle, state: &Self::State) {
+        self.rect = Rectangle {
             top_left: Point::new(
                 rect.top_left.x + self.margin.left as i32,
                 rect.top_left.y + self.margin.top as i32,
@@ -123,16 +130,14 @@ impl<V: View> View for Margin<V> {
                     .saturating_sub(self.margin.top as u32 + self.margin.bottom as u32),
             ),
         };
-    
-        self.inner.layout(margin_rect, state);
-        margin_rect
+
+        self.inner.layout(self.rect, state);
     }
 
-    fn draw(&mut self, fb: &mut FrameBuffer, rect: Rectangle, state: &Self::State) {
-        self.inner.draw(fb, rect, state);
+    fn draw(&mut self, fb: &mut FrameBuffer, _rect: Rectangle, state: &Self::State) {
+        self.inner.draw(fb, self.rect, state);
     }
 }
-
 
 pub trait ViewExt: View + Sized {
     fn background(self, style: BasicStyle) -> Background<Self> {

@@ -1,8 +1,18 @@
-use std::{num::NonZeroU32, rc::Rc, time::Instant};
+use std::{num::NonZeroU32, rc::Rc};
 
-use edgy_ui::{UiContext, graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::Size}};
+use edgy_ui::{
+    UiContext,
+    graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::Size},
+};
 use softbuffer::Surface;
-use winit::{application::ApplicationHandler, dpi::PhysicalSize, error::EventLoopError, event::WindowEvent, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::{Window, WindowId}};
+use winit::{
+    application::ApplicationHandler,
+    dpi::PhysicalSize,
+    error::EventLoopError,
+    event::WindowEvent,
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    window::{Window, WindowId},
+};
 
 pub mod fonts;
 
@@ -12,12 +22,11 @@ pub struct WindowProperties {
     pub title: Box<str>,
 }
 
-
 impl Default for WindowProperties {
     fn default() -> WindowProperties {
         WindowProperties {
             size: PhysicalSize::new(800, 600),
-            title: "Softbuffer window".into(),
+            title: "a bit edgy ui".into(),
         }
     }
 }
@@ -31,21 +40,24 @@ impl WindowProperties {
     }
 }
 
-
 struct State<M> {
     window: Rc<Window>,
     surface: Surface<Rc<Window>, Rc<Window>>,
-    ui_context: UiContext<M>
+    ui_context: UiContext<M>,
 }
 
 impl<M> State<M> {
     fn resize(&mut self, new_size: Size) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.surface.resize(
-                NonZeroU32::new(new_size.width).unwrap(),
-                NonZeroU32::new(new_size.height).unwrap(),
-            ).unwrap();
-            self.ui_context.framebuffer.resize(Size::new(new_size.width, new_size.height));   
+            self.surface
+                .resize(
+                    NonZeroU32::new(new_size.width).unwrap(),
+                    NonZeroU32::new(new_size.height).unwrap(),
+                )
+                .unwrap();
+            self.ui_context
+                .framebuffer
+                .resize(Size::new(new_size.width, new_size.height));
         }
     }
 }
@@ -63,28 +75,39 @@ impl<M> ApplicationHandler for SoftbufferWindow<M> {
         let window = {
             let window = event_loop.create_window(
                 Window::default_attributes()
-                    //.with_title(self.properties.title.clone())
+                    .with_title(self.properties.title.clone())
                     .with_inner_size(self.properties.size),
             );
             Rc::new(window.unwrap())
         };
         let size = window.inner_size();
-        let context = softbuffer::Context::new(window.clone()).expect("Failed to create softbuffer context");
-        let framebuffer = FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp8);
+        let context =
+            softbuffer::Context::new(window.clone()).expect("Failed to create softbuffer context");
+        let framebuffer =
+            FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp8);
 
         self.state = Some(State {
-           window: window.clone(),
-           surface: Surface::new(&context, window.clone()).expect("Failed to create surface"),
-           ui_context: UiContext::new(framebuffer)
+            window: window.clone(),
+            surface: Surface::new(&context, window.clone()).expect("Failed to create surface"),
+            ui_context: UiContext::new(framebuffer),
         });
-        
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-         //println!("{:?}", event);
-         match event {
-             WindowEvent::CloseRequested => {
-                     event_loop.exit();
+        println!("{:?}", event);
+        match event {
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
+
+            WindowEvent::CursorMoved {
+                device_id,
+                position,
+            } => {
+                let x = position.x as i32;
+                let y = position.y as i32;
+                let state = self.state.as_mut().unwrap();
+                state.ui_context
             }
 
             WindowEvent::Resized(new_size) => {
@@ -98,7 +121,7 @@ impl<M> ApplicationHandler for SoftbufferWindow<M> {
             }
 
             _ => {}
-         }
+        }
     }
 }
 
@@ -127,8 +150,11 @@ impl<M> SoftbufferWindow<M> {
         let state = self.state.as_mut().unwrap();
         (self.update_fn)(&mut state.ui_context);
         let mut buffer = state.surface.buffer_mut().unwrap();
-        
-        for (dst, &src) in buffer.iter_mut().zip(state.ui_context.framebuffer.data.iter()) {
+
+        for (dst, &src) in buffer
+            .iter_mut()
+            .zip(state.ui_context.framebuffer.data.iter())
+        {
             *dst = self.palette[src as usize];
         }
 
