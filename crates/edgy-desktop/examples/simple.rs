@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use edgy_desktop::{SoftbufferWindow, WindowProperties, fonts::{govno::GOVNO}};
-use edgy_ui::{Event, graphics::{self, draw, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, parse_palette_rgb888, text::{self, LayoutOptions}}, widgets::{Behavior, NullBehavior, View, WidgetObject, label::{self, TypographyLabel}, linear_layout::{LayoutAlignment, LinearLayout}}};
+use edgy_ui::{Event, decorators::{self, ViewExt}, graphics::{self, Color, draw::{self, BasicStyle}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, parse_palette_rgb888, text::{self, LayoutOptions}}, margin, widgets::{Behavior, NullBehavior, View, WidgetObject, label::{self, TypographyLabel}, linear_layout::{LayoutAlignment, LinearLayout}}};
 
 
 const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
@@ -34,7 +34,7 @@ impl<S> Behavior for StateBehavior<S> {
 pub struct LinkLabel<'a> {
     pub base: TypographyLabel<'a, LinkState>,
     pub underline: bool,
-    pub hover_color: u8,
+    pub hover_color: Color,
 }
 
 impl<'a> LinkLabel<'a> {
@@ -54,13 +54,14 @@ impl<'a> View for LinkLabel<'a> {
         self.base.measure(hint)
     }
 
-    fn layout(&mut self, _rect: Rectangle, state: &LinkState) {
+    fn layout(&mut self, rect: Rectangle, state: &LinkState) -> Rectangle {
         let color = match state {
             LinkState::Normal => self.base.color,
             LinkState::Hovered => self.hover_color,
         }; 
 
         self.base.color = color;
+        rect
     }
 
     fn draw(
@@ -103,17 +104,18 @@ fn main() {
         ctx.framebuffer.clear();
         let options = LayoutOptions {
             wrap: text::Wrap::Word,
-            horizontal: text::HorizontalAlign::Center,
+            horizontal: text::HorizontalAlign::Left,
             ..Default::default()
         };
-
-        graphics::draw::text(&mut ctx.framebuffer, Point::new(10, 10), &GOVNO, &format!("FPS: {}", fps), 3);
-
-        let linear_layout = LinearLayout::new_vertical(LayoutAlignment::Stretch, LayoutAlignment::Start, 5, |ui| {
-           ui.add(Box::new(label::typography_label(&GOVNO, "The str type, also called a ‘string slice’, is the most primitive string type. It is usually seen in its borrowed form, &str. It is also the type of string literals, &'static str.".into(), options, 2))); 
-           ui.add(Box::new(label::typography_label(&GOVNO, "Here we have declared a string slice initialized with a string literal. String literals have a static lifetime, which means the string hello_world is guaranteed to be valid for the duration of the entire program. We can explicitly specify hello_world’s lifetime as well:".into(), options, 2))); 
+        let linear_layout = LinearLayout::new_vertical(LayoutAlignment::Start, LayoutAlignment::Start, 5, |ui| {
+           ui.add(label::typography_label(&GOVNO, "The str type, also called a ‘string slice’, is the most primitive string type. It is usually seen in its borrowed form, &str. It is also the type of string literals, &'static str.".into(), options, 14));
+           ui.add(WidgetObject::new(StateBehavior::new(LinkState::Hovered), LinkLabel::new(String::from("CLICK HERE FOR FREE COOKIES!"))));
+           ui.add(label::typography_label(&GOVNO, "Here we have declared a string slice initialized with a string literal. String literals have a static lifetime, which means the string hello_world is guaranteed to be valid for the duration of the entire program. We can explicitly specify hello_world’s lifetime as well:".into(), options, 14));
+           ui.add(WidgetObject::new(NullBehavior, label::TypographyLabel::new(&GOVNO, "let hello_world: &'static str = \"Hello, world!\";", options, 15).background(BasicStyle::with_fill(7)).margin(margin!(20))));
         });
         
-        ctx.update(WidgetObject::new(NullBehavior, linear_layout));
+        ctx.update(WidgetObject::new(NullBehavior, linear_layout.background(BasicStyle::with_fill(8))));
+        graphics::draw::text(&mut ctx.framebuffer, Point::new(10, 10), &GOVNO, &format!("FPS: {}", fps), 3);
+
     }).unwrap();
 }

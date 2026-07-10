@@ -1,9 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::{
-    font::{Font, Glyph},
-    framebuffer::FrameBuffer,
-    geometry::{Point, Rectangle, Size},
+    Color, font::{Font, Glyph}, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -99,7 +97,7 @@ pub(crate) fn draw_glyph(
     pos: Point,
     font: &Font,
     glyph: &Glyph,
-    color: u8,
+    color: Color,
 ) -> Rectangle {
     let stride = glyph.width.div_ceil(8) as usize;
     let size = stride * glyph.height as usize;

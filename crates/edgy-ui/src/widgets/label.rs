@@ -2,11 +2,7 @@ use core::marker::PhantomData;
 
 use alloc::{boxed::Box, string::String};
 use edgy_graphics::{
-    draw,
-    font::Font,
-    framebuffer::FrameBuffer,
-    geometry::{Point, Rectangle, Size},
-    text::{self, LayoutOptions},
+    Color, draw, font::Font, framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}, text::{self, LayoutOptions},
 };
 
 use crate::widgets::{NullBehavior, View, WidgetObject};
@@ -15,12 +11,12 @@ pub struct TypographyLabel<'a, S> {
     pub text: String,
     pub font: &'a Font<'a>,
     pub options: LayoutOptions,
-    pub color: u8,
+    pub color: Color,
     _state: PhantomData<S>
 }
 
 impl<'a, S> TypographyLabel<'a, S> {
-    pub fn new<ST: Into<String>>(font: &'a Font<'a>, text: ST, options: LayoutOptions, color: u8) -> Self {
+    pub fn new<ST: Into<String>>(font: &'a Font<'a>, text: ST, options: LayoutOptions, color: Color) -> Self {
         Self {
             text: text.into(),
             font,
@@ -61,7 +57,7 @@ pub fn typography_label<'a>(
     font: &'a Font<'a>,
     text: String,
     options: LayoutOptions,
-    color: u8,
+    color: Color,
 ) -> WidgetObject<NullBehavior, TypographyLabel<'a, ()>> {
     WidgetObject::new(NullBehavior, TypographyLabel::new(font, text, options, color))
 }

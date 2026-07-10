@@ -12,6 +12,7 @@ pub mod text;
 
 use fixed::types::I16F16;
 pub type Fixed = I16F16;
+pub type Color = u8;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]

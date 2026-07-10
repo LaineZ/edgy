@@ -9,6 +9,7 @@ pub use edgy_graphics as graphics;
 use crate::widgets::{Behavior, View, WidgetObject, root_layout::{Anchor, RootLayout}};
 
 pub mod widgets;
+pub mod decorators;
 
 pub enum Event {
     

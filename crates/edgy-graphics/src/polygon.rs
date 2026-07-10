@@ -1,4 +1,4 @@
-use crate::{Fixed, draw::hline, framebuffer::FrameBuffer, geometry::Point};
+use crate::{Color, Fixed, draw::hline, framebuffer::FrameBuffer, geometry::Point};
 
 struct Edge {
     y_max: i32,
@@ -38,7 +38,7 @@ fn make_edge(a: Point, b: Point) -> Option<(i32, Edge)> {
     ))
 }
 
-pub fn fill_polygon<const N: usize>(fb: &mut FrameBuffer, store: &mut PolygonData<N>, color: u8) {
+pub fn fill_polygon<const N: usize>(fb: &mut FrameBuffer, store: &mut PolygonData<N>, color: Color) {
     if store.points.len() < 3 {
         return;
     }

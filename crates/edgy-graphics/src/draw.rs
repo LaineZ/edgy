@@ -1,29 +1,25 @@
 use embedded_heatshrink::{HSDFinishRes, HSDPollRes, HSDSinkRes, HeatshrinkDecoder};
 
 use crate::{
-    font::Font,
-    framebuffer::FrameBuffer,
-    geometry::{Point, Rectangle},
-    image::Image,
-    text::{LayoutOptions, TextLayout},
+    Color, font::Font, framebuffer::FrameBuffer, geometry::{Point, Rectangle}, image::Image, text::{LayoutOptions, TextLayout},
 };
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct BasicStyle {
     pub border_width: u16,
     pub fill_color: Option<u8>,
-    pub border_color: u8,
+    pub border_color: Color,
 }
 
 impl BasicStyle {
-    pub fn with_fill(fill_color: u8) -> Self {
+    pub fn with_fill(fill_color: Color) -> Self {
         Self {
             fill_color: Some(fill_color),
             ..Default::default()
         }
     }
 
-    pub fn with_border(border_color: u8, border_width: u16) -> Self {
+    pub fn with_border(border_color: Color, border_width: u16) -> Self {
         Self {
             border_color,
             border_width,
@@ -31,7 +27,7 @@ impl BasicStyle {
         }
     }
 
-    pub fn new(fill_color: u8, border_color: u8, border_width: u16) -> Self {
+    pub fn new(fill_color: Color, border_color: Color, border_width: u16) -> Self {
         Self {
             border_color,
             border_width,
@@ -40,7 +36,7 @@ impl BasicStyle {
     }
 }
 
-fn stamp(fb: &mut FrameBuffer, position: Point, size: u16, color: u8) {
+fn stamp(fb: &mut FrameBuffer, position: Point, size: u16, color: Color) {
     // if size == 1 use just pixel setting instead
     if size == 1 {
         if position.x >= 0
@@ -69,7 +65,7 @@ fn stamp(fb: &mut FrameBuffer, position: Point, size: u16, color: u8) {
     }
 }
 
-fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: u8, thickness: u16) {
+fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: Color, thickness: u16) {
     stamp(
         fb,
         Point::new(
@@ -146,7 +142,7 @@ fn plot8(fb: &mut FrameBuffer, center_position: Point, position: Point, color: u
 }
 
 #[inline(always)]
-pub(crate) fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: u8) {
+pub(crate) fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: Color) {
     if y < 0 || y >= fb.height() as i32 {
         return;
     }
@@ -159,7 +155,7 @@ pub(crate) fn hline(fb: &mut FrameBuffer, x0: i32, x1: i32, y: i32, color: u8) {
     }
 }
 
-fn fill_circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: u8) {
+fn fill_circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: Color) {
     let mut x = radius;
     let mut y = 0;
     let mut d = 1 - radius;
@@ -182,7 +178,7 @@ fn fill_circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: u8)
     }
 }
 
-fn circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: u8, thickness: u16) {
+fn circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: Color, thickness: u16) {
     let mut x = radius;
     let mut y = 0;
     let mut d = 1 - radius;
@@ -201,7 +197,7 @@ fn circle_impl(fb: &mut FrameBuffer, center: Point, radius: i32, color: u8, thic
     }
 }
 
-pub fn line(fb: &mut FrameBuffer, first: Point, second: Point, color: u8, thickness: u16) {
+pub fn line(fb: &mut FrameBuffer, first: Point, second: Point, color: Color, thickness: u16) {
     let mut x0 = first.x;
     let mut y0 = first.y;
     let x1 = second.x;
@@ -235,7 +231,7 @@ pub fn line(fb: &mut FrameBuffer, first: Point, second: Point, color: u8, thickn
     }
 }
 
-fn rect_impl(fb: &mut FrameBuffer, rect: Rectangle, color: u8, thickness: u16) {
+fn rect_impl(fb: &mut FrameBuffer, rect: Rectangle, color: Color, thickness: u16) {
     if rect.size.is_zero() {
         return;
     }
@@ -284,7 +280,7 @@ fn rect_impl(fb: &mut FrameBuffer, rect: Rectangle, color: u8, thickness: u16) {
     );
 }
 
-fn fill_rect_impl(fb: &mut FrameBuffer, rect: Rectangle, color: u8) {
+fn fill_rect_impl(fb: &mut FrameBuffer, rect: Rectangle, color: Color) {
     if rect.size.is_zero() {
         return;
     }
@@ -328,7 +324,7 @@ pub fn text(
     position: Point,
     font: &Font,
     text: &str,
-    color: u8,
+    color: Color,
 ) -> TextLayout {
     crate::text::layout(font, position, text, |pos, glyph| {
         crate::text::draw_glyph(fb, pos, font, glyph, color);
@@ -345,7 +341,7 @@ pub fn text_advanced(
     options: &LayoutOptions,
     font: &Font,
     text: &str,
-    color: u8,
+    color: Color,
 ) -> TextLayout {
     crate::text::layout_bounds(font, bounds, text, options, |pos, glyph| {
         crate::text::draw_glyph(fb, pos, font, glyph, color);

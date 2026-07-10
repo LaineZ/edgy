@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
-use edgy_graphics::{framebuffer::{self, FrameBuffer}, geometry::{Rectangle, Size}};
+use edgy_graphics::{framebuffer::FrameBuffer, geometry::{Rectangle, Size}};
 
-use crate::{Event, UiContext};
+use crate::Event;
 
 pub mod root_layout;
 pub mod label;
@@ -33,7 +33,9 @@ pub trait View {
     }
 
     /// Calls at layout pass. Gives a try for layout computation in Layouts (Containers)
-    fn layout(&mut self, _rect: Rectangle, state: &Self::State) {}
+    fn layout(&mut self, _rect: Rectangle, _state: &Self::State) -> Rectangle {
+        _rect
+    }
 
     fn draw(
         &mut self,
@@ -82,8 +84,8 @@ where
     }
 
     fn layout(&mut self, rect: Rectangle) {
-        self.set_rect(rect);
-        self.view.layout(rect, &self.behavior.state());
+        let modified_rect = self.view.layout(rect, &self.behavior.state());
+        self.set_rect(modified_rect);
     }
 
     fn draw(
@@ -111,6 +113,12 @@ where
     }
 }
 
+impl<T: Widget + 'static> From<T> for Box<dyn Widget> {
+    fn from(value: T) -> Self {
+        Box::new(value)
+    }
+}
+
 /// No behavior for widget
 pub struct NullBehavior;
 
@@ -129,9 +137,9 @@ pub struct Ui<'a> {
 }
 
 impl<'a> Ui<'a> {
-    pub fn add(&mut self, widget: Box<dyn Widget>)
+    pub fn add<W: Into<Box<dyn Widget>>>(&mut self, widget: W)
     {
-        self.children.push(widget);
+        self.children.push(widget.into());
     }
 
     // TODO: Add more widgets here
