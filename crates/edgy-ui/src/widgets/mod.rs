@@ -1,4 +1,3 @@
-use core::marker::PhantomData;
 
 use alloc::{boxed::Box, vec::Vec};
 use edgy_graphics::{
@@ -7,17 +6,17 @@ use edgy_graphics::{
     geometry::{Rectangle, Size},
 };
 
-use crate::{Event, EventDispatcher, EventResult, SystemEvent, utils};
+use crate::{Event, EventDispatcher, EventResult, IdGenerator, StateStorage, SystemEvent, WidgetId};
 
 pub mod label;
 pub mod linear_layout;
 pub mod root_layout;
 
 pub trait Behavior {
-    type State;
-
-    fn handle(&mut self, event: Event) -> EventResult;
-    fn state(&self) -> &Self::State;
+    type State: Default + 'static;
+    fn handle(&mut self, state: &mut Self::State, event: Event) -> EventResult {
+        EventResult::Pass
+    }
 }
 
 pub trait View {
@@ -45,10 +44,11 @@ pub trait View {
 }
 
 pub trait Widget {
+    fn init(&mut self, ids: &mut IdGenerator, storage: &mut StateStorage) -> WidgetId;
     fn measure(&mut self, hint: Size) -> Size;
-    fn layout(&mut self, rect: Rectangle);
-    fn draw(&mut self, fb: &mut FrameBuffer);
-    fn handle_system_event(&mut self, dispatcher: &EventDispatcher) -> EventResult;
+    fn layout(&mut self, rect: Rectangle, storage: &mut StateStorage);
+    fn draw(&mut self, fb: &mut FrameBuffer, storage: &mut StateStorage);
+    fn handle_system_event(&mut self, storage: &mut StateStorage, dispatcher: &mut EventDispatcher) -> EventResult;
     fn rect(&self) -> Rectangle;
     fn set_rect(&mut self, rect: Rectangle);
 }
@@ -61,7 +61,7 @@ where
     behavior: B,
     view: V,
     computed_rect: Rectangle,
-    hovered: bool,
+    id: WidgetId,
 }
 
 impl<B, V> WidgetObject<B, V>
@@ -73,7 +73,7 @@ where
         Self {
             behavior,
             view,
-            hovered: false,
+            id: WidgetId::default(),
             computed_rect: Rectangle::zero(),
         }
     }
@@ -84,50 +84,74 @@ where
     B: Behavior,
     V: View<State = B::State>,
 {
+
+    fn init(&mut self, id: &mut IdGenerator, _storage: &mut crate::StateStorage) -> WidgetId {
+        self.id = id.next();
+        self.id
+    }
+    
     fn measure(&mut self, hint: Size) -> Size {
         self.view.measure(hint)
     }
 
-    fn layout(&mut self, rect: Rectangle) {
-        self.view.layout(rect, &self.behavior.state());
+    fn layout(&mut self, rect: Rectangle, storage: &mut crate::StateStorage) {
+        self.view.layout(rect, storage.get_or_insert::<B::State>(self.id));
         self.set_rect(rect);
     }
 
-    fn handle_system_event(&mut self, dispatcher: &EventDispatcher) -> EventResult {
-        let rect = self.rect();
+
+    fn handle_system_event(
+        &mut self,
+        storage: &mut StateStorage,
+        dispatcher: &mut EventDispatcher,
+    ) -> EventResult {
+        let state = storage.get_or_insert::<B::State>(self.id);
+
         match dispatcher.current() {
-            SystemEvent::PointerMove(point) => {
-                let inside = rect.contains(point);
-    
-                match (inside, self.hovered) {
-                    (true, false) => {
-                        self.hovered = true;
-                        self.behavior.handle(Event::HoverEnter)
-                    }
-    
-                    (false, true) => {
-                        self.hovered = false;
-                        self.behavior.handle(Event::HoverLeave)
-                    }
-    
-                    _ => EventResult::Pass,
+            SystemEvent::PointerMove(point) if !dispatcher.pointer_down => {
+                let contains = self.rect().contains(point);
+                let was_hovered = dispatcher.old_hovered_widget == Some(self.id);
+                let already_claimed = dispatcher.hovered_widget.is_some();
+
+                if contains && !was_hovered && !already_claimed {
+                    dispatcher.hovered_widget = Some(self.id);
+                    self.behavior.handle(state, Event::HoverEnter);
+                    EventResult::Pass
+                } else if contains && was_hovered {
+                    dispatcher.hovered_widget = Some(self.id);
+                    EventResult::Pass
+                } else if !contains && was_hovered {
+                    self.behavior.handle(state, Event::HoverLeave);
+                    EventResult::Pass
+                } else {
+                    EventResult::Pass
                 }
             }
-    
-            SystemEvent::PointerDown(point) if rect.contains(point) => {
-                self.behavior.handle(Event::Press)
+
+            SystemEvent::PointerDown(point) => {
+                if self.rect().contains(point) {
+                    self.behavior.handle(state, Event::Press);
+                    EventResult::Stop
+                } else {
+                    EventResult::Pass
+                }
             }
-    
-            SystemEvent::PointerUp(point) if rect.contains(point) => {
-                self.behavior.handle(Event::Release)
+
+            SystemEvent::PointerUp(point) => {
+                if self.rect().contains(point) {
+                    self.behavior.handle(state, Event::Release);
+                    EventResult::Stop
+                } else {
+                    EventResult::Pass
+                }
             }
-    
+
             _ => EventResult::Pass,
         }
     }
 
-    fn draw(&mut self, fb: &mut FrameBuffer) {
-        let state = self.behavior.state();
+    fn draw(&mut self, fb: &mut FrameBuffer, storage: &mut crate::StateStorage) {
+        let state = storage.get_or_insert::<B::State>(self.id);
         self.view.draw(fb, self.rect(), &state);
 
         draw::rect(fb, self.computed_rect, BasicStyle::with_border(40, 1));
@@ -153,14 +177,6 @@ pub struct NullBehavior;
 
 impl Behavior for NullBehavior {
     type State = ();
-
-    fn handle(&mut self, _event: Event) -> EventResult {
-        EventResult::Pass
-    }
-
-    fn state(&self) -> &Self::State {
-        &()
-    }
 }
 
 

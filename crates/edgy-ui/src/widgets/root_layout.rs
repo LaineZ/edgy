@@ -4,7 +4,7 @@ use edgy_graphics::{
     geometry::{Rectangle, Size},
 };
 
-use crate::{EventDispatcher, EventResult, utils, widgets::{Behavior, View, Widget, WidgetObject}};
+use crate::{EventDispatcher, EventResult, WidgetId, widgets::Widget};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Anchor {
@@ -20,13 +20,15 @@ struct WidgetAndPosition<'a> {
 
 pub struct RootLayout<'a> {
     children: Vec<WidgetAndPosition<'a>>,
-    computed_rect: Rectangle
+    computed_rect: Rectangle,
+    id: WidgetId,
 }
 
 impl<'a> RootLayout<'a> {
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
+            id: WidgetId::default(),
             computed_rect: Rectangle::zero()
         }
     }
@@ -42,6 +44,21 @@ impl<'a> RootLayout<'a> {
 }
 
 impl<'a> Widget for RootLayout<'a> {
+    fn init(&mut self, ids: &mut crate::IdGenerator, storage: &mut crate::StateStorage) -> WidgetId {
+        self.id = ids.next();
+
+
+        ids.push(self.id);
+
+        for child in &mut self.children {
+            child.widget.init(ids, storage);
+        }
+
+        ids.pop();
+
+        self.id
+    }
+    
     fn measure(&mut self, _hint: Size) -> Size {
         let mut size = Size::zero();
 
@@ -56,32 +73,32 @@ impl<'a> Widget for RootLayout<'a> {
         size
     }
 
-    fn layout(&mut self, rect: Rectangle) {
+    fn layout(&mut self, rect: Rectangle, storage: &mut crate::StateStorage) {
         for child in self.children.iter_mut() {
             match child.anchor {
                 Anchor::TopLeft => {
-                    child.widget.layout(child.dimensions);
+                    child.widget.layout(child.dimensions, storage);
                 }
                 Anchor::Center => {
                     let centered_pos =
                         rect.top_left + (rect.size / 2) - (child.dimensions.size / 2);
                     let centered_rect = Rectangle::new(centered_pos, child.dimensions.size);
-                    child.widget.layout(centered_rect);
+                    child.widget.layout(centered_rect, storage);
                 }
             }
         }
         self.set_rect(rect);
     }
 
-    fn draw(&mut self, fb: &mut FrameBuffer) {
+    fn draw(&mut self, fb: &mut FrameBuffer, storage: &mut crate::StateStorage) {
         for child in self.children.iter_mut() {
-            child.widget.draw(fb);
+            child.widget.draw(fb, storage);
         }
     }
 
-    fn handle_system_event(&mut self, event: &EventDispatcher) -> crate::EventResult {
+    fn handle_system_event(&mut self, storage: &mut crate::StateStorage, event: &mut EventDispatcher) -> crate::EventResult {
         for wd in self.children.iter_mut().rev() {
-            let result = wd.widget.handle_system_event(event);
+            let result = wd.widget.handle_system_event(storage, event);
 
             if result == EventResult::Stop {
                 return result;

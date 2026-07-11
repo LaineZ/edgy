@@ -5,7 +5,7 @@ use edgy_ui::{
 };
 use softbuffer::Surface;
 use winit::{
-    application::ApplicationHandler, dpi::PhysicalSize, error::EventLoopError, event::{ElementState, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::{Window, WindowId},
+    application::ApplicationHandler, dpi::PhysicalSize, error::EventLoopError, event::{ElementState, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::{Window, WindowId},
 };
 
 pub mod fonts;
@@ -65,7 +65,7 @@ pub struct SoftbufferWindow<M> {
     cursor_pos: Point,
 }
 
-impl<M> ApplicationHandler for SoftbufferWindow<M> {
+impl<'a, M> ApplicationHandler for SoftbufferWindow<M> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = {
             let window = event_loop.create_window(
@@ -131,7 +131,7 @@ impl<M> ApplicationHandler for SoftbufferWindow<M> {
     }
 }
 
-impl<M> SoftbufferWindow<M> {
+impl<'a, M> SoftbufferWindow<M> {
     pub fn new(properties: WindowProperties, palette: Vec<u32>) -> SoftbufferWindow<M> {
         SoftbufferWindow {
             state: None,

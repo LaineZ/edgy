@@ -4,7 +4,7 @@ use edgy_graphics::{
     geometry::{Point, Rectangle, Size},
 };
 
-use crate::{EventDispatcher, EventResult, utils, widgets::{Behavior, NullBehavior, NullView, Ui, View, Widget}};
+use crate::{EventDispatcher, EventResult, StateStorage, WidgetId, utils, widgets::{Behavior, NullBehavior, NullView, Ui, View, Widget}};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum LayoutDirection {
@@ -23,6 +23,7 @@ pub enum LayoutAlignment {
 /// Linear layout
 pub struct LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
     children: Vec<Box<dyn Widget>>,
+    id: WidgetId,
     behavior: B,
     view: V,
     direction: LayoutDirection,
@@ -43,6 +44,7 @@ impl LinearLayout<NullBehavior, NullView> {
         F: FnOnce(&mut Ui),
     {
         let mut layout = Self {
+            id: WidgetId::default(),
             children: Vec::new(),
             direction: LayoutDirection::Vertical,
             behavior: NullBehavior,
@@ -103,7 +105,7 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
         }
     }
 
-    fn layout(&mut self, rect: edgy_graphics::geometry::Rectangle) {
+    fn layout(&mut self, storage: &mut StateStorage, rect: edgy_graphics::geometry::Rectangle) {
         let total_gap = self.gap * self.children.len().saturating_sub(1) as u32;
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
@@ -220,7 +222,7 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
                 ),
             };
 
-            child.layout(child_rect);
+            child.layout(child_rect, storage);
 
             match self.direction {
                 LayoutDirection::Horizontal => {
@@ -239,34 +241,46 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
         }
     }
 
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle) {
+    fn draw(&mut self, framebuffer: &mut FrameBuffer, storage: &mut StateStorage) {
         for child in self.children.iter_mut() {
-            child.draw(framebuffer);
+            child.draw(framebuffer, storage);
         }
     }
 }
 
 impl<B, V> Widget for LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
+    fn init(&mut self, ids: &mut crate::IdGenerator, storage: &mut crate::StateStorage) -> WidgetId {
+        self.id = ids.next();
+        ids.push(self.id);
+        for child in &mut self.children {
+            child.init(ids, storage);
+        }
+    
+        ids.pop();
+
+        self.id
+    }
+    
     fn measure(&mut self, hint: Size) -> Size {
         let size = self.measure(hint);
         self.view.measure(size);
         size
     }
 
-    fn layout(&mut self, rect: Rectangle) {
-        self.view.layout(rect, self.behavior.state());
-        self.layout(rect);
+    fn layout(&mut self, rect: Rectangle, storage: &mut StateStorage) {
+        self.view.layout(rect, storage.get_or_insert(self.id));
+        self.layout(storage, rect);
         self.set_rect(rect);
     }
 
-    fn draw(&mut self, fb: &mut FrameBuffer) {
-        self.view.draw(fb, self.rect(), self.behavior.state());
-        self.draw(fb, self.rect());
+    fn draw(&mut self, fb: &mut FrameBuffer, storage: &mut StateStorage) {
+        self.view.draw(fb, self.rect(), storage.get_or_insert::<B::State>(self.id));
+        self.draw(fb, storage);
     }
 
-    fn handle_system_event(&mut self, event: &EventDispatcher) -> crate::EventResult {
+    fn handle_system_event(&mut self, storage: &mut StateStorage, event: &mut EventDispatcher) -> crate::EventResult {
         for widget in self.children.iter_mut().rev() {
-            let result = widget.handle_system_event(event);
+            let result = widget.handle_system_event(storage, event);
 
             if result == EventResult::Stop {
                 return result;
@@ -274,7 +288,7 @@ impl<B, V> Widget for LinearLayout<B, V> where B: Behavior, V: View<State = B::S
         }
         
         let rect = self.rect();
-        utils::handle_system_event(&mut self.behavior, rect, event)
+        utils::handle_system_event(&mut self.behavior, rect, self.id, storage, event)
     }
 
     fn rect(&self) -> Rectangle {
