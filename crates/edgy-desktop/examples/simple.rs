@@ -2,18 +2,14 @@ use std::time::{Duration, Instant};
 
 use edgy_desktop::{SoftbufferWindow, WindowProperties, fonts::govno::UNSCII};
 use edgy_ui::{
-    Event,
-    decorators::{self, ViewExt},
-    graphics::{
+    Event, EventResult, decorators::{self, ViewExt}, graphics::{
         self, Color,
         draw::{self, BasicStyle},
         framebuffer::FrameBuffer,
         geometry::{Point, Rectangle, Size},
         parse_palette_rgb888,
         text::{self, LayoutOptions},
-    },
-    margin,
-    widgets::{
+    }, margin, widgets::{
         Behavior, NullBehavior, View, WidgetObject,
         label::{self, TypographyLabel},
         linear_layout::{LayoutAlignment, LinearLayout},
@@ -21,29 +17,51 @@ use edgy_ui::{
 };
 
 const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum LinkState {
     Normal,
+    Clicked,
     Hovered,
 }
 
-pub struct StateBehavior<S> {
-    state: S,
+pub struct StateBehavior {
+    hovered: bool,
+    pressed: bool,
 }
 
-impl<S> StateBehavior<S> {
-    pub fn new(state: S) -> Self {
-        Self { state }
+impl StateBehavior {
+    pub fn new() -> Self {
+        Self { hovered: false, pressed: false }
     }
 }
 
-impl<S> Behavior for StateBehavior<S> {
-    type State = S;
+impl Behavior for StateBehavior {
+    type State = LinkState;
 
-    fn handle(&mut self, _event: Event) {}
+    fn handle(&mut self, event: Event) -> EventResult {
+        println!("{:?}", event);
+        match event {
+            Event::HoverEnter => { self.hovered = true; EventResult::Stop },
+            Event::HoverLeave => {
+                self.hovered = false;
+                self.pressed = false;
+                EventResult::Stop
+            }
+            Event::Press => { self.pressed = true; EventResult::Stop },
+            Event::Release => { self.pressed = false; EventResult::Stop },
 
-    fn state(&self) -> &S {
-        &self.state
+            _ => EventResult::Pass
+        }
+    }
+
+    fn state(&self) -> &LinkState {
+        if self.pressed {
+            &LinkState::Clicked
+        } else if self.hovered {
+            &LinkState::Hovered
+        } else {
+            &LinkState::Normal
+        }
     }
 }
 
@@ -51,6 +69,7 @@ pub struct LinkLabel<'a> {
     pub base: TypographyLabel<'a, LinkState>,
     pub underline: bool,
     pub hover_color: Color,
+    pub active_color: Color,
 }
 
 impl<'a> LinkLabel<'a> {
@@ -59,6 +78,7 @@ impl<'a> LinkLabel<'a> {
             base: TypographyLabel::new(&UNSCII, text, LayoutOptions::default(), 2),
             underline: true,
             hover_color: 1,
+            active_color: 3,
         }
     }
 }
@@ -70,16 +90,15 @@ impl<'a> View for LinkLabel<'a> {
         self.base.measure(hint)
     }
 
-    fn layout(&mut self, rect: Rectangle, state: &LinkState) {
+    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, state: &LinkState) {
         let color = match state {
             LinkState::Normal => self.base.color,
             LinkState::Hovered => self.hover_color,
+            LinkState::Clicked => self.active_color,
         };
 
         self.base.color = color;
-    }
-
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, state: &LinkState) {
+        
         self.base.draw(framebuffer, rect, state);
         // draw::rect(framebuffer, rect, BasicStyle::with_border(4, 1));
 
@@ -120,12 +139,12 @@ fn main() {
         let linear_layout = LinearLayout::new_vertical(LayoutAlignment::Start, LayoutAlignment::Start, 5, |ui| {
            ui.add(label::typography_label(&UNSCII, "The str type, also called a ‘string slice’, is the most primitive string type. It is usually seen in its borrowed form, &str. 
                It is also the type of string literals, &'static str.".into(), options, 14));
-           ui.add(WidgetObject::new(StateBehavior::new(LinkState::Hovered), LinkLabel::new(String::from("CLICK HERE FOR FREE COOKIES!"))));
+           ui.add(WidgetObject::new(StateBehavior::new(), LinkLabel::new(String::from("CLICK HERE FOR FREE COOKIES!"))));
            ui.add(label::typography_label(&UNSCII, "Here we have declared a string slice initialized with a string literal. String literals have a static lifetime, which means the string hello_world is 
                guaranteed to be valid for the duration of the entire program. We can explicitly specify hello_world’s lifetime as well:".into(), options, 14));
            ui.add(WidgetObject::new(NullBehavior, label::TypographyLabel::new(&UNSCII, "let hello_world: &'static str = \"Hello, world!\";", options, 15).background(BasicStyle::with_fill(7)).margin(margin!(20))));
         });
-        ctx.update(WidgetObject::new(NullBehavior, linear_layout.background(BasicStyle::with_fill(8))));
+        ctx.update(Box::new(linear_layout));
         graphics::draw::text(&mut ctx.framebuffer, Point::new(10, 10), &UNSCII, &format!("FPS: {}", fps), 3);
 
     }).unwrap();

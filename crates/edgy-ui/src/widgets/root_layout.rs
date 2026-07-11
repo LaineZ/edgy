@@ -4,7 +4,7 @@ use edgy_graphics::{
     geometry::{Rectangle, Size},
 };
 
-use crate::widgets::{Behavior, View, Widget, WidgetObject};
+use crate::{EventDispatcher, EventResult, utils, widgets::{Behavior, View, Widget, WidgetObject}};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Anchor {
@@ -20,31 +20,28 @@ struct WidgetAndPosition<'a> {
 
 pub struct RootLayout<'a> {
     children: Vec<WidgetAndPosition<'a>>,
+    computed_rect: Rectangle
 }
 
 impl<'a> RootLayout<'a> {
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
+            computed_rect: Rectangle::zero()
         }
     }
 
-    pub fn add<B, V>(&mut self, widget: WidgetObject<B, V>, bounds: Rectangle, anchor: Anchor)
-    where
-        B: Behavior + 'a,
-        V: View<State = B::State> + 'a,
+    pub fn add(&mut self, widget: Box<dyn Widget + 'a>, bounds: Rectangle, anchor: Anchor)
     {
         self.children.push(WidgetAndPosition {
-            widget: Box::new(widget),
+            widget: widget,
             dimensions: bounds,
             anchor,
         });
     }
 }
 
-impl<'a> View for RootLayout<'a> {
-    type State = ();
-
+impl<'a> Widget for RootLayout<'a> {
     fn measure(&mut self, _hint: Size) -> Size {
         let mut size = Size::zero();
 
@@ -59,7 +56,7 @@ impl<'a> View for RootLayout<'a> {
         size
     }
 
-    fn layout(&mut self, rect: Rectangle, _state: &()) {
+    fn layout(&mut self, rect: Rectangle) {
         for child in self.children.iter_mut() {
             match child.anchor {
                 Anchor::TopLeft => {
@@ -73,11 +70,32 @@ impl<'a> View for RootLayout<'a> {
                 }
             }
         }
+        self.set_rect(rect);
     }
 
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, _rect: Rectangle, _state: &()) {
+    fn draw(&mut self, fb: &mut FrameBuffer) {
         for child in self.children.iter_mut() {
-            child.widget.draw(framebuffer);
+            child.widget.draw(fb);
         }
+    }
+
+    fn handle_system_event(&mut self, event: &EventDispatcher) -> crate::EventResult {
+        for wd in self.children.iter_mut().rev() {
+            let result = wd.widget.handle_system_event(event);
+
+            if result == EventResult::Stop {
+                return result;
+            }
+        }
+
+        EventResult::Pass
+    }
+
+    fn rect(&self) -> Rectangle {
+        self.computed_rect
+    }
+
+    fn set_rect(&mut self, rect: Rectangle) {
+        self.computed_rect = rect;
     }
 }

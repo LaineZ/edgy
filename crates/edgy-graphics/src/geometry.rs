@@ -4,7 +4,6 @@ use core::{
     cmp::min,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, RangeInclusive, Sub, SubAssign},
 };
-use std::ops::Index;
 
 use crate::Fixed;
 

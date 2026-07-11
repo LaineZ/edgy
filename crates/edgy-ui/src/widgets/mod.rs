@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use alloc::{boxed::Box, vec::Vec};
 use edgy_graphics::{
     draw::{self, BasicStyle},
@@ -5,7 +7,7 @@ use edgy_graphics::{
     geometry::{Rectangle, Size},
 };
 
-use crate::Event;
+use crate::{Event, EventDispatcher, EventResult, SystemEvent, utils};
 
 pub mod label;
 pub mod linear_layout;
@@ -14,7 +16,7 @@ pub mod root_layout;
 pub trait Behavior {
     type State;
 
-    fn handle(&mut self, event: Event);
+    fn handle(&mut self, event: Event) -> EventResult;
     fn state(&self) -> &Self::State;
 }
 
@@ -46,7 +48,7 @@ pub trait Widget {
     fn measure(&mut self, hint: Size) -> Size;
     fn layout(&mut self, rect: Rectangle);
     fn draw(&mut self, fb: &mut FrameBuffer);
-    fn handle(&mut self, event: Event);
+    fn handle_system_event(&mut self, dispatcher: &EventDispatcher) -> EventResult;
     fn rect(&self) -> Rectangle;
     fn set_rect(&mut self, rect: Rectangle);
 }
@@ -59,6 +61,7 @@ where
     behavior: B,
     view: V,
     computed_rect: Rectangle,
+    hovered: bool,
 }
 
 impl<B, V> WidgetObject<B, V>
@@ -70,6 +73,7 @@ where
         Self {
             behavior,
             view,
+            hovered: false,
             computed_rect: Rectangle::zero(),
         }
     }
@@ -89,15 +93,44 @@ where
         self.set_rect(rect);
     }
 
+    fn handle_system_event(&mut self, dispatcher: &EventDispatcher) -> EventResult {
+        let rect = self.rect();
+        match dispatcher.current() {
+            SystemEvent::PointerMove(point) => {
+                let inside = rect.contains(point);
+    
+                match (inside, self.hovered) {
+                    (true, false) => {
+                        self.hovered = true;
+                        self.behavior.handle(Event::HoverEnter)
+                    }
+    
+                    (false, true) => {
+                        self.hovered = false;
+                        self.behavior.handle(Event::HoverLeave)
+                    }
+    
+                    _ => EventResult::Pass,
+                }
+            }
+    
+            SystemEvent::PointerDown(point) if rect.contains(point) => {
+                self.behavior.handle(Event::Press)
+            }
+    
+            SystemEvent::PointerUp(point) if rect.contains(point) => {
+                self.behavior.handle(Event::Release)
+            }
+    
+            _ => EventResult::Pass,
+        }
+    }
+
     fn draw(&mut self, fb: &mut FrameBuffer) {
         let state = self.behavior.state();
         self.view.draw(fb, self.rect(), &state);
 
         draw::rect(fb, self.computed_rect, BasicStyle::with_border(40, 1));
-    }
-
-    fn handle(&mut self, event: Event) {
-        self.behavior.handle(event);
     }
 
     fn set_rect(&mut self, rect: Rectangle) {
@@ -121,11 +154,23 @@ pub struct NullBehavior;
 impl Behavior for NullBehavior {
     type State = ();
 
-    fn handle(&mut self, _event: Event) {}
+    fn handle(&mut self, _event: Event) -> EventResult {
+        EventResult::Pass
+    }
 
     fn state(&self) -> &Self::State {
         &()
     }
+}
+
+
+/// No view for widget, useful for containers
+pub struct NullView;
+
+impl View for NullView {
+    type State = ();
+    
+    fn draw(&mut self, _: &mut FrameBuffer, _: Rectangle, _: &Self::State) {}
 }
 
 pub struct Ui<'a> {

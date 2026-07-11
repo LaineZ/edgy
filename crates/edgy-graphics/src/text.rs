@@ -116,8 +116,6 @@ pub(crate) fn draw_glyph(
         for x in 0..glyph.width {
             if bit(bitmap, stride, x, y) {
                 fb.set_pixel((px + x as i32) as u16, (py + y as i32) as u16, color);
-            } else {
-                //fb.set_pixel((px + x as i32) as u16, (py + y as i32) as u16, 3);
             }
         }
     }

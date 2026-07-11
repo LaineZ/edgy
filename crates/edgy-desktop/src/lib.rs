@@ -1,17 +1,11 @@
 use std::{num::NonZeroU32, rc::Rc};
 
 use edgy_ui::{
-    UiContext,
-    graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::Size},
+    SystemEvent, UiContext, graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::{Point, Size}},
 };
 use softbuffer::Surface;
 use winit::{
-    application::ApplicationHandler,
-    dpi::PhysicalSize,
-    error::EventLoopError,
-    event::WindowEvent,
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    window::{Window, WindowId},
+    application::ApplicationHandler, dpi::PhysicalSize, error::EventLoopError, event::{ElementState, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::{Window, WindowId},
 };
 
 pub mod fonts;
@@ -68,6 +62,7 @@ pub struct SoftbufferWindow<M> {
     update_fn: Box<dyn FnMut(&mut UiContext<M>) -> ()>,
     palette: Vec<u32>,
     properties: WindowProperties,
+    cursor_pos: Point,
 }
 
 impl<M> ApplicationHandler for SoftbufferWindow<M> {
@@ -94,7 +89,7 @@ impl<M> ApplicationHandler for SoftbufferWindow<M> {
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        println!("{:?}", event);
+        //println!("{:?}", event);
         match event {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
@@ -107,7 +102,18 @@ impl<M> ApplicationHandler for SoftbufferWindow<M> {
                 let x = position.x as i32;
                 let y = position.y as i32;
                 let state = self.state.as_mut().unwrap();
-                state.ui_context
+                self.cursor_pos = Point::new(x, y);
+                state.ui_context.push_event(SystemEvent::PointerMove(self.cursor_pos));
+            }
+
+            WindowEvent::MouseInput { device_id, state, button } => {
+                let window_state = self.state.as_mut().unwrap();
+                if state == ElementState::Pressed {
+                    window_state.ui_context.push_event(SystemEvent::PointerDown(self.cursor_pos));
+                } else {
+                    window_state.ui_context.push_event(SystemEvent::PointerUp(self.cursor_pos));
+                }
+
             }
 
             WindowEvent::Resized(new_size) => {
@@ -132,6 +138,7 @@ impl<M> SoftbufferWindow<M> {
             palette,
             properties,
             update_fn: Box::new(|_| {}),
+            cursor_pos: Point::default()
         }
     }
 

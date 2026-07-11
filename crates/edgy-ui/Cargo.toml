@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 edgy-graphics = {path = "../edgy-graphics"}
+heapless = "0.9.3"

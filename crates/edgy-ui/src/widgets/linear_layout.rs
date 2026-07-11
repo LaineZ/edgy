@@ -1,13 +1,10 @@
-use core::{alloc::Layout, marker::PhantomData};
-
 use alloc::{boxed::Box, vec::Vec};
 use edgy_graphics::{
-    draw::BasicStyle,
     framebuffer::FrameBuffer,
     geometry::{Point, Rectangle, Size},
 };
 
-use crate::widgets::{Ui, View, Widget, WidgetObject};
+use crate::{EventDispatcher, EventResult, utils, widgets::{Behavior, NullBehavior, NullView, Ui, View, Widget}};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum LayoutDirection {
@@ -24,16 +21,18 @@ pub enum LayoutAlignment {
 }
 
 /// Linear layout
-pub struct LinearLayout<S> {
+pub struct LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
     children: Vec<Box<dyn Widget>>,
+    behavior: B,
+    view: V,
     direction: LayoutDirection,
     horizontal_alignment: LayoutAlignment,
     vertical_alignment: LayoutAlignment,
+    computed_rect: Rectangle,
     gap: u32,
-    _state: PhantomData<S>,
 }
 
-impl<S> LinearLayout<S> {
+impl LinearLayout<NullBehavior, NullView> {
     pub fn new_vertical<F>(
         horizontal_alignment: LayoutAlignment,
         vertical_alignment: LayoutAlignment,
@@ -46,7 +45,9 @@ impl<S> LinearLayout<S> {
         let mut layout = Self {
             children: Vec::new(),
             direction: LayoutDirection::Vertical,
-            _state: PhantomData::<S>::default(),
+            behavior: NullBehavior,
+            computed_rect: Rectangle::zero(),
+            view: NullView,
             gap,
             horizontal_alignment,
             vertical_alignment,
@@ -64,9 +65,8 @@ impl<S> LinearLayout<S> {
     }
 }
 
-impl<'a, S> View for LinearLayout<S> {
-    type State = S;
 
+impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
     fn measure(&mut self, hint: Size) -> Size {
         let mut computed_size = Size::zero();
         let gap_total = self.gap * self.children.len().saturating_sub(1) as u32;
@@ -103,7 +103,7 @@ impl<'a, S> View for LinearLayout<S> {
         }
     }
 
-    fn layout(&mut self, rect: edgy_graphics::geometry::Rectangle, state: &Self::State) {
+    fn layout(&mut self, rect: edgy_graphics::geometry::Rectangle) {
         let total_gap = self.gap * self.children.len().saturating_sub(1) as u32;
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
@@ -239,9 +239,50 @@ impl<'a, S> View for LinearLayout<S> {
         }
     }
 
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, state: &Self::State) {
+    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle) {
         for child in self.children.iter_mut() {
             child.draw(framebuffer);
         }
     }
 }
+
+impl<B, V> Widget for LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
+    fn measure(&mut self, hint: Size) -> Size {
+        let size = self.measure(hint);
+        self.view.measure(size);
+        size
+    }
+
+    fn layout(&mut self, rect: Rectangle) {
+        self.view.layout(rect, self.behavior.state());
+        self.layout(rect);
+        self.set_rect(rect);
+    }
+
+    fn draw(&mut self, fb: &mut FrameBuffer) {
+        self.view.draw(fb, self.rect(), self.behavior.state());
+        self.draw(fb, self.rect());
+    }
+
+    fn handle_system_event(&mut self, event: &EventDispatcher) -> crate::EventResult {
+        for widget in self.children.iter_mut().rev() {
+            let result = widget.handle_system_event(event);
+
+            if result == EventResult::Stop {
+                return result;
+            }
+        }
+        
+        let rect = self.rect();
+        utils::handle_system_event(&mut self.behavior, rect, event)
+    }
+
+    fn rect(&self) -> Rectangle {
+        self.computed_rect
+    }
+
+    fn set_rect(&mut self, rect: Rectangle) {
+        self.computed_rect = rect;
+    }
+}
+
