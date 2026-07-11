@@ -99,6 +99,8 @@ impl EventDispatcher {
 }
 
 
+const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
+
 pub struct IdGenerator {
     stack: Vec<WidgetId>,
     child_indices: Vec<u32>,
@@ -107,14 +109,14 @@ pub struct IdGenerator {
 impl Default for IdGenerator {
     fn default() -> Self {
         Self {
-            stack: alloc::vec![0xcbf29ce484222325], // FNV offset basis
+            stack: alloc::vec![FNV_OFFSET_BASIS], // FNV offset basis
             child_indices: alloc::vec![0],
         }
     }
 }
 
 fn hash(parent: WidgetId, child: u32) -> WidgetId {
-    let mut h = parent ^ 0xcbf29ce484222325;
+    let mut h = parent ^ FNV_OFFSET_BASIS;
 
     for b in child.to_le_bytes() {
         h ^= b as u64;
