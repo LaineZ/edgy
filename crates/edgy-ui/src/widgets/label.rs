@@ -1,75 +1,59 @@
 use core::marker::PhantomData;
+use std::u32;
 
-use alloc::{boxed::Box, string::String};
-use edgy_graphics::{
-    Color, draw,
-    font::Font,
-    framebuffer::FrameBuffer,
-    geometry::{Point, Rectangle, Size},
-    text::{self, LayoutOptions},
-};
+use alloc::string::String;
+use edgy_graphics::{draw::{self, BasicStyle}, font::Font, geometry::{Point, Rectangle, Size}, text::{self, LayoutOptions}};
 
-use crate::widgets::{NullBehavior, View, WidgetObject};
+use crate::{Prop, geometry::Constraint, widgets::Widget};
 
-pub struct TypographyLabel<'a, S> {
-    pub text: String,
-    pub font: &'a Font<'a>,
-    pub options: LayoutOptions,
-    pub color: Color,
-    _state: PhantomData<S>,
+pub struct TypographyLabel<'a> {
+    pub text: Prop<String>,
+    pub font: Prop<&'a Font<'a>>,
+    pub options: Prop<LayoutOptions>,
+    pub color: Prop<u8>,
 }
 
-impl<'a, S> TypographyLabel<'a, S> {
-    pub fn new<ST: Into<String>>(
-        font: &'a Font<'a>,
-        text: ST,
-        options: LayoutOptions,
-        color: Color,
-    ) -> Self {
+impl<'a> TypographyLabel<'a> {
+    pub fn new(text: impl Into<Prop<String>>, font: impl Into<Prop<&'a Font<'a>>>, color: impl Into<Prop<u8>>) -> Self {
         Self {
             text: text.into(),
-            font,
-            color,
-            options,
-            _state: PhantomData::<S>::default(),
+            color: color.into(),
+            font: font.into(),
+            options: Prop::Value(LayoutOptions::default()),
         }
+    }
+
+    pub fn options(mut self, options: impl Into<Prop<LayoutOptions>>) -> Self {
+        self.options = options.into();
+        self
     }
 }
 
-impl<'a, S> View for TypographyLabel<'a, S> {
-    type State = S;
-    fn measure(&mut self, hint: Size) -> Size {
+impl<'a> Widget for TypographyLabel<'static> {
+
+    fn measure(&mut self, _context: &mut crate::context::SizeContext<'_>, constraint: Constraint) -> Size {
         let bounds = text::layout_bounds(
-            &self.font,
-            Rectangle::new(Point::<i32>::zero(), hint),
-            &self.text,
-            &self.options,
+            &self.font.get(),
+            Rectangle::new(Point::<i32>::zero(), constraint.max_size),
+            &self.text.get(),
+            &self.options.get(),
             |_, _| {},
         );
 
         bounds.bounding_box.size
     }
 
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, _state: &Self::State) {
+    fn draw(&mut self, context: &mut crate::context::DrawContext<'_>) {
+        let rect = context.rect();
+        println!("{:?}", rect);
+        draw::rect(context.framebuffer, rect, BasicStyle::with_border(4, 1));
         draw::text_advanced(
-            framebuffer,
+            context.framebuffer,
             rect,
-            &self.options,
-            &self.font,
-            &self.text,
-            self.color,
+            &self.options.get(),
+            &self.font.get(),
+            &self.text.get(),
+            self.color.get(),
         );
     }
-}
-
-pub fn typography_label<'a>(
-    font: &'a Font<'a>,
-    text: String,
-    options: LayoutOptions,
-    color: Color,
-) -> WidgetObject<NullBehavior, TypographyLabel<'a, ()>> {
-    WidgetObject::new(
-        NullBehavior,
-        TypographyLabel::new(font, text, options, color),
-    )
 }

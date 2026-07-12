@@ -237,6 +237,13 @@ impl Size {
         }
     }
 
+    pub fn clamp(self, min: Size, max: Size) -> Self {
+        Self {
+            width: self.width.clamp(min.width, max.width),
+            height: self.height.clamp(min.width, min.height)
+        }
+    }
+
     pub const fn zero() -> Self {
         Size {
             width: 0,

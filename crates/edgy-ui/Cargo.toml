@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 edgy-graphics = {path = "../edgy-graphics"}
 heapless = "0.9.3"
+slotmap = "1.1.1"

@@ -1,11 +1,21 @@
 use std::{num::NonZeroU32, rc::Rc};
 
 use edgy_ui::{
-    SystemEvent, UiContext, graphics::{PixelFormat, framebuffer::FrameBuffer, geometry::{Point, Size}},
+    SystemEvent, UiContext,
+    graphics::{
+        PixelFormat,
+        framebuffer::FrameBuffer,
+        geometry::{Point, Size},
+    },
 };
 use softbuffer::Surface;
 use winit::{
-    application::ApplicationHandler, dpi::PhysicalSize, error::EventLoopError, event::{ElementState, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::{Window, WindowId},
+    application::ApplicationHandler,
+    dpi::PhysicalSize,
+    error::EventLoopError,
+    event::{ElementState, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    window::{Window, WindowId},
 };
 
 pub mod fonts;
@@ -34,13 +44,13 @@ impl WindowProperties {
     }
 }
 
-struct State<M> {
+struct State {
     window: Rc<Window>,
     surface: Surface<Rc<Window>, Rc<Window>>,
-    ui_context: UiContext<M>,
+    framebuffer: FrameBuffer,
 }
 
-impl<M> State<M> {
+impl State {
     fn resize(&mut self, new_size: Size) {
         if new_size.width > 0 && new_size.height > 0 {
             self.surface
@@ -49,23 +59,22 @@ impl<M> State<M> {
                     NonZeroU32::new(new_size.height).unwrap(),
                 )
                 .unwrap();
-            self.ui_context
-                .framebuffer
+            self.framebuffer
                 .resize(Size::new(new_size.width, new_size.height));
         }
     }
 }
 
 /// Wrapper for Softbuffer and a Winit window
-pub struct SoftbufferWindow<M> {
-    state: Option<State<M>>,
-    update_fn: Box<dyn FnMut(&mut UiContext<M>) -> ()>,
+pub struct SoftbufferWindow {
+    state: Option<State>,
+    update_fn: Box<dyn FnMut(&mut FrameBuffer) -> ()>,
     palette: Vec<u32>,
     properties: WindowProperties,
     cursor_pos: Point,
 }
 
-impl<'a, M> ApplicationHandler for SoftbufferWindow<M> {
+impl<'a> ApplicationHandler for SoftbufferWindow {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = {
             let window = event_loop.create_window(
@@ -78,13 +87,11 @@ impl<'a, M> ApplicationHandler for SoftbufferWindow<M> {
         let size = window.inner_size();
         let context =
             softbuffer::Context::new(window.clone()).expect("Failed to create softbuffer context");
-        let framebuffer =
-            FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp8);
 
         self.state = Some(State {
             window: window.clone(),
             surface: Surface::new(&context, window.clone()).expect("Failed to create surface"),
-            ui_context: UiContext::new(framebuffer),
+            framebuffer: FrameBuffer::new(size.width as u16, size.height as u16, PixelFormat::Bpp8),
         });
     }
 
@@ -103,17 +110,20 @@ impl<'a, M> ApplicationHandler for SoftbufferWindow<M> {
                 let y = position.y as i32;
                 let state = self.state.as_mut().unwrap();
                 self.cursor_pos = Point::new(x, y);
-                state.ui_context.push_event(SystemEvent::PointerMove(self.cursor_pos));
+                //state.ui_context.push_event(SystemEvent::PointerMove(self.cursor_pos));
             }
 
-            WindowEvent::MouseInput { device_id, state, button } => {
+            WindowEvent::MouseInput {
+                device_id,
+                state,
+                button,
+            } => {
                 let window_state = self.state.as_mut().unwrap();
                 if state == ElementState::Pressed {
-                    window_state.ui_context.push_event(SystemEvent::PointerDown(self.cursor_pos));
+                    //window_state.ui_context.push_event(SystemEvent::PointerDown(self.cursor_pos));
                 } else {
-                    window_state.ui_context.push_event(SystemEvent::PointerUp(self.cursor_pos));
+                    //window_state.ui_context.push_event(SystemEvent::PointerUp(self.cursor_pos));
                 }
-
             }
 
             WindowEvent::Resized(new_size) => {
@@ -131,21 +141,21 @@ impl<'a, M> ApplicationHandler for SoftbufferWindow<M> {
     }
 }
 
-impl<'a, M> SoftbufferWindow<M> {
-    pub fn new(properties: WindowProperties, palette: Vec<u32>) -> SoftbufferWindow<M> {
+impl<'a> SoftbufferWindow {
+    pub fn new(properties: WindowProperties, palette: Vec<u32>) -> SoftbufferWindow {
         SoftbufferWindow {
             state: None,
             palette,
             properties,
             update_fn: Box::new(|_| {}),
-            cursor_pos: Point::default()
+            cursor_pos: Point::default(),
         }
     }
 
     /// Runs a SoftbufferWindow event loop.
     pub fn run(
         &mut self,
-        update_fn: impl FnMut(&mut UiContext<M>) + 'static,
+        update_fn: impl FnMut(&mut FrameBuffer) + 'static,
     ) -> Result<(), EventLoopError> {
         self.update_fn = Box::new(update_fn);
         let event_loop = EventLoop::new().unwrap();
@@ -155,12 +165,12 @@ impl<'a, M> SoftbufferWindow<M> {
 
     fn render(&mut self) {
         let state = self.state.as_mut().unwrap();
-        (self.update_fn)(&mut state.ui_context);
+        (self.update_fn)(&mut state.framebuffer);
         let mut buffer = state.surface.buffer_mut().unwrap();
 
         for (dst, &src) in buffer
             .iter_mut()
-            .zip(state.ui_context.framebuffer.data.iter())
+            .zip(state.framebuffer.data.iter())
         {
             *dst = self.palette[src as usize];
         }

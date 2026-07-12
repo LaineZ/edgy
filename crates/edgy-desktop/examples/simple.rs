@@ -1,126 +1,32 @@
 use std::time::{Duration, Instant};
 
 use edgy_desktop::{SoftbufferWindow, WindowProperties, fonts::govno::UNSCII};
-use edgy_ui::{
-    Event, EventResult, decorators::ViewExt, graphics::{
-        self, Color,
-        draw::{self, BasicStyle},
-        framebuffer::FrameBuffer,
-        geometry::{Point, Rectangle, Size},
-        parse_palette_rgb888,
-        text::{self, LayoutOptions},
-    }, margin, widgets::{
-        Behavior, NullBehavior, View, WidgetObject,
-        label::{self, TypographyLabel},
-        linear_layout::{LayoutAlignment, LinearLayout},
-    },
-};
+use edgy_ui::{Prop, UiContext, graphics::{geometry::Size, parse_palette_rgb888}, widgets::label::TypographyLabel};
 
 const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
-#[derive(Clone, Copy, Debug, Default)]
-pub enum LinkState {
-    #[default]
-    Normal,
-    Clicked,
-    Hovered,
-}
-
-pub struct StateBehavior;
-
-impl Behavior for StateBehavior {
-    type State = LinkState;
-
-    fn handle(
-        &mut self,
-        state: &mut LinkState,
-        event: Event,
-    ) -> EventResult {
-        match event {
-            Event::HoverEnter => {
-                *state = LinkState::Hovered;
-                EventResult::Stop
-            }
-
-            Event::HoverLeave => {
-                *state = LinkState::Normal;
-                EventResult::Stop
-            }
-
-            Event::Press => {
-                *state = LinkState::Clicked;
-                EventResult::Stop
-            }
-
-            Event::Release => {
-                *state = LinkState::Hovered;
-                EventResult::Stop
-            }
-
-            _ => EventResult::Pass,
-        }
-    }
-}
-
-pub struct LinkLabel<'a> {
-    pub base: TypographyLabel<'a, LinkState>,
-    pub underline: bool,
-    pub hover_color: Color,
-    pub active_color: Color,
-}
-
-impl<'a> LinkLabel<'a> {
-    pub fn new<S: Into<String>>(text: S) -> Self {
-        Self {
-            base: TypographyLabel::new(&UNSCII, text, LayoutOptions::default(), 2),
-            underline: true,
-            hover_color: 1,
-            active_color: 3,
-        }
-    }
-}
-
-impl<'a> View for LinkLabel<'a> {
-    type State = LinkState;
-
-    fn measure(&mut self, hint: Size) -> Size {
-        self.base.measure(hint)
-    }
-
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, rect: Rectangle, state: &LinkState) {
-        let color = match state {
-            LinkState::Normal => self.base.color,
-            LinkState::Hovered => self.hover_color,
-            LinkState::Clicked => self.active_color,
-        };
-
-        //println!("{:?}", state);
-
-        self.base.color = color;
-        
-        self.base.draw(framebuffer, rect, state);
-        // draw::rect(framebuffer, rect, BasicStyle::with_border(4, 1));
-
-        if self.underline {
-            let y = rect.top_left.y + rect.size.height as i32;
-
-            draw::line(
-                framebuffer,
-                Point::new(rect.top_left.x, y),
-                Point::new(rect.top_left.x + rect.size.width as i32, y),
-                1,
-                1,
-            );
-        }
-    }
-}
 
 fn main() {
-    let mut window = SoftbufferWindow::<i32>::new(WindowProperties::default(), COLORS.to_vec());
+    let mut window = SoftbufferWindow::new(WindowProperties::default(), COLORS.to_vec());
     let mut frames = 0;
     let mut fps = 0;
     let mut last = Instant::now();
+    let mut ui: UiContext<i32> = UiContext::new(Size::new(800, 600));
 
-    window.run(move |ctx| {
+    let mut pizda = String::from("temperature");
+
+    ui.build(|b| {
+        b.column(|b| {
+
+            fn pizda() -> String {
+                String::from("govno")
+            }
+            
+            b.add(TypographyLabel::new(Prop::Binding(pizda), Prop::Value(&UNSCII), Prop::Value(5)));
+            b.add(TypographyLabel::new(Prop::Value(String::from("How are you?")), Prop::Value(&UNSCII), Prop::Value(4)));
+        });
+    });
+    
+    window.run(move |framebuffer| {
         frames += 1;
 
         if last.elapsed() >= Duration::from_secs(1) {
@@ -128,22 +34,11 @@ fn main() {
             frames = 0;
             last = Instant::now();
         }
-        ctx.framebuffer.clear();
-        let options = LayoutOptions {
-            wrap: text::Wrap::Word,
-            horizontal: text::HorizontalAlign::Left,
-            ..Default::default()
-        };
-        let linear_layout = LinearLayout::new_vertical(LayoutAlignment::Start, LayoutAlignment::Start, 5, |ui| {
-           ui.add(label::typography_label(&UNSCII, "The str type, also called a ‘string slice’, is the most primitive string type. It is usually seen in its borrowed form, &str. 
-               It is also the type of string literals, &'static str.".into(), options, 14));
-           ui.add(WidgetObject::new(StateBehavior, LinkLabel::new(String::from("CLICK HERE FOR FREE COOKIES!"))));
-           ui.add(label::typography_label(&UNSCII, "Here we have declared a string slice initialized with a string literal. String literals have a static lifetime, which means the string hello_world is 
-               guaranteed to be valid for the duration of the entire program. We can explicitly specify hello_world’s lifetime as well:".into(), options, 14));
-           ui.add(WidgetObject::new(NullBehavior, label::TypographyLabel::new(&UNSCII, "let hello_world: &'static str = \"Hello, world!\";", options, 15).background(BasicStyle::with_fill(7)).margin(margin!(20))));
-        });
-        ctx.update(Box::new(linear_layout));
-        graphics::draw::text(&mut ctx.framebuffer, Point::new(10, 10), &UNSCII, &format!("FPS: {}", fps), 3);
+        framebuffer.clear();
+        ui.size = Size::new(framebuffer.width() as u32, framebuffer.height() as u32);
+        ui.layout();
+        ui.draw(framebuffer);
+        //graphics::draw::text(framebuffer, Point::new(10, 10), &UNSCII, &format!("FPS: {}", fps), 3);
 
     }).unwrap();
 }

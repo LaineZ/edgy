@@ -1,10 +1,10 @@
-use alloc::{boxed::Box, vec::Vec};
-use edgy_graphics::{
-    framebuffer::FrameBuffer,
-    geometry::{Point, Rectangle, Size},
-};
+use edgy_graphics::{geometry::{Point, Rectangle, Size}};
 
-use crate::{EventDispatcher, EventResult, StateStorage, WidgetId, utils, widgets::{Behavior, NullBehavior, NullView, Ui, View, Widget}};
+use crate::{
+    context::LayoutContext,
+    geometry::Constraint,
+    widgets::Widget,
+};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum LayoutDirection {
@@ -20,60 +20,51 @@ pub enum LayoutAlignment {
     Stretch,
 }
 
-/// Linear layout
-pub struct LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
-    children: Vec<Box<dyn Widget>>,
-    id: WidgetId,
-    behavior: B,
-    view: V,
-    direction: LayoutDirection,
-    horizontal_alignment: LayoutAlignment,
-    vertical_alignment: LayoutAlignment,
-    computed_rect: Rectangle,
-    gap: u32,
-}
-
-impl LinearLayout<NullBehavior, NullView> {
-    pub fn new_vertical<F>(
-        horizontal_alignment: LayoutAlignment,
-        vertical_alignment: LayoutAlignment,
-        gap: u32,
-        build: F,
-    ) -> Self
-    where
-        F: FnOnce(&mut Ui),
-    {
-        let mut layout = Self {
-            id: WidgetId::default(),
-            children: Vec::new(),
-            direction: LayoutDirection::Vertical,
-            behavior: NullBehavior,
-            computed_rect: Rectangle::zero(),
-            view: NullView,
-            gap,
-            horizontal_alignment,
-            vertical_alignment,
-        };
-
-        {
-            let mut ui = Ui {
-                children: &mut layout.children,
-            };
-
-            build(&mut ui);
+impl LayoutAlignment {
+    fn offset(self, free: u32) -> u32 {
+        match self {
+            LayoutAlignment::Center => free / 2,
+            LayoutAlignment::End => free,
+            _ => 0,
         }
-
-        layout
     }
 }
 
+pub struct LinearLayout {
+    direction: LayoutDirection,
+    horizontal_alignment: LayoutAlignment,
+    vertical_alignment: LayoutAlignment,
+    gap: u16,
+}
 
-impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
-    fn measure(&mut self, hint: Size) -> Size {
+impl LinearLayout {
+    pub fn new(
+        direction: LayoutDirection,
+        horizontal_alignment: LayoutAlignment,
+        vertical_alignment: LayoutAlignment,
+        gap: u16,
+    ) -> LinearLayout {
+        Self {
+            direction,
+            horizontal_alignment,
+            vertical_alignment,
+            gap,
+        }
+    }
+}
+
+impl Widget for LinearLayout {
+    fn measure(
+        &mut self,
+        context: &mut crate::context::SizeContext<'_>,
+        constraint: Constraint,
+    ) -> Size {
+        let hint = constraint.max_size;
+        let children = context.children();
         let mut computed_size = Size::zero();
-        let gap_total = self.gap * self.children.len().saturating_sub(1) as u32;
+        let gap_total = self.gap as u32 * children.len().saturating_sub(1) as u32;
 
-        for child in &mut self.children {
+        for child_id in children {
             // oh dear...
             let remaining_size = match self.direction {
                 LayoutDirection::Horizontal => {
@@ -84,7 +75,7 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
                 }
             };
 
-            let child_size = child.measure(remaining_size);
+            let child_size = context.measure_child(child_id, Constraint::loose(remaining_size));
 
             match self.direction {
                 LayoutDirection::Horizontal => {
@@ -105,22 +96,25 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
         }
     }
 
-    fn layout(&mut self, storage: &mut StateStorage, rect: edgy_graphics::geometry::Rectangle) {
-        let total_gap = self.gap * self.children.len().saturating_sub(1) as u32;
+    fn layout(&mut self, context: &mut LayoutContext<'_>) {
+        let children = context.children();
+        let children_count = children.len();
+        let rect = context.rect();
+        let total_gap = self.gap as u32 * children.len().saturating_sub(1) as u32;
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
                 let mut total = 0;
-                for child in &mut self.children {
-                    let child_size = child.measure(Size::new(rect.size.width, rect.size.height));
-                    total += child_size.width;
+                for child in children.iter() {
+                    let child_size = context.get_child_costraint(*child);
+                    total += child_size.max_size.width;
                 }
                 total
             }
             LayoutDirection::Vertical => {
                 let mut total = 0;
-                for child in &mut self.children {
-                    let child_size = child.measure(Size::new(rect.size.width, rect.size.height));
-                    total += child_size.height;
+                for child in children.iter() {
+                    let child_size = context.get_child_costraint(*child);
+                    total += child_size.max_size.height;
                 }
                 total
             }
@@ -143,8 +137,6 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
             _ => 0,
         } as i32;
 
-        let children_count = self.children.len();
-
         // compute stretched size
         let stretched_size = if main_alignment == LayoutAlignment::Stretch {
             match self.direction {
@@ -155,9 +147,9 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
             0 // just do not stretch
         };
 
-        for (i, child) in self.children.iter_mut().enumerate() {
+        for (i, child) in children.iter().enumerate() {
             let child_bounds = Size::new(rect.size.width, rect.size.height);
-            let mut child_size = child.measure(child_bounds);
+            let mut child_size = context.get_child_size(*child);
 
             let cross_alignment = if self.direction == LayoutDirection::Horizontal {
                 self.vertical_alignment
@@ -222,7 +214,8 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
                 ),
             };
 
-            child.layout(child_rect, storage);
+            context.set_child_position(*child, child_rect.top_left);
+            context.set_child_size(*child, child_rect.size);
 
             match self.direction {
                 LayoutDirection::Horizontal => {
@@ -241,62 +234,5 @@ impl<B, V> LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
         }
     }
 
-    fn draw(&mut self, framebuffer: &mut FrameBuffer, storage: &mut StateStorage) {
-        for child in self.children.iter_mut() {
-            child.draw(framebuffer, storage);
-        }
-    }
+    fn draw(&mut self, _context: &mut crate::context::DrawContext<'_>) {}
 }
-
-impl<B, V> Widget for LinearLayout<B, V> where B: Behavior, V: View<State = B::State> {
-    fn init(&mut self, ids: &mut crate::IdGenerator, storage: &mut crate::StateStorage) -> WidgetId {
-        self.id = ids.next();
-        ids.push(self.id);
-        for child in &mut self.children {
-            child.init(ids, storage);
-        }
-    
-        ids.pop();
-
-        self.id
-    }
-    
-    fn measure(&mut self, hint: Size) -> Size {
-        let size = self.measure(hint);
-        self.view.measure(size);
-        size
-    }
-
-    fn layout(&mut self, rect: Rectangle, storage: &mut StateStorage) {
-        self.view.layout(rect, storage.get_or_insert(self.id));
-        self.layout(storage, rect);
-        self.set_rect(rect);
-    }
-
-    fn draw(&mut self, fb: &mut FrameBuffer, storage: &mut StateStorage) {
-        self.view.draw(fb, self.rect(), storage.get_or_insert::<B::State>(self.id));
-        self.draw(fb, storage);
-    }
-
-    fn handle_system_event(&mut self, storage: &mut StateStorage, event: &mut EventDispatcher) -> crate::EventResult {
-        for widget in self.children.iter_mut().rev() {
-            let result = widget.handle_system_event(storage, event);
-
-            if result == EventResult::Stop {
-                return result;
-            }
-        }
-        
-        let rect = self.rect();
-        utils::handle_system_event(&mut self.behavior, rect, self.id, storage, event)
-    }
-
-    fn rect(&self) -> Rectangle {
-        self.computed_rect
-    }
-
-    fn set_rect(&mut self, rect: Rectangle) {
-        self.computed_rect = rect;
-    }
-}
-

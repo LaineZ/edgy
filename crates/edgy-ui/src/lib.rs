@@ -1,24 +1,19 @@
-#![no_std]
+//#![no_std]
 extern crate alloc;
 
-use core::any::Any;
-
-use alloc::{boxed::Box, collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 pub use edgy_graphics as graphics;
 use edgy_graphics::{
-    framebuffer::FrameBuffer,
-    geometry::{Point, Rectangle},
+    framebuffer::{self, FrameBuffer}, geometry::{Point, Rectangle, Size},
 };
-use heapless::Deque;
+use slotmap::{SlotMap, new_key_type};
 
-use crate::widgets::{Behavior, Widget, root_layout::{Anchor, RootLayout}};
+use crate::{context::{DrawContext, LayoutContext, SizeContext}, geometry::Constraint, widgets::{Widget, linear_layout::{LayoutAlignment, LayoutDirection, LinearLayout}, root::RootLayout}};
 
-pub mod decorators;
+pub mod context;
+pub mod geometry;
+pub mod tree;
 pub mod widgets;
-pub(crate) mod utils;
-
-pub type WidgetId = u64;
-const ROOT_ID: WidgetId = 0;
 
 /// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,7 +23,6 @@ pub enum EventResult {
     /// Event passed, trying next widget
     Pass,
 }
-
 
 /// Filtered to specified widget event
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -55,173 +49,173 @@ pub enum SystemEvent {
     Activate,
 }
 
-#[derive(Debug, Default)]
-pub struct EventDispatcher {
-    current: SystemEvent,
-    pointer: Option<Point>,
-    pub(crate) pointer_down: bool,
-    pub hovered_widget: Option<WidgetId>,
-    pub(crate) old_hovered_widget: Option<WidgetId>,
+pub enum Prop<T> {
+    Value(T),
+    Binding(fn() -> T),
 }
 
-impl EventDispatcher {
-    pub fn update(&mut self, event: SystemEvent) {
-        self.old_hovered_widget = self.hovered_widget;
-        self.hovered_widget = None;
-        self.current = event;
-
-        match event {
-            SystemEvent::PointerMove(pos) => {
-                self.pointer = Some(pos);
-            }
-
-            SystemEvent::PointerDown(pos) => {
-                self.pointer = Some(pos);
-                self.pointer_down = true;
-            }
-
-            SystemEvent::PointerUp(pos) => {
-                self.pointer = Some(pos);
-                self.pointer_down = false;
-            }
-
-            _ => {}
+impl<T: Clone> Prop<T> {
+    pub fn get(&self) -> T {
+        match self {
+            Prop::Value(value) => value.clone(),
+            Prop::Binding(binding) => binding(),
         }
     }
-
-    pub fn current(&self) -> SystemEvent {
-        self.current
-    }
-
-    pub fn hit(&self, rect: Rectangle) -> bool {
-        self.pointer.is_some_and(|p| rect.contains(p))
-    }
 }
 
-
-const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
-
-pub struct IdGenerator {
-    stack: Vec<WidgetId>,
-    child_indices: Vec<u32>,
+new_key_type! {
+    pub struct NodeId;
 }
 
-impl Default for IdGenerator {
-    fn default() -> Self {
+pub struct Node {
+    pub parent: Option<NodeId>,
+    pub first_child: Option<NodeId>,
+    pub next_sibling: Option<NodeId>,
+    pub size: Size,
+    pub top_left: Point,
+    pub constraint: Constraint,
+    /// Current widget object which belongs to this node. Option used for `.take()` pattern in mutable contexts
+    pub widget: Option<Box<dyn Widget>>,
+}
+
+impl Node {
+    pub fn new(widget: Box<dyn Widget>) -> Self {
         Self {
-            stack: alloc::vec![FNV_OFFSET_BASIS], // FNV offset basis
-            child_indices: alloc::vec![0],
+            parent: None,
+            first_child: None,
+            next_sibling: None,
+            widget: Some(widget),
+            constraint: Constraint::default(),
+            top_left: Point::<i32>::zero(),
+            size: Size::zero()
         }
     }
-}
 
-fn hash(parent: WidgetId, child: u32) -> WidgetId {
-    let mut h = parent ^ FNV_OFFSET_BASIS;
-
-    for b in child.to_le_bytes() {
-        h ^= b as u64;
-        h = h.wrapping_mul(0x100000001b3);
-    }
-
-    h
-}
-
-impl IdGenerator {
-    pub fn next(&mut self) -> WidgetId {
-        let parent = *self.stack.last().unwrap();
-        let index = self.child_indices.last_mut().unwrap();
-        let id = hash(parent, *index);
-        *index += 1;
-        id
-    }
-
-    pub fn push(&mut self, id: WidgetId) {
-        self.stack.push(id);
-        self.child_indices.push(0);
-    }
-
-    pub fn pop(&mut self) {
-        self.stack.pop();
-        self.child_indices.pop();
-    }
-
-    pub fn begin_frame(&mut self) {
-        self.stack.clear();
-        self.stack.push(ROOT_ID);
-
-        self.child_indices.clear();
-        self.child_indices.push(0);
+    pub fn rectangle(&self) -> Rectangle {
+        Rectangle::new(self.top_left, self.size)
     }
 }
 
-#[derive(Default)]
-pub struct StateStorage {
-    map: BTreeMap<WidgetId, Box<dyn Any>>,
-}
-
-
-impl StateStorage {
-    pub fn get_or_insert<T>(
-        &mut self,
-        id: WidgetId,
-    ) -> &mut T
-    where
-        T: Default + 'static,
-    {
-        self.map
-            .entry(id)
-            .or_insert_with(|| Box::new(T::default()))
-            .downcast_mut::<T>()
-            .expect("state type mismatch")
-    }
-
-    pub fn remove(&mut self, id: WidgetId) {
-        self.map.remove(&id);
+impl Into<Rectangle> for Node {
+    fn into(self) -> Rectangle {
+        self.rectangle()
     }
 }
 
 pub struct UiContext<M> {
     messages: Vec<M>,
-    events: Deque<SystemEvent, 32>,
-    dispatcher: EventDispatcher,
-    pub framebuffer: FrameBuffer,
-    storage: StateStorage,
-    id_generator: IdGenerator,
+    tree: SlotMap<NodeId, Node>,
+    /// Ui context size
+    pub size: Size,
+    root: Option<NodeId>,
 }
 
+
 impl<M> UiContext<M> {
-    pub fn new(framebuffer: FrameBuffer) -> Self {
+    pub fn new(size: Size) -> Self {
         Self {
             messages: Vec::new(),
-            framebuffer,
-            id_generator: IdGenerator::default(),
-            storage: StateStorage::default(),
-            dispatcher: EventDispatcher::default(),
-            events: Deque::new(),
+            tree: SlotMap::with_key(),
+            root: None,
+            size,
+        }
+    }
+    
+    pub fn layout(&mut self) {
+        if let Some(root) = self.root {
+            self.tree
+                .get_mut(root)
+                .unwrap();
+            self.measure_node(root, Constraint::loose(self.size));
+            self.layout_node(root);
         }
     }
 
-    pub fn push_event(&mut self, event: SystemEvent) {
-        self.events.push_back(event).ok();
+    pub fn draw(&mut self, framebuffer: &mut FrameBuffer) {
+        if let Some(root) = self.root {
+            self.draw_node(root, framebuffer);
+        }
     }
 
-    pub fn update(&mut self, root: Box<dyn Widget>) {
-        let fb_bounds = self.framebuffer.bounding_box();
-        self.id_generator.begin_frame();
+    fn add_widget_node(
+        &mut self,
+        widget: Box<dyn Widget>,
+    ) -> NodeId {
+        let node = Node::new(widget);
+        self.tree.insert(node)
+    }
+    
+    fn add_root_node(&mut self) -> NodeId {
+        let node = Node::new(Box::new(RootLayout::new(self.size)) as Box<dyn Widget>);
+        self.tree.insert(node)
+    }
 
-        let mut root_layout = RootLayout::new();
-        root_layout.add(root, fb_bounds, Anchor::TopLeft);
-        root_layout.init(&mut self.id_generator, &mut self.storage);
-        let size = root_layout.measure(fb_bounds.size);
-        let bounds = Rectangle::new(fb_bounds.top_left, size);
-    
-        root_layout.layout(bounds, &mut self.storage);
-    
-        while let Some(event) = self.events.pop_front() {
-            self.dispatcher.update(event);
-            root_layout.handle_system_event(&mut self.storage, &mut self.dispatcher);
+    pub fn build(&mut self, f: impl FnOnce(&mut UiBuilder<M>)) {
+        let root = self.add_root_node();
+        self.root = Some(root);
+        let mut builder = UiBuilder::new(self, root);
+        f(&mut builder);
+    }
+
+    fn layout_node(&mut self, id: NodeId) {
+        let mut widget = self.tree.get_mut(id).unwrap().widget.take().expect("failed to take");
+        {
+            let mut cx = LayoutContext::new(&mut self.tree, id);
+            widget.layout(&mut cx);
         }
-    
-        root_layout.draw(&mut self.framebuffer, &mut self.storage);
+        self.tree.get_mut(id).unwrap().widget = Some(widget);
+    }
+
+    fn measure_node(&mut self, id: NodeId, constraint: Constraint) {
+        let mut widget = self.tree.get_mut(id).unwrap().widget.take().unwrap();
+        {
+            let mut cx = SizeContext::new(&mut self.tree, id);
+            widget.measure(&mut cx, constraint);
+        }
+        self.tree.get_mut(id).unwrap().widget = Some(widget);
+    }
+
+    fn draw_node(&mut self, id: NodeId, framebuffer: &mut FrameBuffer) {
+        {
+            let node = self.tree.get_mut(id).unwrap();
+            let widget = node.widget.as_mut().unwrap();
+
+            let mut cx = DrawContext::new(Rectangle::new(node.top_left, node.size), framebuffer);
+
+            widget.draw(&mut cx);
+        }
+
+        let mut child = self.tree.get(id).and_then(|n| n.first_child);
+
+        while let Some(child_id) = child {
+            let next = self.tree.get(child_id).and_then(|n| n.next_sibling);
+
+            self.draw_node(child_id, framebuffer);
+            child = next;
+        }
+    }
+}
+
+pub struct UiBuilder<'a, M> {
+    ui: &'a mut UiContext<M>,
+    parent: NodeId,
+}
+
+impl<'a, M> UiBuilder<'a, M> {
+    fn new(ui: &'a mut UiContext<M>, parent: NodeId) -> Self {
+        Self { ui, parent }
+    }
+
+    pub fn add<W: Into<Box<dyn Widget>>>(&mut self, widget: W) -> NodeId {
+        let id = self.ui.add_widget_node(widget.into());
+        tree::attach_child(&mut self.ui.tree, self.parent, id);
+        id
+    }
+
+    pub fn column(&mut self, f: impl FnOnce(&mut UiBuilder<M>)) -> NodeId {
+        let id = self.add(LinearLayout::new(LayoutDirection::Vertical, LayoutAlignment::Start, LayoutAlignment::Start, 0));
+        let mut child_builder = UiBuilder::new(self.ui, id);
+        f(&mut child_builder);
+        id
     }
 }
