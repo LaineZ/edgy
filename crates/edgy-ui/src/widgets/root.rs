@@ -2,17 +2,7 @@ use edgy_graphics::geometry::{Point, Rectangle, Size};
 
 use crate::widgets::Widget;
 
-pub struct RootLayout {
-    size: Size
-}
-
-impl RootLayout {
-    pub fn new(size: Size) -> Self {
-        Self {
-            size
-        }
-    }
-}
+pub struct RootLayout;
 
 impl Widget for RootLayout {
     fn measure(&mut self, context: &mut crate::context::SizeContext<'_>, constraint: crate::geometry::Constraint) -> Size {
@@ -30,11 +20,9 @@ impl Widget for RootLayout {
     }
     
     fn layout(&mut self, context: &mut crate::context::LayoutContext<'_>) {
-        let constraint = context.constraint();
-        let children = context.children();
-
-        for &child in &children {
-            context.set_child_constraint(child, constraint);
+        for child in context.children() {
+            context.set_child_position(child, Point::<i32>::zero());
+            context.set_child_size(child, context.size());
             context.layout_child(child);
         }
     }

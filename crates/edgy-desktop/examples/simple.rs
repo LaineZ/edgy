@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use edgy_desktop::{SoftbufferWindow, WindowProperties, fonts::govno::UNSCII};
-use edgy_ui::{Prop, UiContext, graphics::{geometry::Size, parse_palette_rgb888}, widgets::label::TypographyLabel};
+use edgy_ui::{Prop, UiContext, graphics::{self, geometry::{Point, Size}, parse_palette_rgb888}, widgets::label::TypographyLabel};
 
 const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
 
@@ -35,10 +35,11 @@ fn main() {
             last = Instant::now();
         }
         framebuffer.clear();
-        ui.size = Size::new(framebuffer.width() as u32, framebuffer.height() as u32);
+        ui.resize(Size::new(framebuffer.width() as u32, framebuffer.height() as u32));
         ui.layout();
         ui.draw(framebuffer);
-        //graphics::draw::text(framebuffer, Point::new(10, 10), &UNSCII, &format!("FPS: {}", fps), 3);
+        graphics::draw::text(framebuffer, Point::new(10, 10), &UNSCII, &format!("FPS: {}", fps), 3);
+        //panic!();
 
     }).unwrap();
 }

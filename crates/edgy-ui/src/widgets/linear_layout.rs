@@ -1,4 +1,4 @@
-use edgy_graphics::{geometry::{Point, Rectangle, Size}};
+use edgy_graphics::{draw::{self, BasicStyle}, geometry::{Point, Rectangle, Size}};
 
 use crate::{
     context::LayoutContext,
@@ -100,21 +100,22 @@ impl Widget for LinearLayout {
         let children = context.children();
         let children_count = children.len();
         let rect = context.rect();
+        //println!("layout rect: {:?}", context.rect());
         let total_gap = self.gap as u32 * children.len().saturating_sub(1) as u32;
         let total_length = match self.direction {
             LayoutDirection::Horizontal => {
                 let mut total = 0;
                 for child in children.iter() {
-                    let child_size = context.get_child_costraint(*child);
-                    total += child_size.max_size.width;
+                    let child_size = context.get_child_size(*child);
+                    total += child_size.width;
                 }
                 total
             }
             LayoutDirection::Vertical => {
                 let mut total = 0;
                 for child in children.iter() {
-                    let child_size = context.get_child_costraint(*child);
-                    total += child_size.max_size.height;
+                    let child_size = context.get_child_size(*child);
+                    total += child_size.height;
                 }
                 total
             }
@@ -137,12 +138,15 @@ impl Widget for LinearLayout {
             _ => 0,
         } as i32;
 
+        let available = match self.direction {
+            LayoutDirection::Horizontal => rect.size.width.saturating_sub(total_gap),
+            LayoutDirection::Vertical => rect.size.height.saturating_sub(total_gap),
+        };
+
+        
         // compute stretched size
         let stretched_size = if main_alignment == LayoutAlignment::Stretch {
-            match self.direction {
-                LayoutDirection::Horizontal => rect.size.width / children_count as u32,
-                LayoutDirection::Vertical => rect.size.height / children_count as u32,
-            }
+            available / children_count as u32
         } else {
             0 // just do not stretch
         };
@@ -216,6 +220,7 @@ impl Widget for LinearLayout {
 
             context.set_child_position(*child, child_rect.top_left);
             context.set_child_size(*child, child_rect.size);
+            //println!("layout: {:?}", child_rect.size);
 
             match self.direction {
                 LayoutDirection::Horizontal => {
@@ -234,5 +239,7 @@ impl Widget for LinearLayout {
         }
     }
 
-    fn draw(&mut self, _context: &mut crate::context::DrawContext<'_>) {}
+    fn draw(&mut self, context: &mut crate::context::DrawContext<'_>) {
+        draw::rect(context.framebuffer, context.rect(), BasicStyle::with_border(7, 1));
+    }
 }

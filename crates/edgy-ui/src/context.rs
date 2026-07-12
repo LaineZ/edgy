@@ -68,26 +68,8 @@ impl<'a> LayoutContext<'a> {
         self.tree.get(self.current).and_then(|n| n.parent)
     }
 
-    /// Returns the layout constraint received from parent
-    pub fn constraint(&self) -> Constraint {
-        self.tree[self.id()].constraint
-    }
-
-    pub fn constrain(&mut self, constraint: Constraint) {
-        let id = self.id();
-        self.tree[id].constraint = constraint;
-    }
-
-    pub fn set_child_constraint(&mut self, child: NodeId, constraint: Constraint) {
-        self.tree.get_mut(child).unwrap().constraint = constraint;
-    }
-
     pub fn set_child_size(&mut self, child: NodeId, size: Size) {
         self.tree.get_mut(child).unwrap().size = size;
-    }
-
-    pub fn get_child_costraint(&self, child: NodeId) -> Constraint {
-        self.tree.get(child).unwrap().constraint
     }
 
     pub fn get_child_size(&self, child: NodeId) -> Size {

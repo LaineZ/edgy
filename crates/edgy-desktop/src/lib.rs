@@ -1,13 +1,10 @@
 use std::{num::NonZeroU32, rc::Rc};
 
-use edgy_ui::{
-    SystemEvent, UiContext,
-    graphics::{
+use edgy_ui::graphics::{
         PixelFormat,
         framebuffer::FrameBuffer,
         geometry::{Point, Size},
-    },
-};
+    };
 use softbuffer::Surface;
 use winit::{
     application::ApplicationHandler,
@@ -103,22 +100,22 @@ impl<'a> ApplicationHandler for SoftbufferWindow {
             }
 
             WindowEvent::CursorMoved {
-                device_id,
+                device_id: _,
                 position,
             } => {
                 let x = position.x as i32;
                 let y = position.y as i32;
-                let state = self.state.as_mut().unwrap();
+                let _state = self.state.as_mut().unwrap();
                 self.cursor_pos = Point::new(x, y);
                 //state.ui_context.push_event(SystemEvent::PointerMove(self.cursor_pos));
             }
 
             WindowEvent::MouseInput {
-                device_id,
+                device_id: _,
                 state,
-                button,
+                button: _,
             } => {
-                let window_state = self.state.as_mut().unwrap();
+                let _window_state = self.state.as_mut().unwrap();
                 if state == ElementState::Pressed {
                     //window_state.ui_context.push_event(SystemEvent::PointerDown(self.cursor_pos));
                 } else {

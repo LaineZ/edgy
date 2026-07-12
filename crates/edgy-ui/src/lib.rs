@@ -3,9 +3,7 @@ extern crate alloc;
 
 use alloc::{boxed::Box, vec::Vec};
 pub use edgy_graphics as graphics;
-use edgy_graphics::{
-    framebuffer::{self, FrameBuffer}, geometry::{Point, Rectangle, Size},
-};
+use edgy_graphics::{framebuffer::FrameBuffer, geometry::{Point, Rectangle, Size}};
 use slotmap::{SlotMap, new_key_type};
 
 use crate::{context::{DrawContext, LayoutContext, SizeContext}, geometry::Constraint, widgets::{Widget, linear_layout::{LayoutAlignment, LayoutDirection, LinearLayout}, root::RootLayout}};
@@ -71,9 +69,8 @@ pub struct Node {
     pub parent: Option<NodeId>,
     pub first_child: Option<NodeId>,
     pub next_sibling: Option<NodeId>,
-    pub size: Size,
+    size: Size,
     pub top_left: Point,
-    pub constraint: Constraint,
     /// Current widget object which belongs to this node. Option used for `.take()` pattern in mutable contexts
     pub widget: Option<Box<dyn Widget>>,
 }
@@ -85,7 +82,6 @@ impl Node {
             first_child: None,
             next_sibling: None,
             widget: Some(widget),
-            constraint: Constraint::default(),
             top_left: Point::<i32>::zero(),
             size: Size::zero()
         }
@@ -106,18 +102,18 @@ pub struct UiContext<M> {
     messages: Vec<M>,
     tree: SlotMap<NodeId, Node>,
     /// Ui context size
-    pub size: Size,
+    pub viewport_size: Size,
     root: Option<NodeId>,
 }
 
 
 impl<M> UiContext<M> {
-    pub fn new(size: Size) -> Self {
+    pub fn new(viewport_size: Size) -> Self {
         Self {
             messages: Vec::new(),
             tree: SlotMap::with_key(),
             root: None,
-            size,
+            viewport_size,
         }
     }
     
@@ -126,7 +122,7 @@ impl<M> UiContext<M> {
             self.tree
                 .get_mut(root)
                 .unwrap();
-            self.measure_node(root, Constraint::loose(self.size));
+            self.measure_node(root, Constraint::loose(self.viewport_size));
             self.layout_node(root);
         }
     }
@@ -137,6 +133,13 @@ impl<M> UiContext<M> {
         }
     }
 
+    pub fn resize(&mut self, size: Size) {
+        self.viewport_size = size;
+    
+        let root = self.tree.get_mut(self.root.expect("root is not created yet")).unwrap();
+        root.size = size;
+    }
+    
     fn add_widget_node(
         &mut self,
         widget: Box<dyn Widget>,
@@ -146,7 +149,7 @@ impl<M> UiContext<M> {
     }
     
     fn add_root_node(&mut self) -> NodeId {
-        let node = Node::new(Box::new(RootLayout::new(self.size)) as Box<dyn Widget>);
+        let node = Node::new(Box::new(RootLayout) as Box<dyn Widget>);
         self.tree.insert(node)
     }
 
@@ -213,7 +216,7 @@ impl<'a, M> UiBuilder<'a, M> {
     }
 
     pub fn column(&mut self, f: impl FnOnce(&mut UiBuilder<M>)) -> NodeId {
-        let id = self.add(LinearLayout::new(LayoutDirection::Vertical, LayoutAlignment::Start, LayoutAlignment::Start, 0));
+        let id = self.add(LinearLayout::new(LayoutDirection::Horizontal, LayoutAlignment::Stretch, LayoutAlignment::Stretch, 0));
         let mut child_builder = UiBuilder::new(self.ui, id);
         f(&mut child_builder);
         id

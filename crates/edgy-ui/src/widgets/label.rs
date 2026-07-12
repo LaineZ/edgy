@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use std::u32;
+use core::u32;
 
 use alloc::string::String;
 use edgy_graphics::{draw::{self, BasicStyle}, font::Font, geometry::{Point, Rectangle, Size}, text::{self, LayoutOptions}};
@@ -30,8 +30,11 @@ impl<'a> TypographyLabel<'a> {
 }
 
 impl<'a> Widget for TypographyLabel<'static> {
-
     fn measure(&mut self, _context: &mut crate::context::SizeContext<'_>, constraint: Constraint) -> Size {
+
+        //println!("constraint: {:?}", constraint);
+
+        
         let bounds = text::layout_bounds(
             &self.font.get(),
             Rectangle::new(Point::<i32>::zero(), constraint.max_size),
@@ -40,12 +43,13 @@ impl<'a> Widget for TypographyLabel<'static> {
             |_, _| {},
         );
 
+        //println!("my size is: {:?}", bounds.bounding_box.size);
+        
         bounds.bounding_box.size
     }
 
     fn draw(&mut self, context: &mut crate::context::DrawContext<'_>) {
         let rect = context.rect();
-        println!("{:?}", rect);
         draw::rect(context.framebuffer, rect, BasicStyle::with_border(4, 1));
         draw::text_advanced(
             context.framebuffer,
