@@ -1,45 +1,87 @@
-use std::time::{Duration, Instant};
-
 use edgy_desktop::{SoftbufferWindow, WindowProperties, fonts::govno::UNSCII};
-use edgy_ui::{Prop, UiContext, graphics::{self, geometry::{Point, Size}, parse_palette_rgb888}, widgets::label::TypographyLabel};
+use edgy_ui::{NodeId, Prop, UiContext, graphics::{framebuffer::FrameBuffer, geometry::Size, parse_palette_rgb888}, widgets::label::TypographyLabel};
 
 const COLORS: [u32; 256] = parse_palette_rgb888::<256>(include_str!("vga13h.hex"));
 
-fn main() {
-    let mut window = SoftbufferWindow::new(WindowProperties::default(), COLORS.to_vec());
-    let mut frames = 0;
-    let mut fps = 0;
-    let mut last = Instant::now();
-    let mut ui: UiContext<i32> = UiContext::new(Size::new(800, 600));
+struct App {
+    ui: UiContext<i32>,
 
-    let mut pizda = String::from("temperature");
+    temperature_label: NodeId,
+    status_label: NodeId,
 
-    ui.build(|b| {
-        b.column(|b| {
+    connected: bool,
+    temperature: f32,
+}
 
-            fn pizda() -> String {
-                String::from("govno")
-            }
-            
-            b.add(TypographyLabel::new(Prop::Binding(pizda), Prop::Value(&UNSCII), Prop::Value(5)));
-            b.add(TypographyLabel::new(Prop::Value(String::from("How are you?")), Prop::Value(&UNSCII), Prop::Value(4)));
+impl App {
+    pub fn new(size: Size) -> Self {
+        let mut ui = UiContext::new(size);
+
+        let mut temperature_label = NodeId::default();
+        let mut status_label = NodeId::default();
+
+        ui.build(|b| {
+            b.column(|b| {
+                temperature_label = b.add(
+                    TypographyLabel::new(
+                        Prop::Value("Temperature: --".into()),
+                        Prop::Value(&UNSCII),
+                        Prop::Value(4),
+                    )
+                );
+
+                status_label = b.add(
+                    TypographyLabel::new(
+                        Prop::Value("Connected".into()),
+                        Prop::Value(&UNSCII),
+                        Prop::Value(4),
+                    )
+                );
+            });
         });
-    });
-    
-    window.run(move |framebuffer| {
-        frames += 1;
 
-        if last.elapsed() >= Duration::from_secs(1) {
-            fps = frames;
-            frames = 0;
-            last = Instant::now();
+        Self {
+            ui,
+            temperature_label,
+            status_label,
+            connected: true,
+            temperature: 0.0,
         }
-        framebuffer.clear();
-        ui.resize(Size::new(framebuffer.width() as u32, framebuffer.height() as u32));
-        ui.layout();
-        ui.draw(framebuffer);
-        graphics::draw::text(framebuffer, Point::new(10, 10), &UNSCII, &format!("FPS: {}", fps), 3);
-        //panic!();
+    }
 
-    }).unwrap();
+    pub fn update(&mut self) {
+        self.temperature += 0.1;
+
+        self.ui.modify::<TypographyLabel>(self.temperature_label, |label| {
+            label.text = Prop::Value(format!("Temperature: {:.1} °C", self.temperature));
+        });
+
+        if self.ui.tree.contains_key(self.status_label) && !self.connected {
+            self.ui.remove(self.status_label);
+        }
+    }
+
+    pub fn render(&mut self, framebuffer: &mut FrameBuffer) {
+        self.ui.resize(Size::new(
+            framebuffer.width() as u32,
+            framebuffer.height() as u32,
+        ));
+
+        self.ui.layout();
+        self.ui.draw(framebuffer);
+    }
+}
+
+fn main() {
+    let mut window =
+        SoftbufferWindow::new(WindowProperties::default(), COLORS.to_vec());
+
+    let mut app = App::new(Size::new(800, 600));
+
+    window.run(move |fb| {
+        fb.clear();
+
+        app.update();
+        app.render(fb);
+    });
 }

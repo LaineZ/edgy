@@ -1,3 +1,5 @@
+use core::any::Any;
+
 use alloc::boxed::Box;
 use edgy_graphics::geometry::Size;
 
@@ -7,7 +9,22 @@ pub mod root;
 
 use crate::{Event, EventResult, context::{DrawContext, LayoutContext, SizeContext}, geometry::Constraint};
 
-pub trait Widget: 'static {
+pub trait AsAny {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+impl<T: Any> AsAny for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+pub trait Widget: AsAny {
     fn measure(&mut self, context: &mut SizeContext<'_>, constraint: Constraint) -> Size {
         constraint.max_size
     }

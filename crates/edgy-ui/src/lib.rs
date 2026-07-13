@@ -1,4 +1,4 @@
-//#![no_std]
+#![no_std]
 extern crate alloc;
 
 use alloc::{boxed::Box, vec::Vec};
@@ -12,6 +12,8 @@ pub mod context;
 pub mod geometry;
 pub mod tree;
 pub mod widgets;
+
+pub type Tree = SlotMap<NodeId, Node>;
 
 /// Event result struct
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -49,14 +51,14 @@ pub enum SystemEvent {
 
 pub enum Prop<T> {
     Value(T),
-    Binding(fn() -> T),
+    Binding(Box<dyn Fn() -> T>),
 }
 
 impl<T: Clone> Prop<T> {
     pub fn get(&self) -> T {
         match self {
             Prop::Value(value) => value.clone(),
-            Prop::Binding(binding) => binding(),
+            Prop::Binding(value) => value(),
         }
     }
 }
@@ -99,8 +101,8 @@ impl Into<Rectangle> for Node {
 }
 
 pub struct UiContext<M> {
-    messages: Vec<M>,
-    tree: SlotMap<NodeId, Node>,
+    messages: heapless::Vec<M, 4>,
+    pub tree: Tree,
     /// Ui context size
     pub viewport_size: Size,
     root: Option<NodeId>,
@@ -110,7 +112,7 @@ pub struct UiContext<M> {
 impl<M> UiContext<M> {
     pub fn new(viewport_size: Size) -> Self {
         Self {
-            messages: Vec::new(),
+            messages: heapless::Vec::new(),
             tree: SlotMap::with_key(),
             root: None,
             viewport_size,
@@ -131,6 +133,10 @@ impl<M> UiContext<M> {
         if let Some(root) = self.root {
             self.draw_node(root, framebuffer);
         }
+    }
+
+    pub fn remove(&mut self, id: NodeId) {
+        tree::remove(&mut self.tree, id);
     }
 
     pub fn resize(&mut self, size: Size) {
@@ -158,6 +164,17 @@ impl<M> UiContext<M> {
         self.root = Some(root);
         let mut builder = UiBuilder::new(self, root);
         f(&mut builder);
+    }
+
+    pub fn modify<T: Widget + 'static>(
+        &mut self,
+        id: NodeId,
+        f: impl FnOnce(&mut T),
+    ) {
+        let node = self.tree.get_mut(id).unwrap();
+        let widget = node.widget.as_mut().unwrap();
+        let widget = widget.as_any_mut().downcast_mut::<T>().unwrap();
+        f(widget);
     }
 
     fn layout_node(&mut self, id: NodeId) {
@@ -207,6 +224,10 @@ pub struct UiBuilder<'a, M> {
 impl<'a, M> UiBuilder<'a, M> {
     fn new(ui: &'a mut UiContext<M>, parent: NodeId) -> Self {
         Self { ui, parent }
+    }
+
+    pub fn remove(&mut self, id: NodeId) {
+        self.ui.remove(id);
     }
 
     pub fn add<W: Into<Box<dyn Widget>>>(&mut self, widget: W) -> NodeId {

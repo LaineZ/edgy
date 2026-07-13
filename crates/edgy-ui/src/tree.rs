@@ -87,3 +87,16 @@ pub fn detach(tree: &mut SlotMap<NodeId, Node>, id: NodeId) {
     tree.get_mut(id).unwrap().parent = None;
     tree.get_mut(id).unwrap().next_sibling = None;
 }
+
+pub fn remove(tree: &mut SlotMap<NodeId, Node>, id: NodeId) {
+    detach(tree, id);
+    
+    let mut child = tree[id].first_child;
+    
+    while let Some(current) = child {
+        child = tree[current].next_sibling;
+        remove(tree, current);
+    }
+    
+    tree.remove(id);
+}
